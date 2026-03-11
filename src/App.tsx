@@ -105,7 +105,7 @@ function App() {
       }}
     >
       <header style={{ flexShrink: 0, marginBottom: '0.5rem' }}>
-        <h1 style={{ margin: 0, fontSize: '1.25rem' }}>Synthesis Tutor</h1>
+        <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Synthesis Tutor</h1>
         <p style={{ margin: 0, fontSize: 14, color: 'rgba(0,0,0,0.6)' }}>
           Fraction equivalence lesson — scaffold ready.
         </p>

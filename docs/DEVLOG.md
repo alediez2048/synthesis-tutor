@@ -1,6 +1,6 @@
-# Synthesis Tutor — Development Log
+# Fraction Quest — Development Log
 
-**Project:** Synthesis Tutor — Interactive AI-Powered Fractions Tutor for Ages 8–12  
+**Project:** Fraction Quest (formerly Synthesis Tutor) — Interactive AI-Powered Fractions Tutor for Ages 8–12
 **Sprint:** Mar 10–16, 2026 (7-Day Challenge)  
 **Developer:** JAD  
 **AI Assistant:** Claude (Cursor Agent)
@@ -42,6 +42,7 @@
 | ENG-028 | Celebration confetti | ⬜ Pending | 2h |
 | ENG-027 | Incorrect placement animation | ⬜ Pending | 0.5h |
 | ENG-026 | Equivalence reveal animation | ⬜ Pending | 1h |
+| ENG-045 | Fraction Quest theme pass | ⬜ Pending | 5-9h |
 
 ### Phase 5: Assessment + Core Polish (Day 5 — Friday)
 
