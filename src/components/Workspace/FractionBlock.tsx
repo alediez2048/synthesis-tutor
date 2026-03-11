@@ -78,17 +78,21 @@ export function FractionBlock({
         { transform: 'scaleX(0)', opacity: 0.5 },
         { transform: 'scaleX(1)', opacity: 1 },
       ],
-      { duration: 400, easing: 'ease-out', fill: 'forwards' }
+      { duration: 400, easing: 'ease-out' }
     );
   }, [animateIn]);
 
   const bind = useDrag(
     ({ first, last, movement: [mx, my] }) => {
       if (first) onDragStart?.();
-      setDragOffset(last ? { x: 0, y: 0 } : { x: mx, y: my });
       if (last) {
         const el = rootRef.current;
-        if (el && onDragEnd) onDragEnd(block.id, el.getBoundingClientRect());
+        // Capture rect while still translated, before resetting offset
+        const dropRect = el?.getBoundingClientRect();
+        setDragOffset({ x: 0, y: 0 });
+        if (el && dropRect && onDragEnd) onDragEnd(block.id, dropRect);
+      } else {
+        setDragOffset({ x: mx, y: my });
       }
     },
     { enabled: !dragDisabled, pointer: { touch: true }, preventDefault: true }
@@ -154,6 +158,7 @@ export function FractionBlock({
             : '0 1px 3px rgba(0,0,0,0.2)',
         outline: 'none',
         cursor: onSelect ? 'pointer' : 'default',
+        touchAction: 'none',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',

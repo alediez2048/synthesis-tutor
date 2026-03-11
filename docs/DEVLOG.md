@@ -82,7 +82,7 @@
 
 | Ticket | Description | Status | Est. |
 |--------|-------------|--------|------|
-| ENG-009 | Wire blocks to reducer | ⬜ Pending | 1h |
+| ENG-009 | Wire blocks to reducer | ✅ Complete | 1h |
 | ENG-008 | Combine interaction + animation | ✅ Complete | 2h |
 | ENG-007 | Split interaction + animation | ✅ Complete | 2h |
 | ENG-006 | FractionWorkspace component | ✅ Complete | 2h |
@@ -305,18 +305,18 @@ Drag two same-denominator blocks together to combine them. Different-denominator
 
 ---
 
-### ENG-009: Wire Blocks to Reducer ⬜
+### ENG-009: Wire Blocks to Reducer ✅
 
 #### Plain-English Summary
 Connect all visual interactions to the state reducer. Visual state is always derived from engine state.
 
 #### Acceptance Criteria
-- [ ] All block interactions dispatch `LessonAction` to reducer
-- [ ] Visual rendering is a pure function of `LessonState.blocks`
-- [ ] `isDragging` guard prevents multi-touch conflicts
-- [ ] 500ms debounce on Split action
-- [ ] Impossible states rejected (denominator > 12, invalid combine)
-- [ ] No visual state exists outside the reducer
+- [x] All block interactions dispatch `LessonAction` to reducer
+- [x] Visual rendering is a pure function of `LessonState.blocks`
+- [x] `isDragging` guard prevents multi-touch conflicts
+- [x] 500ms debounce on Split action
+- [x] Impossible states rejected (denominator > 12, invalid combine)
+- [x] No visual state exists outside the reducer
 
 #### Files Modified
 - `src/components/Workspace/Workspace.tsx`
