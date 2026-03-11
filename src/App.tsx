@@ -5,24 +5,52 @@ import {
 } from './state/reducer';
 import { Workspace } from './components/Workspace/Workspace';
 import { ChatPanel } from './components/ChatPanel/ChatPanel';
+import { ActionBar } from './components/Workspace/ActionBar';
+
+const SPLIT_REJECTION_MESSAGE = 'Those pieces are as small as they can get!';
+const SPLIT_ANIMATION_MS = 400;
 
 function App() {
   const [state, dispatch] = useReducer(lessonReducer, getInitialLessonState());
   const [draggingBlockId, setDraggingBlockId] = useState<string | null>(null);
   const [combineRejectionMessage, setCombineRejectionMessage] = useState<string | null>(null);
   const [combinedBlockId, setCombinedBlockId] = useState<string | null>(null);
+  const [splitRejectionMessage, setSplitRejectionMessage] = useState<string | null>(null);
+  const [splitBlockIds, setSplitBlockIds] = useState<string[] | null>(null);
 
   const selectedBlockId = state.blocks.find((b) => b.isSelected)?.id ?? null;
 
   useEffect(() => {
     if (!combinedBlockId) return;
-    const t = setTimeout(() => setCombinedBlockId(null), 350);
+    const t = setTimeout(() => setCombinedBlockId(null), SPLIT_ANIMATION_MS);
     return () => clearTimeout(t);
   }, [combinedBlockId]);
 
+  useEffect(() => {
+    if (!splitBlockIds?.length) return;
+    const t = setTimeout(() => setSplitBlockIds(null), SPLIT_ANIMATION_MS);
+    return () => clearTimeout(t);
+  }, [splitBlockIds]);
+
   const handleSelectBlock = (blockId: string) => {
     setCombineRejectionMessage(null);
+    setSplitRejectionMessage(null);
     dispatch({ type: 'SELECT_BLOCK', blockId });
+  };
+
+  const handleSplitRequest = (parts: number) => {
+    if (!selectedBlockId) return;
+    const selectedBlock = state.blocks.find((b) => b.id === selectedBlockId);
+    if (!selectedBlock) return;
+    if (selectedBlock.fraction.denominator * parts > 12) {
+      setSplitRejectionMessage(SPLIT_REJECTION_MESSAGE);
+      return;
+    }
+    setSplitRejectionMessage(null);
+    const startId = state.nextBlockId;
+    const newIds = Array.from({ length: parts }, (_, i) => `block-${startId + i}`);
+    setSplitBlockIds(newIds);
+    dispatch({ type: 'SPLIT_BLOCK', blockId: selectedBlockId, parts });
   };
 
   const handleDragStart = (blockId: string) => {
@@ -130,6 +158,13 @@ function App() {
               isDragging={state.isDragging}
               draggingBlockId={draggingBlockId}
               combinedBlockId={combinedBlockId}
+              splitBlockIds={splitBlockIds}
+            />
+            <ActionBar
+              selectedBlockId={selectedBlockId}
+              onSplitRequest={handleSplitRequest}
+              rejectionMessage={splitRejectionMessage}
+              disabled={state.isDragging}
             />
           </div>
         </div>

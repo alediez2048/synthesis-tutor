@@ -76,15 +76,15 @@
 | ENG-013 | System prompt engineering (Sam persona) | ⬜ Pending | 2h |
 | ENG-012 | Claude tool definitions (FractionEngine → tools) | ⬜ Pending | 2h |
 | ENG-011 | Vercel edge function + Claude API proxy | ✅ Complete | 3h |
-| ENG-010 | Chat panel UI | ✅ Complete | 2h |
+| ENG-010 | Chat panel UI | ⬜ Pending | 2h |
 
 ### Phase 2: Visual Manipulative (Day 2 — Tuesday)
 
 | Ticket | Description | Status | Est. |
 |--------|-------------|--------|------|
-| ENG-009 | Wire blocks to reducer | ✅ Complete | 1h |
+| ENG-009 | Wire blocks to reducer | ⬜ Pending | 1h |
 | ENG-008 | Combine interaction + animation | ✅ Complete | 2h |
-| ENG-007 | Split interaction + animation | ⬜ Pending | 2h |
+| ENG-007 | Split interaction + animation | ✅ Complete | 2h |
 | ENG-006 | FractionWorkspace component | ✅ Complete | 2h |
 | ENG-005 | FractionBlock component | ✅ Complete | 3h |
 
@@ -259,27 +259,28 @@ Build the workspace layout: reference bar at top, active blocks area, and compar
 
 ---
 
-### ENG-007: Split Interaction + Animation ⬜
+### ENG-007: Split Interaction + Animation ✅
 
 #### Plain-English Summary
-Implement the split interaction: tap block → select → tap Split → picker [2][3][4] → engine computes → block cracks and separates with animation.
+Split interaction: tap block to select → tap Split in ActionBar → picker [2][3][4] → pre-dispatch check (denominator × parts ≤ 12) → SPLIT_BLOCK dispatched → new blocks animate in (400ms ease-out scaleX). Rejection shows Sam message; 500ms debounce on Split.
 
 #### Acceptance Criteria
-- [ ] Tap block to select it (visual selection ring)
-- [ ] Split button in action bar (pulses when block is selected)
-- [ ] Split picker shows options: [2] [3] [4] — no free-text input
-- [ ] Engine computes `split()` and reducer updates state
-- [ ] Split animation: block cracks → separates (400ms, ease-out)
-- [ ] Total area preserved during animation (mathematical invariant)
-- [ ] Labels appear on new blocks after animation completes
-- [ ] 500ms debounce on Split button
-- [ ] Denominator > 12 rejected with Sam message
+- [x] Tap block to select it (visual selection ring)
+- [x] Split button in action bar (emphasized when block is selected)
+- [x] Split picker shows options: [2] [3] [4] — no free-text input
+- [x] Engine/reducer compute split and update state
+- [x] Split animation: new blocks grow in (400ms, ease-out, scaleX)
+- [x] Total width preserved (layout invariant)
+- [x] Labels on new blocks (state-driven via FractionBlock)
+- [x] 500ms debounce on Split button
+- [x] Denominator > 12: pre-check; Sam message, no dispatch
 
-#### Files to Create
-- `src/components/Workspace/ActionBar.tsx`
-
-#### Dependencies
-- ENG-005, ENG-006 (block + workspace exist), ENG-002 (engine split function)
+#### Files Created / Modified
+- `src/components/Workspace/ActionBar.tsx` (created)
+- `src/App.tsx` — selectedBlockId, handleSplitRequest, splitRejectionMessage, splitBlockIds, ActionBar
+- `src/components/Workspace/Workspace.tsx` — splitBlockIds prop, animateIn for split blocks
+- `src/components/Workspace/FractionBlock.tsx` — animation 400ms ease-out (split spec)
+- `docs/DEVLOG.md` — ENG-007 entry
 
 ---
 
@@ -1223,84 +1224,42 @@ Implemented drag-to-combine using `@use-gesture/react`: FractionBlock has useDra
 
 ---
 
-### ENG-009: Wire Blocks to Reducer ✅
+### ENG-007: Split Interaction + Animation ✅
 
 #### Plain-English Summary
-Wired comparison zone drop, derived selection state, and DESELECT_ALL so all block interactions flow through the reducer. Dragging a block onto the comparison zone dispatches COMPARE_BLOCKS and moves the block there; clicking the workspace background dispatches DESELECT_ALL; selectedBlockId is derived from state.blocks (ready for ActionBar in ENG-007).
+Implemented the split interaction: ActionBar with Split button (min 44×44pt) and picker [2][3][4]. Parent derives selectedBlockId from state; onSplitRequest runs pre-dispatch check (selectedBlock.fraction.denominator * parts > 12) and either shows Sam message (“Those pieces are as small as they can get!”) or dispatches SPLIT_BLOCK. New blocks animate in via scaleX(0)→scaleX(1), 400ms ease-out, transform-origin left; total width preserved. 500ms debounce on Split; selection clears after split (reducer creates new blocks with isSelected: false).
 
 #### Metadata
 - **Status:** Complete
-- **Date:** Mar 11, 2026
-- **Ticket:** ENG-009
-- **Branch:** `feature/eng-009-wire-blocks-to-reducer`
+- **Date:** Mar 10, 2026
+- **Ticket:** ENG-007
+- **Branch:** `feature/eng-007-split-interaction`
 
 #### Key Achievements
-- **Comparison zone drop:** Workspace holds a ref to ComparisonZone (forwardRef); at drag end, if drop rect overlaps zone and no block target, dispatch COMPARE_BLOCKS with [draggedId, draggedId]. Block moves to position 'comparison' and renders in ComparisonZone.
-- **Block vs zone:** findDropTarget runs first; if a block is hit, existing combine logic runs; else if zone overlaps, onDropOnComparisonZone; else onCombineAttempt(draggedId, null).
-- **Derived state:** selectedBlockId = state.blocks.find(b => b.isSelected)?.id ?? null in App; passed to Workspace (reserved for ActionBar).
-- **DESELECT_ALL:** Workspace active-blocks section onClick: when e.target === e.currentTarget, parent dispatches DESELECT_ALL so tapping the background clears selection.
-- **ComparisonZone:** forwardRef so Workspace can attach ref to the zone container for overlap detection.
-- **rectsOverlap** helper in Workspace for zone vs drop rect.
+- ActionBar.tsx: selectedBlockId, onSplitRequest, rejectionMessage; Split button; picker [2][3][4]; 500ms debounce (state + useEffect); aria-labels
+- App: selectedBlockId from state.blocks; handleSplitRequest (pre-check den * parts > 12, set splitRejectionMessage or setSplitBlockIds + dispatch SPLIT_BLOCK); splitBlockIds cleared after 400ms
+- Workspace: splitBlockIds prop; animateIn = combinedBlockId || splitBlockIds.includes(block.id)
+- FractionBlock: grow-in animation 400ms ease-out (primer spec)
 
 #### Files Modified
-- `src/App.tsx` — derived selectedBlockId; handleDropOnComparisonZone (DRAG_END + COMPARE_BLOCKS); handleWorkspaceBackgroundClick (DESELECT_ALL); pass new callbacks and selectedBlockId to Workspace
-- `src/components/Workspace/Workspace.tsx` — comparisonZoneRef, rectsOverlap, handleDragEnd branches (block target → combine, zone overlap → onDropOnComparisonZone, else combine null); onDropOnComparisonZone, onWorkspaceBackgroundClick props; active-blocks section onClick for background; selectedBlockId prop (reserved for ENG-007)
-- `src/components/Workspace/ComparisonZone.tsx` — forwardRef so root section accepts ref
-- `docs/DEVLOG.md` — ENG-009 entry
+- `src/components/Workspace/ActionBar.tsx` — created
+- `src/App.tsx` — ActionBar, selectedBlockId, handleSplitRequest, splitRejectionMessage, splitBlockIds
+- `src/components/Workspace/Workspace.tsx` — splitBlockIds, animateIn for split
+- `src/components/Workspace/FractionBlock.tsx` — 400ms ease-out for grow-in
+- `docs/DEVLOG.md` — ENG-007 entry
 
 #### Verification
 - `npx tsc -b` — zero errors
 - `npm run lint` — zero errors
-- `npm test` — 61 passed
 
 #### Acceptance Criteria
-- [x] Dragging a block into ComparisonZone dispatches COMPARE_BLOCKS; block position becomes 'comparison'
-- [x] Combine-on-block behavior unchanged (same/different denominator)
-- [x] selectedBlockId derived from state.blocks; passed to Workspace
-- [x] Tapping workspace background dispatches DESELECT_ALL
-- [x] isDragging guard and DRAG_START/DRAG_END unchanged (already correct)
-- [x] DEVLOG updated; feature branch created
-
----
-
-### ENG-010: Chat Panel UI ✅
-
-#### Plain-English Summary
-Built the Chat Panel as the left 40% of a two-panel layout: scrollable message list (role="list"), MessageBubble for tutor (left, Sam avatar) and student (right), InputField with Send (44×44pt min), and STUDENT_RESPONSE wiring. App uses flex 40/60; chat shows empty state when no messages; auto-scroll to newest message; isLoading prop supported for future typing indicator.
-
-#### Metadata
-- **Status:** Complete
-- **Date:** Mar 11, 2026
-- **Ticket:** ENG-010
-- **Branch:** `feature/eng-010-chat-panel-ui`
-
-#### Key Achievements
-- **ChatPanel.tsx:** messages, onSendMessage, isLoading; scrollable list with scrollEndRef and scrollIntoView; empty state "No messages yet. Say hi to get started!"; loading placeholder "Sam is typing..."; InputField at bottom.
-- **MessageBubble.tsx:** tutor messages left-aligned with Sam avatar (36px circle, blue, two white dot eyes) and "Sam" label; student messages right-aligned, green-tinted background; role="listitem", aria-label for tutor "Sam: {content}".
-- **InputField.tsx:** text input + Send button (min 44×44pt); Submit on Enter or Send; trims and rejects empty; clears after send; aria-label on input and button; disabled prop for future streaming.
-- **App.tsx:** two-panel flex layout (40% chat, 60% workspace); handleSendMessage dispatches STUDENT_RESPONSE; header with title above panels; rejection message in right panel above Workspace.
-
-#### Files Created
-- `src/components/ChatPanel/ChatPanel.tsx`
-- `src/components/ChatPanel/MessageBubble.tsx`
-- `src/components/ChatPanel/InputField.tsx`
-
-#### Files Modified
-- `src/App.tsx` — two-panel layout, ChatPanel, handleSendMessage
-- `docs/DEVLOG.md` — ENG-010 entry
-
-#### Verification
-- `npx tsc -b` — zero errors
-- `npm run lint` — zero errors
-- `npm test` — 61 passed
-
-#### Acceptance Criteria
-- [x] Two-panel layout: Chat (40% left) + Workspace (60% right)
-- [x] ChatPanel scrollable message list with auto-scroll to newest
-- [x] Tutor messages left-aligned with Sam avatar (circle + eyes); student messages right-aligned
-- [x] Input accepts text; Enter or Send dispatches STUDENT_RESPONSE; student messages appear in chat
-- [x] Empty/whitespace input rejected; 44×44pt Send button; ARIA labels
-- [x] DEVLOG updated; feature branch created
+- [x] ActionBar with Split button (44×44pt min) and picker [2][3][4]
+- [x] 500ms debounce on Split
+- [x] Pre-dispatch check: den * parts > 12 → Sam message, no dispatch
+- [x] After successful split, selection clears
+- [x] Split animation: scaleX 0→1, 400ms ease-out, transform-origin left; total width preserved
+- [x] Labels on new blocks (FractionBlock)
+- [x] Feature branch created
 
 ---
 

@@ -38,6 +38,7 @@ export interface WorkspaceProps {
   isDragging?: boolean;
   draggingBlockId?: string | null;
   combinedBlockId?: string | null;
+  splitBlockIds?: string[] | null;
 }
 
 export function Workspace({
@@ -52,6 +53,7 @@ export function Workspace({
   isDragging = false,
   draggingBlockId = null,
   combinedBlockId = null,
+  splitBlockIds = null,
 }: WorkspaceProps) {
   void _selectedBlockId; // Reserved for ActionBar (ENG-007)
   const workspaceBlocks = blocks.filter((b) => b.position === 'workspace');
@@ -152,7 +154,10 @@ export function Workspace({
             onBlockRef={setBlockRef}
             isDragging={isDragging}
             dragDisabled={isDragging && draggingBlockId !== block.id}
-            animateIn={block.id === combinedBlockId}
+            animateIn={
+              block.id === combinedBlockId ||
+              (splitBlockIds != null && splitBlockIds.includes(block.id))
+            }
           />
         ))}
       </section>
