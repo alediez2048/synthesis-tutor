@@ -2,6 +2,7 @@
 
 **For:** New Cursor Agent session
 **Project:** Synthesis Tutor — Interactive AI-Powered Fractions Tutor for Ages 8–12
+**Phase:** Phase 1: Foundation (Day 1)
 **Date:** Mar 10, 2026
 **Previous work:** None — this is the first ticket. See `docs/DEVLOG.md`.
 

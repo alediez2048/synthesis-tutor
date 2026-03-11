@@ -1,7 +1,8 @@
 # ENG-005 Primer: FractionBlock Component
 
 **For:** New Cursor Agent session  
-**Project:** Synthesis Tutor — Interactive AI-Powered Fractions Tutor for Ages 8–12  
+**Project:** Synthesis Tutor — Interactive AI-Powered Fractions Tutor for Ages 8–12
+**Phase:** Phase 2: Visual Manipulative (Day 2)
 **Date:** Mar 10, 2026  
 **Previous work:** ENG-001 through ENG-004 complete. See `docs/DEVLOG.md`.
 
