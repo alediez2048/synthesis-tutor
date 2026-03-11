@@ -1,0 +1,54 @@
+---
+description: Mandatory verification checks before committing or marking work done
+alwaysApply: true
+---
+
+# Verify Before Done (MANDATORY)
+
+## Before EVERY Commit
+
+Run these checks. Do NOT commit if any fails.
+
+1. **TypeScript compiles cleanly:**
+   ```
+   npx tsc --noEmit
+   ```
+   Zero type errors.
+
+2. **Tests pass:**
+   ```
+   npm test
+   ```
+   ALL tests must pass — not just the ones you wrote.
+
+3. **Lint is clean:**
+   ```
+   npm run lint
+   ```
+   Zero warnings, zero errors. Do not add `eslint-disable` without justification.
+
+4. **Build succeeds:**
+   ```
+   npm run build
+   ```
+   Production build must complete without errors.
+
+5. **No unintended files staged:**
+   - Run `git status` and `git diff --staged` before committing
+   - Do NOT stage `.env`, `node_modules/`, `dist/`, `.DS_Store`
+   - Only stage files related to the current change
+
+## Before Marking a Feature Complete
+
+- All items in the ticket's acceptance criteria are met
+- No pre-existing tests broke as a result of changes
+- Feature branch has been pushed to remote
+- App loads and runs correctly in a browser (ideally iPad Safari)
+- Animations run at 60fps (check with DevTools Performance tab)
+
+## If Tests Fail
+
+- Do NOT commit with failing tests
+- Do NOT delete or skip failing tests
+- Fix the issue, then re-run the full test suite
+- If a failure is pre-existing, note it in the commit message but do not introduce new failures

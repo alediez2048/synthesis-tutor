@@ -1,0 +1,42 @@
+---
+description: Core architectural constraints — client-only, single source of truth, deterministic math
+alwaysApply: true
+---
+
+# Architecture (NON-NEGOTIABLE)
+
+## Client-Only
+
+This is a fully client-side application. No backend, no API calls, no database.
+
+- Do NOT create a backend server, REST API, or database
+- Do NOT make network requests from the app (except static asset loading)
+- Do NOT import or use `fetch()` for data operations
+- All state lives in the browser: `useReducer` state + `sessionStorage` checkpoints
+- Deployment is static files served by Vercel
+
+## Single Source of Truth
+
+The `LessonState` managed by `useReducer` is the ONLY source of truth.
+
+- Visual components are pure projections of `LessonState` — they NEVER own state
+- Fraction blocks render FROM engine state, never the reverse
+- During drag animations, use CSS transforms for preview only — commit state change only on gesture completion
+- The reducer rejects impossible state transitions (denominator > 12, invalid fractions)
+
+## Deterministic Math
+
+The `FractionEngine` is the sole authority on mathematical correctness.
+
+- The LLM / scripted dialogue NEVER evaluates math — `FractionEngine.areEquivalent()` is the only judge
+- `EvaluationResult.isCorrect` is always computed by the engine, never by text matching or LLM output
+- All engine functions are pure (same input → same output, no side effects, no network)
+- The `TutorBrain` interface separates pedagogy from math — implementations can change, the engine stays
+
+## State Flow
+
+```
+User Action → Reducer (validates via Engine) → New LessonState → React re-render → Visual update
+```
+
+Never shortcut this flow. Never mutate state outside the reducer.

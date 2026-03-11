@@ -1,0 +1,52 @@
+---
+description: Testing strategy — property-based engine tests, script integrity, E2E
+alwaysApply: true
+---
+
+# Testing Strategy
+
+## Priority Order
+
+1. **Fraction Engine** (P0) — property-based tests with fast-check, 10,000 iterations
+2. **Misconception Detectors** (P0) — truth-table tests
+3. **Script Integrity** (P1) — DFS graph traversal
+4. **State Reducer** (P1) — key transitions and impossible-state rejection
+5. **E2E Happy Path** (P2) — Cypress
+6. **E2E Struggle Path** (P2) — Cypress
+
+## Fraction Engine — Property-Based Tests (MANDATORY)
+
+Use `fast-check` to verify these invariants with 10,000+ random iterations:
+
+- **Reflexivity:** `areEquivalent(f, f) === true` for all valid fractions
+- **Symmetry:** `areEquivalent(a, b) === areEquivalent(b, a)`
+- **Split-combine roundtrip:** `areEquivalent(combine(split(f, n)), f)` for all valid f, n
+- **Simplify preserves value:** `areEquivalent(f, simplify(f))` and `simplify(f).denominator <= f.denominator`
+
+These four properties catch an enormous class of bugs. They run in under a second.
+
+## Misconception Detectors — Truth Table Tests
+
+Each detector is a predicate. Test every handler against a truth table:
+- Correct answer → no detection
+- Each specific misconception → correct detection type
+- Wrong answer that doesn't match a pattern → generic "wrong_equivalence"
+
+## Script Integrity — Graph Traversal Test
+
+DFS over all script JSON files and verify:
+- No dead-end nodes (every non-terminal has at least one outgoing edge)
+- Every terminal node is in the assessment-complete phase
+- No orphaned nodes (every node reachable from start)
+
+## E2E Tests — Exactly 2
+
+- **Happy path:** Complete lesson, all correct → 3/3 completion screen
+- **Struggle path:** All incorrect → hints → demonstrations → assessment available
+
+## Rules
+
+- Write tests BEFORE implementation (TDD for engine, at minimum)
+- ALL tests must pass before committing — no skipping, no deleting
+- Test files live next to source files (`FractionEngine.test.ts`)
+- Never mock the Fraction Engine — it's pure functions, test the real thing

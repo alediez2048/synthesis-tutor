@@ -1,0 +1,52 @@
+---
+description: Mandatory context loading before starting any implementation work
+alwaysApply: true
+---
+
+# Context Loading (MANDATORY)
+
+## Before Writing ANY Code
+
+Read these files before making changes:
+
+1. **PRD** — `docs/prd.md`
+   - Understand the full system architecture, data models, and lesson flow
+   - Check the sprint plan for the current day's tickets and acceptance criteria
+   - Reference Section 7 for exact scripted dialogue content
+   - Reference Section 4 for data models and engine API
+
+2. **Interviews** — `docs/interviews.md`
+   - 30 questions of architectural deep-dive
+   - Contains implementation guidance, edge case handling, and design rationale
+   - Reference for: accessibility, testing strategy, animation specs, persona rules, deployment
+
+3. **Requirements** — `docs/requirements.md`
+   - Project assignment rubric with checkpoint deadlines
+   - MVP requirements (24-hour gate), eval framework, observability requirements
+   - Submission deliverables checklist
+
+4. **DEVLOG** — `docs/DEVLOG.md`
+   - Development log with all 38 tickets across 7 phases
+   - Read before starting any ticket to understand what's already done
+   - Update as the LAST step of every completed ticket
+
+5. **Type contracts** — `src/state/types.ts`
+   - Understand `Fraction`, `FractionBlock`, `LessonState`, `LessonAction`, `ChatMessage`
+   - Do NOT change type contracts without understanding all consumers
+
+5. **Files you are about to modify** — read them in full before editing
+   - Never edit a file you haven't read first
+   - Understand existing code structure before adding to it
+
+## During Implementation
+
+- If a decision feels ambiguous, check the PRD and interviews — it's almost certainly specified
+- If you need to understand how a function works, read its implementation — do not guess
+- The PRD Section 15 defines the exact file structure — follow it
+
+## Do NOT
+
+- Start writing code before reading the relevant PRD section
+- Assume what a file contains without reading it
+- Guess at function signatures, return types, or interface shapes
+- Contradict a decision documented in the interviews or PRD
