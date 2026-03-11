@@ -1,7 +1,8 @@
 # ENG-002 Primer: Fraction Type + Engine Core
 
 **For:** New Cursor Agent session  
-**Project:** Synthesis Tutor — Interactive AI-Powered Fractions Tutor for Ages 8–12  
+**Project:** Synthesis Tutor — Interactive AI-Powered Fractions Tutor for Ages 8–12
+**Phase:** Phase 1: Foundation (Day 1)
 **Date:** Mar 10, 2026  
 **Previous work:** ENG-001 (Project scaffold) complete. See `docs/DEVLOG.md`.
 

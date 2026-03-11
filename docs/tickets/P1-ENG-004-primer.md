@@ -1,7 +1,8 @@
 # ENG-004 Primer: LessonState Types + Reducer Skeleton
 
 **For:** New Cursor Agent session  
-**Project:** Synthesis Tutor — Interactive AI-Powered Fractions Tutor for Ages 8–12  
+**Project:** Synthesis Tutor — Interactive AI-Powered Fractions Tutor for Ages 8–12
+**Phase:** Phase 1: Foundation (Day 1)
 **Date:** Mar 10, 2026  
 **Previous work:** ENG-001 (scaffold), ENG-002 (Fraction Engine), ENG-003 (property-based tests) complete. See `docs/DEVLOG.md`.
 
