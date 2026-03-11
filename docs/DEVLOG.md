@@ -33,8 +33,8 @@
 
 | Ticket | Description | Status | Est. |
 |--------|-------------|--------|------|
-| LLM-011 | Eval runner (automated quality checks) | ⬜ Pending | 1.5h |
-| LLM-010 | Eval dataset (50+ test cases) | ⬜ Pending | 2h |
+| ENG-044 | Eval runner (automated quality checks) | ⬜ Pending | 1.5h |
+| ENG-043 | Eval dataset (50+ test cases) | ⬜ Pending | 2h |
 | ENG-032 | PWA configuration | ⬜ Pending | 0.5h |
 | ENG-031 | Accessibility: ARIA + keyboard | ⬜ Pending | 1.5h |
 | ENG-030 | Responsive layout: portrait mode | ⬜ Pending | 1h |
@@ -48,8 +48,8 @@
 | Ticket | Description | Status | Est. |
 |--------|-------------|--------|------|
 | ENG-025 | Checkpoint + recovery system | ⬜ Pending | 1.5h |
-| LLM-009 | Voice output (TTS via SpeechSynthesis) | ⬜ Pending | 1.5h |
-| LLM-008 | Voice input (STT via Web Speech API) | ⬜ Pending | 2h |
+| ENG-042 | Voice output (TTS via SpeechSynthesis) | ⬜ Pending | 1.5h |
+| ENG-041 | Voice input (STT via Web Speech API) | ⬜ Pending | 2h |
 | ENG-024 | Sound Manager | ⬜ Pending | 1h |
 | ENG-023 | Progress dots | ⬜ Pending | 0.5h |
 | ENG-022 | Completion screen | ⬜ Pending | 1.5h |
@@ -64,18 +64,18 @@
 | ENG-018 | MisconceptionDetector (Claude tool) | ⬜ Pending | 1.5h |
 | ENG-016 | Exploration Observer (simplified) | ⬜ Pending | 1.5h |
 | ENG-015 | Chat ↔ Workspace integration | ⬜ Pending | 2h |
-| LLM-007 | Langfuse observability integration | ⬜ Pending | 2h |
-| LLM-006 | Wire ChatPanel to LLM | ⬜ Pending | 2h |
-| LLM-005 | Reducer additions (TUTOR_RESPONSE, SET_LOADING) | ⬜ Pending | 1h |
-| LLM-004 | useTutorChat hook (SSE streaming) | ⬜ Pending | 3h |
+| ENG-040 | Langfuse observability integration | ⬜ Pending | 2h |
+| ENG-039 | Wire ChatPanel to LLM | ⬜ Pending | 2h |
+| ENG-017 | Reducer additions (TUTOR_RESPONSE, SET_LOADING) | ⬜ Pending | 1h |
+| ENG-014 | useTutorChat hook (SSE streaming) | ⬜ Pending | 3h |
 
 ### Phase 3: Chat + LLM Integration (Day 3 — Wednesday)
 
 | Ticket | Description | Status | Est. |
 |--------|-------------|--------|------|
-| LLM-003 | System prompt engineering (Sam persona) | ⬜ Pending | 2h |
-| LLM-002 | Claude tool definitions (FractionEngine → tools) | ⬜ Pending | 2h |
-| LLM-001 | Vercel edge function + Claude API proxy | ⬜ Pending | 3h |
+| ENG-013 | System prompt engineering (Sam persona) | ⬜ Pending | 2h |
+| ENG-012 | Claude tool definitions (FractionEngine → tools) | ⬜ Pending | 2h |
+| ENG-011 | Vercel edge function + Claude API proxy | ⬜ Pending | 3h |
 | ENG-010 | Chat panel UI | ⬜ Pending | 2h |
 
 ### Phase 2: Visual Manipulative (Day 2 — Tuesday)
@@ -357,7 +357,7 @@ Build the scrollable chat interface with Sam's avatar, message bubbles, and stud
 
 ---
 
-### LLM-001: Vercel Edge Function + Claude API Proxy ⬜
+### ENG-011: Vercel Edge Function + Claude API Proxy ⬜
 
 #### Plain-English Summary
 Create a Vercel Edge Function at `/api/chat` that proxies requests to the Claude API with SSE streaming. FractionEngine runs server-side as tool execution. API key stored in Vercel env vars.
@@ -379,7 +379,7 @@ Create a Vercel Edge Function at `/api/chat` that proxies requests to the Claude
 
 ---
 
-### LLM-002: Claude Tool Definitions ⬜
+### ENG-012: Claude Tool Definitions ⬜
 
 #### Plain-English Summary
 Define all FractionEngine functions as Claude tool schemas. Build the tool execution dispatcher that maps tool calls to engine functions.
@@ -394,11 +394,11 @@ Define all FractionEngine functions as Claude tool schemas. Build the tool execu
 - `api/tools.ts`
 
 #### Dependencies
-- LLM-001 (edge function exists), ENG-002 (FractionEngine)
+- ENG-011 (edge function exists), ENG-002 (FractionEngine)
 
 ---
 
-### LLM-003: System Prompt Engineering ⬜
+### ENG-013: System Prompt Engineering ⬜
 
 #### Plain-English Summary
 Craft the system prompt that defines Sam's persona, voice constraints, pedagogical rules, phase awareness, and math firewall instructions.
@@ -414,7 +414,7 @@ Craft the system prompt that defines Sam's persona, voice constraints, pedagogic
 - `api/system-prompt.ts`
 
 #### Dependencies
-- LLM-002 (tool definitions referenced in prompt)
+- ENG-012 (tool definitions referenced in prompt)
 
 ---
 
@@ -456,7 +456,7 @@ Craft the system prompt that defines Sam's persona, voice constraints, pedagogic
 
 ---
 
-### LLM-004: useTutorChat Hook ⬜
+### ENG-014: useTutorChat Hook ⬜
 
 #### Plain-English Summary
 React hook that manages communication with `/api/chat`. Handles SSE streaming, typing indicators, and dispatches responses to the reducer.
@@ -472,11 +472,11 @@ React hook that manages communication with `/api/chat`. Handles SSE streaming, t
 - `src/brain/useTutorChat.ts`
 
 #### Dependencies
-- LLM-001 (edge function), LLM-005 (new reducer actions)
+- ENG-011 (edge function), ENG-017 (new reducer actions)
 
 ---
 
-### LLM-005: Reducer Additions ⬜
+### ENG-017: Reducer Additions ⬜
 
 #### Plain-English Summary
 Add TUTOR_RESPONSE and SET_LOADING actions to the reducer and types for async LLM integration.
@@ -498,7 +498,7 @@ Add TUTOR_RESPONSE and SET_LOADING actions to the reducer and types for async LL
 
 ---
 
-### LLM-006: Wire ChatPanel to LLM ⬜
+### ENG-039: Wire ChatPanel to LLM ⬜
 
 #### Plain-English Summary
 Connect the ChatPanel UI to the useTutorChat hook. Show streaming responses with typing indicator.
@@ -513,11 +513,11 @@ Connect the ChatPanel UI to the useTutorChat hook. Show streaming responses with
 - `src/components/ChatPanel/ChatPanel.tsx`
 
 #### Dependencies
-- ENG-010 (ChatPanel UI), LLM-004 (useTutorChat hook)
+- ENG-010 (ChatPanel UI), ENG-014 (useTutorChat hook)
 
 ---
 
-### LLM-007: Langfuse Observability ⬜
+### ENG-040: Langfuse Observability ⬜
 
 #### Plain-English Summary
 Integrate Langfuse tracing into the edge function. Trace all Claude calls, tool executions, token usage, and latency.
@@ -535,7 +535,7 @@ Integrate Langfuse tracing into the edge function. Trace all Claude calls, tool 
 - `api/chat.ts`
 
 #### Dependencies
-- LLM-001 (edge function exists)
+- ENG-011 (edge function exists)
 
 ---
 
@@ -688,7 +688,7 @@ Integrate Langfuse tracing into the edge function. Trace all Claude calls, tool 
 
 ---
 
-### LLM-008: Voice Input (STT) ⬜
+### ENG-041: Voice Input (STT) ⬜
 
 #### Plain-English Summary
 Add speech-to-text via Web Speech API. Microphone button next to text input.
@@ -708,7 +708,7 @@ Add speech-to-text via Web Speech API. Microphone button next to text input.
 
 ---
 
-### LLM-009: Voice Output (TTS) ⬜
+### ENG-042: Voice Output (TTS) ⬜
 
 #### Plain-English Summary
 Add text-to-speech via browser SpeechSynthesis API. Sam reads responses aloud.
@@ -724,7 +724,7 @@ Add text-to-speech via browser SpeechSynthesis API. Sam reads responses aloud.
 - `src/brain/useVoiceOutput.ts`
 
 #### Dependencies
-- LLM-006 (ChatPanel wired to LLM)
+- ENG-039 (ChatPanel wired to LLM)
 
 ---
 
@@ -735,7 +735,7 @@ Add text-to-speech via browser SpeechSynthesis API. Sam reads responses aloud.
 
 ---
 
-### LLM-010: Eval Dataset ⬜
+### ENG-043: Eval Dataset ⬜
 
 #### Plain-English Summary
 Create 50+ test cases covering happy path, edge cases, and adversarial inputs for automated LLM quality evaluation.
@@ -749,11 +749,11 @@ Create 50+ test cases covering happy path, edge cases, and adversarial inputs fo
 - `eval/dataset.json`
 
 #### Dependencies
-- LLM-001 through LLM-003 (edge function + tools + prompt)
+- ENG-011 through ENG-013 (edge function + tools + prompt)
 
 ---
 
-### LLM-011: Eval Runner ⬜
+### ENG-044: Eval Runner ⬜
 
 #### Plain-English Summary
 Script that runs eval dataset against /api/chat and checks math correctness, tool selection, and persona adherence.
@@ -768,7 +768,7 @@ Script that runs eval dataset against /api/chat and checks math correctness, too
 - `eval/run.ts`
 
 #### Dependencies
-- LLM-010 (dataset), LLM-007 (Langfuse)
+- ENG-043 (dataset), ENG-040 (Langfuse)
 
 ---
 

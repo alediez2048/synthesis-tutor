@@ -1,4 +1,4 @@
-# LLM-005 Primer: Reducer Additions
+# ENG-017 Primer: Reducer Additions
 
 **For:** New Cursor Agent session
 **Project:** Synthesis Tutor — Interactive AI-Powered Fractions Tutor for Ages 8–12
@@ -9,7 +9,7 @@
 
 ## What Is This Ticket?
 
-LLM-005 adds two new actions to the lesson reducer: `TUTOR_RESPONSE` and `SET_LOADING`. These are the minimal state changes needed for the `useTutorChat` hook (LLM-004) to stream Claude's responses into the UI. This is a small, additive ticket — existing types, actions, and tests must continue to work unchanged.
+ENG-017 adds two new actions to the lesson reducer: `TUTOR_RESPONSE` and `SET_LOADING`. These are the minimal state changes needed for the `useTutorChat` hook (ENG-014) to stream Claude's responses into the UI. This is a small, additive ticket — existing types, actions, and tests must continue to work unchanged.
 
 ### Why Does This Exist?
 
@@ -42,7 +42,7 @@ These two additions complete the reducer's support for the LLM integration layer
 
 ---
 
-## LLM-005 Contract
+## ENG-017 Contract
 
 ### New Action: `TUTOR_RESPONSE`
 
@@ -241,8 +241,8 @@ describe('SET_LOADING', () => {
 
 ### D. Repo Housekeeping
 
-- [ ] Update `docs/DEVLOG.md` with LLM-005 entry when complete
-- [ ] Feature branch: `feature/llm-005-reducer-additions`
+- [ ] Update `docs/DEVLOG.md` with ENG-017 entry when complete
+- [ ] Feature branch: `feature/eng-017-reducer-additions`
 
 ---
 
@@ -250,11 +250,11 @@ describe('SET_LOADING', () => {
 
 ```bash
 git switch main && git pull
-git switch -c feature/llm-005-reducer-additions
+git switch -c feature/eng-017-reducer-additions
 # ... implement ...
 git add src/state/types.ts src/state/reducer.ts src/state/reducer.test.ts
-git commit -m "feat: add TUTOR_RESPONSE and SET_LOADING actions to reducer (LLM-005)"
-git push -u origin feature/llm-005-reducer-additions
+git commit -m "feat: add TUTOR_RESPONSE and SET_LOADING actions to reducer (ENG-017)"
+git push -u origin feature/eng-017-reducer-additions
 ```
 
 Use Conventional Commits: `feat:`.
@@ -311,14 +311,14 @@ None — this ticket only modifies existing files.
 | `src/state/types.ts` | Add `isLoading` to LessonState, `isStreaming` to ChatMessage, 2 new actions to LessonAction |
 | `src/state/reducer.ts` | Add TUTOR_RESPONSE and SET_LOADING cases, add isLoading to initial state |
 | `src/state/reducer.test.ts` | Add ~5 new tests for the new actions |
-| `docs/DEVLOG.md` | Add LLM-005 entry when complete |
+| `docs/DEVLOG.md` | Add ENG-017 entry when complete |
 
 ### Files You Should NOT Modify
 
 - `src/engine/*` — no engine changes
 - `api/*` — no API changes
 - `src/components/*` — no UI changes
-- `src/brain/*` — the hook (LLM-004) is a separate ticket
+- `src/brain/*` — the hook (ENG-014) is a separate ticket
 
 ### Files to READ for Context
 
@@ -330,7 +330,7 @@ None — this ticket only modifies existing files.
 
 ---
 
-## Definition of Done for LLM-005
+## Definition of Done for ENG-017
 
 - [ ] `isLoading: boolean` added to LessonState
 - [ ] `isStreaming?: boolean` added to ChatMessage type
@@ -344,7 +344,7 @@ None — this ticket only modifies existing files.
 
 ---
 
-## After LLM-005
+## After ENG-017
 
-- **LLM-004** (useTutorChat Hook) — depends on these reducer additions to dispatch TUTOR_RESPONSE and SET_LOADING.
+- **ENG-014** (useTutorChat Hook) — depends on these reducer additions to dispatch TUTOR_RESPONSE and SET_LOADING.
 - **UI work** — components will read `state.isLoading` to show/hide loading indicators, and render streaming messages with a typing cursor.

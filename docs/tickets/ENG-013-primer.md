@@ -1,15 +1,15 @@
-# LLM-003 Primer: System Prompt Engineering
+# ENG-013 Primer: System Prompt Engineering
 
 **For:** New Cursor Agent session
 **Project:** Synthesis Tutor — Interactive AI-Powered Fractions Tutor for Ages 8–12
 **Date:** Mar 10, 2026
-**Previous work:** LLM-001 (Edge Function), LLM-002 (Tool Definitions) complete. See `docs/DEVLOG.md`.
+**Previous work:** ENG-011 (Edge Function), ENG-012 (Tool Definitions) complete. See `docs/DEVLOG.md`.
 
 ---
 
 ## What Is This Ticket?
 
-LLM-003 creates `api/system-prompt.ts`, the **single most important file in the LLM integration**. It exports a `buildSystemPrompt(lessonState: LessonState): string` function that constructs the system prompt sent to Claude on every API call. This prompt defines Sam's identity, voice, pedagogical approach, math safety rules, and phase-specific guidance. The quality of every student interaction depends on this file.
+ENG-013 creates `api/system-prompt.ts`, the **single most important file in the LLM integration**. It exports a `buildSystemPrompt(lessonState: LessonState): string` function that constructs the system prompt sent to Claude on every API call. This prompt defines Sam's identity, voice, pedagogical approach, math safety rules, and phase-specific guidance. The quality of every student interaction depends on this file.
 
 ### Why Does This Exist?
 
@@ -24,10 +24,10 @@ The system prompt is the control surface for Sam's behavior. It must:
 
 | Component | Status |
 |-----------|--------|
-| `api/` directory | **Exists** (from LLM-001) |
+| `api/` directory | **Exists** (from ENG-011) |
 | `api/system-prompt.ts` | **Does not exist** — create here |
-| `api/tools.ts` | **Complete** (LLM-002) — 9 tools defined |
-| `api/chat.ts` | **Complete** (LLM-001) — calls `buildSystemPrompt` |
+| `api/tools.ts` | **Complete** (ENG-012) — 9 tools defined |
+| `api/chat.ts` | **Complete** (ENG-011) — calls `buildSystemPrompt` |
 | `src/state/types.ts` | **Complete** (ENG-004) — `LessonState` type |
 | `docs/prd.md` Section 7 | **Exists** — phase descriptions and Sam's behavior per phase |
 
@@ -35,13 +35,13 @@ The system prompt is the control surface for Sam's behavior. It must:
 
 ## What Was Already Done
 
-- LLM-001: Edge function that passes system prompt to Claude API
-- LLM-002: Tool definitions — the system prompt references these by name
+- ENG-011: Edge function that passes system prompt to Claude API
+- ENG-012: Tool definitions — the system prompt references these by name
 - ENG-004: LessonState with phase, stepIndex, workspace, score, conceptsDiscovered, chatHistory
 
 ---
 
-## LLM-003 Contract
+## ENG-013 Contract
 
 ### Export
 
@@ -253,14 +253,14 @@ export function buildSystemPrompt(lessonState: LessonState): string {
 ### C. Quality
 
 - [ ] Prompt is clear and unambiguous
-- [ ] Tool names match exactly what is defined in `api/tools.ts` (LLM-002)
+- [ ] Tool names match exactly what is defined in `api/tools.ts` (ENG-012)
 - [ ] Phase names match `LessonState.phase` values from `src/state/types.ts`
 - [ ] Dynamic content interpolation is safe (handles missing/undefined fields)
 
 ### D. Repo Housekeeping
 
-- [ ] Update `docs/DEVLOG.md` with LLM-003 entry when complete
-- [ ] Feature branch: `feature/llm-003-system-prompt`
+- [ ] Update `docs/DEVLOG.md` with ENG-013 entry when complete
+- [ ] Feature branch: `feature/eng-013-system-prompt`
 
 ---
 
@@ -268,11 +268,11 @@ export function buildSystemPrompt(lessonState: LessonState): string {
 
 ```bash
 git switch main && git pull
-git switch -c feature/llm-003-system-prompt
+git switch -c feature/eng-013-system-prompt
 # ... implement ...
 git add api/system-prompt.ts
-git commit -m "feat: implement system prompt engineering for Sam tutor (LLM-003)"
-git push -u origin feature/llm-003-system-prompt
+git commit -m "feat: implement system prompt engineering for Sam tutor (ENG-013)"
+git push -u origin feature/eng-013-system-prompt
 ```
 
 Use Conventional Commits: `feat:`.
@@ -348,7 +348,7 @@ The system prompt should stay under ~4000 tokens. Strategies:
 
 | File | Action |
 |------|--------|
-| `docs/DEVLOG.md` | Add LLM-003 entry when complete |
+| `docs/DEVLOG.md` | Add ENG-013 entry when complete |
 
 ### Files You Should NOT Modify
 
@@ -370,7 +370,7 @@ The system prompt should stay under ~4000 tokens. Strategies:
 
 ---
 
-## Definition of Done for LLM-003
+## Definition of Done for ENG-013
 
 - [ ] `api/system-prompt.ts` exists and exports `buildSystemPrompt`
 - [ ] Function is pure and synchronous
@@ -385,7 +385,7 @@ The system prompt should stay under ~4000 tokens. Strategies:
 
 ---
 
-## After LLM-003
+## After ENG-013
 
-- **LLM-004** (useTutorChat Hook) — the frontend hook that sends messages to the edge function, which uses this system prompt.
+- **ENG-014** (useTutorChat Hook) — the frontend hook that sends messages to the edge function, which uses this system prompt.
 - **Prompt tuning** — after integration testing, the system prompt will be iteratively refined based on Sam's actual responses. This file will be updated frequently.
