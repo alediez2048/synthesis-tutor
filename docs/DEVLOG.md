@@ -76,13 +76,13 @@
 | ENG-013 | System prompt engineering (Sam persona) | ⬜ Pending | 2h |
 | ENG-012 | Claude tool definitions (FractionEngine → tools) | ⬜ Pending | 2h |
 | ENG-011 | Vercel edge function + Claude API proxy | ✅ Complete | 3h |
-| ENG-010 | Chat panel UI | ⬜ Pending | 2h |
+| ENG-010 | Chat panel UI | ✅ Complete | 2h |
 
 ### Phase 2: Visual Manipulative (Day 2 — Tuesday)
 
 | Ticket | Description | Status | Est. |
 |--------|-------------|--------|------|
-| ENG-009 | Wire blocks to reducer | ⬜ Pending | 1h |
+| ENG-009 | Wire blocks to reducer | ✅ Complete | 1h |
 | ENG-008 | Combine interaction + animation | ✅ Complete | 2h |
 | ENG-007 | Split interaction + animation | ⬜ Pending | 2h |
 | ENG-006 | FractionWorkspace component | ✅ Complete | 2h |
@@ -1220,6 +1220,87 @@ Implemented drag-to-combine using `@use-gesture/react`: FractionBlock has useDra
 - [x] will-change: transform during drag
 - [x] Combined block width = sum of original (reducer/engine)
 - [x] Feature branch created
+
+---
+
+### ENG-009: Wire Blocks to Reducer ✅
+
+#### Plain-English Summary
+Wired comparison zone drop, derived selection state, and DESELECT_ALL so all block interactions flow through the reducer. Dragging a block onto the comparison zone dispatches COMPARE_BLOCKS and moves the block there; clicking the workspace background dispatches DESELECT_ALL; selectedBlockId is derived from state.blocks (ready for ActionBar in ENG-007).
+
+#### Metadata
+- **Status:** Complete
+- **Date:** Mar 11, 2026
+- **Ticket:** ENG-009
+- **Branch:** `feature/eng-009-wire-blocks-to-reducer`
+
+#### Key Achievements
+- **Comparison zone drop:** Workspace holds a ref to ComparisonZone (forwardRef); at drag end, if drop rect overlaps zone and no block target, dispatch COMPARE_BLOCKS with [draggedId, draggedId]. Block moves to position 'comparison' and renders in ComparisonZone.
+- **Block vs zone:** findDropTarget runs first; if a block is hit, existing combine logic runs; else if zone overlaps, onDropOnComparisonZone; else onCombineAttempt(draggedId, null).
+- **Derived state:** selectedBlockId = state.blocks.find(b => b.isSelected)?.id ?? null in App; passed to Workspace (reserved for ActionBar).
+- **DESELECT_ALL:** Workspace active-blocks section onClick: when e.target === e.currentTarget, parent dispatches DESELECT_ALL so tapping the background clears selection.
+- **ComparisonZone:** forwardRef so Workspace can attach ref to the zone container for overlap detection.
+- **rectsOverlap** helper in Workspace for zone vs drop rect.
+
+#### Files Modified
+- `src/App.tsx` — derived selectedBlockId; handleDropOnComparisonZone (DRAG_END + COMPARE_BLOCKS); handleWorkspaceBackgroundClick (DESELECT_ALL); pass new callbacks and selectedBlockId to Workspace
+- `src/components/Workspace/Workspace.tsx` — comparisonZoneRef, rectsOverlap, handleDragEnd branches (block target → combine, zone overlap → onDropOnComparisonZone, else combine null); onDropOnComparisonZone, onWorkspaceBackgroundClick props; active-blocks section onClick for background; selectedBlockId prop (reserved for ENG-007)
+- `src/components/Workspace/ComparisonZone.tsx` — forwardRef so root section accepts ref
+- `docs/DEVLOG.md` — ENG-009 entry
+
+#### Verification
+- `npx tsc -b` — zero errors
+- `npm run lint` — zero errors
+- `npm test` — 61 passed
+
+#### Acceptance Criteria
+- [x] Dragging a block into ComparisonZone dispatches COMPARE_BLOCKS; block position becomes 'comparison'
+- [x] Combine-on-block behavior unchanged (same/different denominator)
+- [x] selectedBlockId derived from state.blocks; passed to Workspace
+- [x] Tapping workspace background dispatches DESELECT_ALL
+- [x] isDragging guard and DRAG_START/DRAG_END unchanged (already correct)
+- [x] DEVLOG updated; feature branch created
+
+---
+
+### ENG-010: Chat Panel UI ✅
+
+#### Plain-English Summary
+Built the Chat Panel as the left 40% of a two-panel layout: scrollable message list (role="list"), MessageBubble for tutor (left, Sam avatar) and student (right), InputField with Send (44×44pt min), and STUDENT_RESPONSE wiring. App uses flex 40/60; chat shows empty state when no messages; auto-scroll to newest message; isLoading prop supported for future typing indicator.
+
+#### Metadata
+- **Status:** Complete
+- **Date:** Mar 11, 2026
+- **Ticket:** ENG-010
+- **Branch:** `feature/eng-010-chat-panel-ui`
+
+#### Key Achievements
+- **ChatPanel.tsx:** messages, onSendMessage, isLoading; scrollable list with scrollEndRef and scrollIntoView; empty state "No messages yet. Say hi to get started!"; loading placeholder "Sam is typing..."; InputField at bottom.
+- **MessageBubble.tsx:** tutor messages left-aligned with Sam avatar (36px circle, blue, two white dot eyes) and "Sam" label; student messages right-aligned, green-tinted background; role="listitem", aria-label for tutor "Sam: {content}".
+- **InputField.tsx:** text input + Send button (min 44×44pt); Submit on Enter or Send; trims and rejects empty; clears after send; aria-label on input and button; disabled prop for future streaming.
+- **App.tsx:** two-panel flex layout (40% chat, 60% workspace); handleSendMessage dispatches STUDENT_RESPONSE; header with title above panels; rejection message in right panel above Workspace.
+
+#### Files Created
+- `src/components/ChatPanel/ChatPanel.tsx`
+- `src/components/ChatPanel/MessageBubble.tsx`
+- `src/components/ChatPanel/InputField.tsx`
+
+#### Files Modified
+- `src/App.tsx` — two-panel layout, ChatPanel, handleSendMessage
+- `docs/DEVLOG.md` — ENG-010 entry
+
+#### Verification
+- `npx tsc -b` — zero errors
+- `npm run lint` — zero errors
+- `npm test` — 61 passed
+
+#### Acceptance Criteria
+- [x] Two-panel layout: Chat (40% left) + Workspace (60% right)
+- [x] ChatPanel scrollable message list with auto-scroll to newest
+- [x] Tutor messages left-aligned with Sam avatar (circle + eyes); student messages right-aligned
+- [x] Input accepts text; Enter or Send dispatches STUDENT_RESPONSE; student messages appear in chat
+- [x] Empty/whitespace input rejected; 44×44pt Send button; ARIA labels
+- [x] DEVLOG updated; feature branch created
 
 ---
 

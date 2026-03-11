@@ -5,6 +5,14 @@ import { ComparisonZone } from './ComparisonZone';
 
 const REFERENCE_BAR_COLOR = '#9E9E9E';
 
+function rectsOverlap(a: DOMRect, b: DOMRect): boolean {
+  const overlapX =
+    Math.min(a.right, b.right) - Math.max(a.left, b.left);
+  const overlapY =
+    Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+  return overlapX > 0 && overlapY > 0;
+}
+
 function findDropTarget(
   blockRefs: Map<string, HTMLElement>,
   draggedId: string,
@@ -13,11 +21,7 @@ function findDropTarget(
   for (const [id, el] of blockRefs) {
     if (id === draggedId) continue;
     const rect = el.getBoundingClientRect();
-    const overlapX =
-      Math.min(draggedRect.right, rect.right) - Math.max(draggedRect.left, rect.left);
-    const overlapY =
-      Math.min(draggedRect.bottom, rect.bottom) - Math.max(draggedRect.top, rect.top);
-    if (overlapX > 0 && overlapY > 0) return id;
+    if (rectsOverlap(draggedRect, rect)) return id;
   }
   return null;
 }
@@ -25,9 +29,12 @@ function findDropTarget(
 export interface WorkspaceProps {
   blocks: FractionBlock[];
   referenceWidth?: number;
+  selectedBlockId?: string | null;
   onSelectBlock?: (blockId: string) => void;
   onDragStart?: (blockId: string) => void;
   onCombineAttempt?: (draggedId: string, targetId: string | null) => void;
+  onDropOnComparisonZone?: (draggedId: string) => void;
+  onWorkspaceBackgroundClick?: () => void;
   isDragging?: boolean;
   draggingBlockId?: string | null;
   combinedBlockId?: string | null;
@@ -36,16 +43,21 @@ export interface WorkspaceProps {
 export function Workspace({
   blocks,
   referenceWidth = 300,
+  selectedBlockId: _selectedBlockId = null,
   onSelectBlock,
   onDragStart,
   onCombineAttempt,
+  onDropOnComparisonZone,
+  onWorkspaceBackgroundClick,
   isDragging = false,
   draggingBlockId = null,
   combinedBlockId = null,
 }: WorkspaceProps) {
+  void _selectedBlockId; // Reserved for ActionBar (ENG-007)
   const workspaceBlocks = blocks.filter((b) => b.position === 'workspace');
   const comparisonBlocks = blocks.filter((b) => b.position === 'comparison');
   const blockRefs = useRef<Map<string, HTMLElement>>(new Map());
+  const comparisonZoneRef = useRef<HTMLElement | null>(null);
 
   const setBlockRef = useCallback((blockId: string, element: HTMLElement | null) => {
     if (element) blockRefs.current.set(blockId, element);
@@ -55,9 +67,21 @@ export function Workspace({
   const handleDragEnd = useCallback(
     (draggedId: string, dropRect: DOMRect) => {
       const targetId = findDropTarget(blockRefs.current, draggedId, dropRect);
-      onCombineAttempt?.(draggedId, targetId);
+      if (targetId !== null) {
+        onCombineAttempt?.(draggedId, targetId);
+        return;
+      }
+      const zoneEl = comparisonZoneRef.current;
+      if (zoneEl) {
+        const zoneRect = zoneEl.getBoundingClientRect();
+        if (rectsOverlap(dropRect, zoneRect)) {
+          onDropOnComparisonZone?.(draggedId);
+          return;
+        }
+      }
+      onCombineAttempt?.(draggedId, null);
     },
-    [onCombineAttempt]
+    [onCombineAttempt, onDropOnComparisonZone]
   );
 
   return (
@@ -94,6 +118,7 @@ export function Workspace({
 
       {/* Comparison zone */}
       <ComparisonZone
+        ref={comparisonZoneRef}
         blocks={comparisonBlocks}
         referenceWidth={referenceWidth}
         onSelectBlock={onSelectBlock}
@@ -102,6 +127,9 @@ export function Workspace({
       {/* Active blocks area */}
       <section
         aria-label="Workspace"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) onWorkspaceBackgroundClick?.();
+        }}
         style={{
           minHeight: 80,
           padding: 12,
