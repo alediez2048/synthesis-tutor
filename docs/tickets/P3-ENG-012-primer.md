@@ -1,7 +1,7 @@
 # ENG-012 Primer: Claude Tool Definitions
 
 **For:** New Cursor Agent session
-**Project:** Fraction Quest — Interactive AI-Powered Fractions Tutor for Ages 8–12
+**Project:** Synthesis Tutor — Interactive AI-Powered Fractions Tutor for Ages 8–12
 **Phase:** Phase 3: Chat + LLM Integration (Day 3)
 **Date:** Mar 11, 2026
 **Previous work:** ENG-001 through ENG-011 complete. See `docs/DEVLOG.md`. The edge function at `api/chat.ts` currently uses a stub (no tools); this ticket adds `api/tools.ts` so the endpoint can pass real tools and execute them.
@@ -11,8 +11,8 @@
 ## Prerequisites
 
 - **ENG-011** is complete: `api/chat.ts` exists, accepts POST, streams SSE. It does not yet pass `tools` to the Anthropic API or handle `tool_use` events.
-- **ENG-002** (FractionEngine) is complete: all pure functions available.
-- **ENG-012 scope:** Create `api/tools.ts` with the 9 tool schemas and `executeToolCall`. Also **update `api/chat.ts`** to import `toolDefinitions` and `executeToolCall`, pass `tools: toolDefinitions` to the Claude API call, and handle `tool_use` events by executing the tool server-side and sending the result back to Claude. Without that wiring, the tools exist but are never used.
+- **ENG-002** (FractionEngine) is complete: all pure functions (simplify, areEquivalent, split, combine, toCommonDenominator, isValidFraction, parseStudentInput) are available.
+- **ENG-012 scope:** Create `api/tools.ts` with the 9 tool schemas and `executeToolCall`. As part of this ticket (or as a required follow-up), **update `api/chat.ts`** to import `toolDefinitions` and `executeToolCall`, pass `tools: toolDefinitions` to the Claude API call, and on `tool_use` events execute the tool server-side and send the result back to Claude, emitting `tool_use` and `tool_result` SSE events to the client. Without that wiring, the tools exist but are never used.
 
 ---
 
@@ -33,21 +33,23 @@ Claude must never compute fraction math itself. The system prompt (ENG-013) tell
 |-----------|--------|
 | `api/` directory | **Exists** (from ENG-011) |
 | `api/tools.ts` | **Does not exist** — create here |
-| `src/engine/FractionEngine.ts` | **Complete** (ENG-002) — exports: `simplify`, `areEquivalent`, `split`, `combine`, `toCommonDenominator`, `isValidFraction`, `parseStudentInput`, `Fraction` interface |
-| `api/chat.ts` | **Complete** (ENG-011) — has `// No tools until ENG-012` stub and `void _lessonState` placeholder. Needs updating in this ticket. |
-| `src/state/types.ts` | **Complete** (ENG-004) — `LessonState` type defined. Note: `conceptsDiscovered` is `string[]` (not Set), so it's already JSON-serializable. |
+| `src/engine/FractionEngine.ts` | **Complete** (ENG-002) — all pure math functions available |
+| `api/chat.ts` | **Complete** (ENG-011) — imports and calls `executeToolCall` |
+| `src/state/types.ts` | **Complete** (ENG-004) — `LessonState` type defined |
 
 ---
 
 ## What Was Already Done
 
 - ENG-002: FractionEngine with simplify, areEquivalent, split, combine, toCommonDenominator, isValidFraction, parseStudentInput
-- ENG-011: Edge function that streams Claude responses via SSE. Currently has no tools and a stub system prompt.
+- ENG-011: Edge function that intercepts tool_use events and calls `executeToolCall`
 - ENG-004: LessonState type with phases, blocks, score, conceptsDiscovered
 
 ---
 
-## Contract: Tool Schema Format
+## ENG-012 Contract
+
+### Tool Schema Format
 
 Each tool must be defined in [Anthropic's tool format](https://docs.anthropic.com/en/docs/tool-use):
 
@@ -100,7 +102,7 @@ Check whether two fractions are mathematically equivalent.
 }
 ```
 
-**Execution:** calls `areEquivalent(a, b)` → returns `{ equivalent: boolean }`.
+**Execution:** calls `FractionEngine.areEquivalent(a, b)` and returns `{ equivalent: boolean }`.
 
 #### 2. `simplify_fraction`
 
@@ -127,7 +129,7 @@ Reduce a fraction to its lowest terms.
 }
 ```
 
-**Execution:** calls `simplify(fraction)` → returns `{ simplified: Fraction }`.
+**Execution:** calls `FractionEngine.simplify(fraction)` and returns `{ simplified: Fraction }`.
 
 #### 3. `split_fraction`
 
@@ -155,7 +157,7 @@ Split a fraction into N equal parts.
 }
 ```
 
-**Execution:** calls `split(fraction, parts)` → returns `{ pieces: Fraction[] }`.
+**Execution:** calls `FractionEngine.split(fraction, parts)` and returns `{ pieces: Fraction[] }`.
 
 #### 4. `combine_fractions`
 
@@ -186,7 +188,7 @@ Sum fractions that share the same denominator.
 }
 ```
 
-**Execution:** calls `combine(fractions)` → returns `{ combined: Fraction }`.
+**Execution:** calls `FractionEngine.combine(fractions)` and returns `{ combined: Fraction }`.
 
 #### 5. `find_common_denominator`
 
@@ -221,7 +223,7 @@ Express two fractions with a shared denominator (LCD).
 }
 ```
 
-**Execution:** calls `toCommonDenominator(a, b)` → returns `{ result: [Fraction, Fraction] }`.
+**Execution:** calls `FractionEngine.toCommonDenominator(a, b)` and returns `{ result: [Fraction, Fraction] }`.
 
 #### 6. `validate_fraction`
 
@@ -248,7 +250,7 @@ Check whether a fraction is valid within lesson constraints.
 }
 ```
 
-**Execution:** calls `isValidFraction(fraction)` → returns `{ valid: boolean }`.
+**Execution:** calls `FractionEngine.isValidFraction(fraction)` and returns `{ valid: boolean }`.
 
 #### 7. `parse_student_input`
 
@@ -268,7 +270,7 @@ Parse a raw text string into a Fraction.
 }
 ```
 
-**Execution:** calls `parseStudentInput(raw)` → returns `{ parsed: Fraction | null }`.
+**Execution:** calls `FractionEngine.parseStudentInput(raw)` and returns `{ parsed: Fraction | null }`.
 
 #### 8. `check_answer`
 
@@ -298,13 +300,13 @@ Composite tool: parse student input, check equivalence to target, detect misconc
 ```
 
 **Execution:**
-1. Call `parseStudentInput(student_input)` → `parsed`
+1. Call `FractionEngine.parseStudentInput(student_input)` → `parsed`
 2. If `parsed` is null → return `{ correct: false, parsed: null, misconception: 'Could not parse input as a fraction' }`
-3. Call `areEquivalent(parsed, target)` → `correct`
+3. Call `FractionEngine.areEquivalent(parsed, target)` → `correct`
 4. If not correct and MisconceptionDetector is available (ENG-018, future), call it to identify the specific misconception
 5. Return `{ correct: boolean, parsed: Fraction | null, misconception?: string }`
 
-For now (before ENG-018), if the answer is incorrect, return `misconception: undefined` — the system prompt will instruct Claude to scaffold without specific misconception data.
+For now (before ENG-018), if the answer is incorrect, return a generic `misconception: undefined` — the system prompt will instruct Claude to scaffold without specific misconception data.
 
 #### 9. `get_workspace_state`
 
@@ -322,18 +324,17 @@ Summarize the current workspace for Claude's awareness. **No input from Claude**
 }
 ```
 
-**Execution:** Use the `lessonState` argument passed to `executeToolCall(name, input, lessonState)` (not the tool input). Return a structured summary:
+**Execution:** Use the `lessonState` argument passed to `executeToolCall(name, input, lessonState)` (not the tool input). Return a structured summary. `LessonState` (see `src/state/types.ts`) has: `phase`, `stepIndex`, `blocks`, `score`, `hintCount`, `chatMessages`, `assessmentPool`, `conceptsDiscovered`, `isDragging`, `nextBlockId`. Return a JSON-serializable subset, e.g.:
 ```typescript
 {
   phase: lessonState.phase,
   stepIndex: lessonState.stepIndex,
   blocks: lessonState.blocks,
   score: lessonState.score,
-  conceptsDiscovered: lessonState.conceptsDiscovered  // string[] — already JSON-serializable
+  conceptsDiscovered: lessonState.conceptsDiscovered
 }
 ```
-
-Note: `LessonState` (see `src/state/types.ts`) has these top-level fields: `phase`, `stepIndex`, `blocks`, `score`, `hintCount`, `chatMessages`, `assessmentPool`, `conceptsDiscovered` (`string[]`), `isDragging`, `nextBlockId`. There is no `workspace` sub-object and no `targetFraction` field.
+(Do not reference `lessonState.workspace` — the type has `blocks` at the top level. There is no `targetFraction` on LessonState unless added elsewhere.)
 
 ### `executeToolCall` Dispatcher
 
@@ -373,17 +374,16 @@ export function executeToolCall(name: string, input: Record<string, any>, lesson
 
 - [ ] Routes to correct FractionEngine function based on tool name
 - [ ] `check_answer` is composite (parse → equivalence → misconception stub)
-- [ ] `get_workspace_state` extracts summary from `lessonState` argument
+- [ ] `get_workspace_state` extracts summary from LessonState
 - [ ] Unknown tools return `{ error: 'Unknown tool' }`
 - [ ] All FractionEngine errors caught and returned as `{ error }` — no thrown exceptions
 
 ### C. Integration with api/chat.ts
 
-- [ ] `api/chat.ts` imports `toolDefinitions` and `executeToolCall` from `./tools`
-- [ ] Claude API call passes `tools: toolDefinitions`
-- [ ] On `tool_use` content blocks: accumulate tool name + input, call `executeToolCall`, send `tool_result` back to Claude in the conversation
-- [ ] Emit `tool_use` and `tool_result` SSE events to the client so the frontend can react
-- [ ] Remove the `void _lessonState` stub and `// No tools until ENG-012` comment
+- [ ] `api/chat.ts` imports `toolDefinitions` and `executeToolCall` from `./tools` (or `./tools.js` as needed for Edge)
+- [ ] When creating the Anthropic stream, pass `tools: toolDefinitions` (and ensure SDK format matches: see Anthropic docs for exact `tools` array shape)
+- [ ] When the stream emits a tool_use (e.g. `content_block_start` with type `tool_use`), accumulate the tool id and input, then on `content_block_stop` call `executeToolCall(name, input, lessonState)` and send the result back to Claude in the same conversation; emit `tool_use` and `tool_result` SSE events to the client
+- [ ] Tool definitions compatible with Anthropic SDK `tools` parameter
 
 ### D. Repo Housekeeping
 
@@ -398,7 +398,7 @@ export function executeToolCall(name: string, input: Record<string, any>, lesson
 git switch main && git pull
 git switch -c feature/eng-012-tool-definitions
 # ... implement ...
-git add api/tools.ts api/chat.ts docs/DEVLOG.md
+git add api/tools.ts
 git commit -m "feat: define Claude tool schemas and executeToolCall dispatcher (ENG-012)"
 git push -u origin feature/eng-012-tool-definitions
 ```
@@ -437,7 +437,7 @@ interface ToolDefinition {
 }
 
 export const toolDefinitions: ToolDefinition[] = [
-  // ... all 9 tools as specified above
+  // ... all 9 tools
 ];
 
 export function executeToolCall(
@@ -472,7 +472,11 @@ export function executeToolCall(
     return { error: err instanceof Error ? err.message : 'Tool execution failed' };
   }
 }
+```
 
+### `check_answer` Implementation
+
+```typescript
 function executeCheckAnswer(
   studentInput: string,
   target: Fraction
@@ -482,97 +486,18 @@ function executeCheckAnswer(
     return { correct: false, parsed: null, misconception: 'Could not parse input as a fraction' };
   }
   const correct = areEquivalent(parsed, target);
-  // Future: MisconceptionDetector (ENG-018) will provide specific misconception
+  // Future: MisconceptionDetector (ENG-018) would provide specific misconception
   return { correct, parsed };
-}
-
-function extractWorkspaceState(lessonState: LessonState) {
-  return {
-    phase: lessonState.phase,
-    stepIndex: lessonState.stepIndex,
-    blocks: lessonState.blocks,
-    score: lessonState.score,
-    conceptsDiscovered: lessonState.conceptsDiscovered,
-  };
 }
 ```
 
 ### Import Path Note
 
-The import path from `api/tools.ts` to `src/engine/FractionEngine.ts` uses `../src/engine/FractionEngine`. Verify these resolve correctly in the Vercel Edge Runtime. If there are module resolution issues:
-- Check `tsconfig.json` for path aliases
-- The Edge Runtime bundles with esbuild — relative imports should work if the files are in the same repo
-- If needed, consider re-exporting FractionEngine functions from a shared location
+The import path from `api/tools.ts` to `src/engine/FractionEngine.ts` uses `../src/engine/FractionEngine` (and `../src/state/types` for LessonState). Verify these resolve correctly in the Vercel Edge Runtime. If there are module resolution issues, the path may need adjustment or a `tsconfig` path alias for the `api/` directory.
 
 ### Anthropic SDK `tools` Parameter
 
-The `@anthropic-ai/sdk` `messages.stream()` method accepts a `tools` array where each item has `name`, `description`, and `input_schema`. Our `ToolDefinition` interface matches this format. Verify by checking the SDK types:
-
-```typescript
-// The SDK expects this shape:
-interface Tool {
-  name: string;
-  description: string;
-  input_schema: {
-    type: 'object';
-    properties: Record<string, unknown>;
-    required?: string[];
-  };
-}
-```
-
-### Updating api/chat.ts for Tool Use
-
-The current `api/chat.ts` uses `anthropic.messages.stream()` which returns text deltas. To support tool use:
-
-1. Pass `tools: toolDefinitions` to the stream call
-2. Handle the `tool_use` content block type — when Claude wants to call a tool, the stream emits a content block with `type: 'tool_use'`, `id`, `name`, and `input`
-3. On receiving a complete tool_use block: call `executeToolCall(name, input, lessonState)`, then continue the conversation by sending the tool result back to Claude
-4. This requires switching from a simple single-pass stream to a loop that handles tool calls:
-
-```typescript
-// Pseudocode for the tool use loop:
-let currentMessages = [...messages];
-while (true) {
-  const response = await anthropic.messages.create({
-    model, system: systemPrompt, messages: currentMessages,
-    tools: toolDefinitions, max_tokens: 1024,
-  });
-
-  // Emit any text content blocks as SSE text_delta events
-  for (const block of response.content) {
-    if (block.type === 'text') {
-      enqueue('text_delta', { content: block.text });
-    }
-    if (block.type === 'tool_use') {
-      const result = executeToolCall(block.name, block.input, lessonState);
-      enqueue('tool_use', { id: block.id, name: block.name, input: block.input });
-      enqueue('tool_result', { id: block.id, result });
-    }
-  }
-
-  // If stop_reason is 'tool_use', continue the loop with tool results
-  if (response.stop_reason === 'tool_use') {
-    currentMessages = [
-      ...currentMessages,
-      { role: 'assistant', content: response.content },
-      { role: 'user', content: response.content
-          .filter(b => b.type === 'tool_use')
-          .map(b => ({
-            type: 'tool_result',
-            tool_use_id: b.id,
-            content: JSON.stringify(executeToolCall(b.name, b.input, lessonState))
-          }))
-      }
-    ];
-    continue;
-  }
-  break; // stop_reason is 'end_turn' — done
-}
-enqueue('done', {});
-```
-
-Note: This changes `api/chat.ts` from streaming to a non-streaming loop (or a hybrid). The trade-off is simplicity vs streaming latency. For the prototype, a non-streaming tool loop with text deltas emitted after each round is acceptable. Full streaming can be refined in ENG-014/039.
+Confirm the exact shape of the `tools` array for the Anthropic Messages API (e.g. each tool has `name`, `description`, `input_schema`). The SDK may expect a specific format; see the current [Anthropic tool use docs](https://docs.anthropic.com/en/docs/tool-use) and the `@anthropic-ai/sdk` types for the correct structure.
 
 ---
 
@@ -588,7 +513,7 @@ Note: This changes `api/chat.ts` from streaming to a non-streaming loop (or a hy
 
 | File | Action |
 |------|--------|
-| `api/chat.ts` | Import `toolDefinitions` and `executeToolCall`; pass tools to Claude API; handle tool_use loop; emit tool SSE events; remove stubs |
+| `api/chat.ts` | Import `toolDefinitions` and `executeToolCall`; pass tools to Claude API; on tool_use, execute and send result back; emit tool_use and tool_result SSE events |
 | `docs/DEVLOG.md` | Add ENG-012 entry when complete |
 
 ### Files You Should NOT Modify
@@ -602,10 +527,10 @@ Note: This changes `api/chat.ts` from streaming to a non-streaming loop (or a hy
 
 | File | Why |
 |------|-----|
-| `src/engine/FractionEngine.ts` | Exact function signatures: `simplify(f)`, `areEquivalent(a, b)`, `split(f, parts)`, `combine(fractions)`, `toCommonDenominator(a, b)`, `isValidFraction(f)`, `parseStudentInput(raw)` |
-| `src/state/types.ts` | `LessonState` shape — fields: `phase`, `stepIndex`, `blocks`, `score`, `hintCount`, `chatMessages`, `assessmentPool`, `conceptsDiscovered` (string[]), `isDragging`, `nextBlockId` |
-| `api/chat.ts` | Current edge function implementation — has stubs to replace |
-| `docs/prd.md` Section 4.4 | Engine API reference |
+| `src/engine/FractionEngine.ts` | Exact function signatures and exports |
+| `src/state/types.ts` | `LessonState` shape — needed for `get_workspace_state` and `executeToolCall` signature |
+| `docs/prd.md` Section 4.3–4.4 | Engine API and data model context |
+| `api/chat.ts` | How tool definitions and executeToolCall are consumed |
 
 ---
 
@@ -619,9 +544,7 @@ Note: This changes `api/chat.ts` from streaming to a non-streaming loop (or a hy
 - [ ] All FractionEngine calls wrapped in try/catch — errors returned as `{ error }`, never thrown
 - [ ] Unknown tool names return `{ error: 'Unknown tool' }`
 - [ ] Tool descriptions are clear enough for Claude to know when to use each tool
-- [ ] `api/chat.ts` updated to pass `toolDefinitions` to the Claude API and to execute tools on `tool_use`, sending results back and emitting `tool_use`/`tool_result` SSE events
-- [ ] `api/chat.ts` stubs removed (`void _lessonState`, `// No tools until ENG-012`)
-- [ ] `npx tsc -b` and `npm run lint` pass
+- [ ] `api/chat.ts` updated to pass `toolDefinitions` to the Claude API and to execute tools on tool_use, sending results back and emitting tool_use/tool_result SSE events
 - [ ] DEVLOG updated
 - [ ] Feature branch pushed
 
@@ -630,5 +553,5 @@ Note: This changes `api/chat.ts` from streaming to a non-streaming loop (or a hy
 ## After ENG-012
 
 - **ENG-013** (System Prompt Engineering) — the system prompt will reference these tools by name and tell Claude when to use them.
-- **ENG-014** (useTutorChat Hook) — the frontend hook will parse `tool_use`/`tool_result` SSE events.
+- **ENG-014** (useTutorChat Hook) — the frontend hook will parse `tool_use` SSE events to update workspace state.
 - **ENG-018** (MisconceptionDetector) — future ticket will provide specific misconception identification for `check_answer`.

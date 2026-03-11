@@ -1,10 +1,12 @@
 /**
- * Vercel Edge Function: Claude API proxy with SSE streaming.
- * ENG-011: Accepts POST { messages, lessonState }, streams text_delta and done.
- * Tools and full system prompt are stubbed until ENG-012 / ENG-013.
+ * Vercel Edge Function: Claude API proxy with SSE and tool use.
+ * ENG-011: POST { messages, lessonState }, streams text_delta and done.
+ * ENG-012: Passes toolDefinitions to Claude; executes tools and sends results back.
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import { toolDefinitions, executeToolCall } from './tools';
+import type { LessonState } from '../src/state/types';
 
 export const config = {
   runtime: 'edge',
@@ -20,10 +22,25 @@ function encodeSSE(event: string, data: object): string {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 }
 
-/** Minimal request shape; lessonState is passed through for future tool/prompt use. */
 interface ChatRequest {
   messages: Array<{ role: 'user' | 'assistant'; content: string }>;
   lessonState?: Record<string, unknown>;
+}
+
+/** Minimal default so get_workspace_state never crashes if client omits lessonState. */
+function defaultLessonState(): LessonState {
+  return {
+    phase: 'intro',
+    stepIndex: 0,
+    blocks: [],
+    score: { correct: 0, total: 0 },
+    hintCount: 0,
+    chatMessages: [],
+    assessmentPool: [],
+    conceptsDiscovered: [],
+    isDragging: false,
+    nextBlockId: 1,
+  };
 }
 
 export default async function handler(req: Request): Promise<Response> {
@@ -52,8 +69,7 @@ export default async function handler(req: Request): Promise<Response> {
     });
   }
 
-  const { messages, lessonState: _lessonState } = body;
-  void _lessonState; // Reserved for ENG-012 (tools) and ENG-013 (system prompt)
+  const { messages, lessonState: rawLessonState } = body;
   if (!Array.isArray(messages)) {
     return new Response(JSON.stringify({ error: 'Invalid request' }), {
       status: 400,
@@ -61,14 +77,18 @@ export default async function handler(req: Request): Promise<Response> {
     });
   }
 
+  const lessonState: LessonState =
+    rawLessonState && typeof rawLessonState === 'object'
+      ? (rawLessonState as unknown as LessonState)
+      : defaultLessonState();
+
   const anthropic = new Anthropic({ apiKey });
   const model = 'claude-sonnet-4-20250514';
-
-  /** Stub system prompt until ENG-013. */
-  const systemPrompt = 'You are Sam, a friendly math tutor for kids learning fractions. Keep responses short and encouraging.';
+  const systemPrompt =
+    'You are Sam, a friendly math tutor for kids learning fractions. Keep responses short and encouraging. Use the tools provided to check answers and read workspace state; never compute fraction math yourself.';
 
   const streamBody = new ReadableStream({
-    start(controller) {
+    async start(controller) {
       const encoder = new TextEncoder();
       let closed = false;
       const enqueue = (event: string, data: object) => {
@@ -81,34 +101,67 @@ export default async function handler(req: Request): Promise<Response> {
         controller.close();
       };
 
-      const stream = anthropic.messages.stream({
-        model,
-        max_tokens: 1024,
-        system: systemPrompt,
-        messages: messages.map((m) => ({
+      try {
+        type UserMessage = { role: 'user'; content: string | Array<{ type: 'tool_result'; tool_use_id: string; content: string }> };
+        type AssistantMessage = { role: 'assistant'; content: Array<{ type: string; text?: string; id?: string; name?: string; input?: unknown }> };
+        let currentMessages: Array<UserMessage | AssistantMessage> = messages.map((m) => ({
           role: m.role as 'user' | 'assistant',
           content: m.content,
-        })),
-        // No tools until ENG-012
-      });
+        })) as Array<UserMessage | AssistantMessage>;
 
-      stream.on('text', (textDelta: string) => {
-        enqueue('text_delta', { content: textDelta });
-      });
+        for (;;) {
+          const response = await anthropic.messages.create({
+            model,
+            max_tokens: 1024,
+            system: systemPrompt,
+            messages: currentMessages as Parameters<Anthropic['messages']['create']>[0]['messages'],
+            tools: toolDefinitions,
+          });
 
-      stream.on('end', () => {
+          for (const block of response.content) {
+            if (block.type === 'text') {
+              enqueue('text_delta', { content: block.text });
+            }
+            if (block.type === 'tool_use') {
+              enqueue('tool_use', { id: block.id, name: block.name, input: block.input });
+              const result = executeToolCall(
+                block.name,
+                block.input as Record<string, unknown>,
+                lessonState
+              );
+              enqueue('tool_result', { id: block.id, result });
+            }
+          }
+
+          if (response.stop_reason === 'tool_use') {
+            const toolResults = response.content
+              .filter((b): b is { type: 'tool_use'; id: string; name: string; input: unknown } => b.type === 'tool_use')
+              .map((b) => ({
+                type: 'tool_result' as const,
+                tool_use_id: b.id,
+                content: JSON.stringify(
+                  executeToolCall(b.name, b.input as Record<string, unknown>, lessonState)
+                ),
+              }));
+            currentMessages = [
+              ...currentMessages,
+              { role: 'assistant' as const, content: response.content },
+              { role: 'user' as const, content: toolResults },
+            ];
+            continue;
+          }
+
+          break;
+        }
+
         enqueue('done', {});
+      } catch (err) {
+        enqueue('error', {
+          message: err instanceof Error ? err.message : 'Upstream API error',
+        });
+      } finally {
         close();
-      });
-
-      stream.on('error', () => {
-        enqueue('error', { message: 'Upstream API error' });
-        close();
-      });
-
-      void stream.done().catch(() => {
-        // end/error already handled
-      });
+      }
     },
   });
 

@@ -75,7 +75,7 @@
 | Ticket | Description | Status | Est. |
 |--------|-------------|--------|------|
 | ENG-013 | System prompt engineering (Sam persona) | ⬜ Pending | 2h |
-| ENG-012 | Claude tool definitions (FractionEngine → tools) | ⬜ Pending | 2h |
+| ENG-012 | Claude tool definitions (FractionEngine → tools) | ✅ Complete | 2h |
 | ENG-011 | Vercel edge function + Claude API proxy | ✅ Complete | 3h |
 | ENG-010 | Chat panel UI | ⬜ Pending | 2h |
 
@@ -381,22 +381,19 @@ Create a Vercel Edge Function at `/api/chat` that proxies requests to the Claude
 
 ---
 
-### ENG-012: Claude Tool Definitions ⬜
+### ENG-012: Claude Tool Definitions ✅
 
 #### Plain-English Summary
-Define all FractionEngine functions as Claude tool schemas. Build the tool execution dispatcher that maps tool calls to engine functions.
+Defined 9 tools in Anthropic schema format and executeToolCall dispatcher. api/chat.ts passes tools to Claude, runs tool-use loop (create → tool_use → execute → tool_result → create), and emits tool_use/tool_result SSE events.
 
 #### Acceptance Criteria
-- [ ] 9 tools defined: check_equivalence, simplify_fraction, split_fraction, combine_fractions, find_common_denominator, validate_fraction, parse_student_input, check_answer, get_workspace_state
-- [ ] Tool execution dispatcher maps Claude tool_use to FractionEngine calls
-- [ ] check_answer combines parse + areEquivalent + misconception detection
-- [ ] All tool schemas have clear descriptions for Claude
+- [x] 9 tools: check_equivalence, simplify_fraction, split_fraction, combine_fractions, find_common_denominator, validate_fraction, parse_student_input, check_answer, get_workspace_state
+- [x] executeToolCall maps tool_use to FractionEngine; check_answer = parse + areEquivalent; misconception stub
+- [x] get_workspace_state from lessonState argument
+- [x] api/chat.ts: tools passed to API; tool loop; tool_use/tool_result SSE
 
-#### Files to Create
-- `api/tools.ts`
-
-#### Dependencies
-- ENG-011 (edge function exists), ENG-002 (FractionEngine)
+#### Files Created / Modified
+- `api/tools.ts` (created), `api/chat.ts` (tools + loop), `docs/DEVLOG.md`
 
 ---
 
@@ -1261,6 +1258,38 @@ Implemented the split interaction: ActionBar with Split button (min 44×44pt) an
 - [x] Split animation: scaleX 0→1, 400ms ease-out, transform-origin left; total width preserved
 - [x] Labels on new blocks (FractionBlock)
 - [x] Feature branch created
+
+---
+
+### ENG-012: Claude Tool Definitions ✅
+
+#### Plain-English Summary
+Added `api/tools.ts` with 9 tool definitions (Anthropic schema) and `executeToolCall(name, input, lessonState)` that dispatches to FractionEngine. `check_answer` parses student input and checks equivalence; misconception is optional (stub until ENG-018). `get_workspace_state` returns phase, stepIndex, blocks, score, conceptsDiscovered from lessonState. Updated `api/chat.ts` to pass `toolDefinitions` to Claude, use `messages.create()` in a loop: on `tool_use`, execute tools, append tool_result to conversation, continue until `end_turn`; emit SSE events `text_delta`, `tool_use`, `tool_result`, `done`.
+
+#### Metadata
+- **Status:** Complete
+- **Date:** Mar 11, 2026
+- **Ticket:** ENG-012
+- **Branch:** `feature/eng-012-tool-definitions`
+
+#### Key Achievements
+- **api/tools.ts:** toolDefinitions array (9 tools), executeToolCall with try/catch; unknown tool → `{ error }`; check_answer composite; get_workspace_state from lessonState
+- **api/chat.ts:** imports tools and executeToolCall; lessonState from body with default; messages.create() loop; tool_use → execute → tool_result → next round; SSE tool_use, tool_result, text_delta, done
+
+#### Files Modified
+- `api/tools.ts` — created
+- `api/chat.ts` — tool loop, lessonState, toolDefinitions, stubs removed
+- `docs/DEVLOG.md` — ENG-012 entry
+
+#### Verification
+- `npx tsc -b` — zero errors
+- `npm run lint` — zero errors
+
+#### Acceptance Criteria
+- [x] 9 tool schemas in Anthropic format; executeToolCall for all; check_answer composite; get_workspace_state from lessonState
+- [x] api/chat.ts passes tools and handles tool_use loop; emits tool_use/tool_result SSE
+- [x] Errors returned as { error }; no thrown exceptions from tools
+- [x] DEVLOG updated
 
 ---
 
