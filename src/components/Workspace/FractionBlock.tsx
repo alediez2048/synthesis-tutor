@@ -53,6 +53,7 @@ export interface FractionBlockProps {
   isDragging?: boolean;
   dragDisabled?: boolean;
   animateIn?: boolean;
+  isHighlighted?: boolean;
 }
 
 export function FractionBlock({
@@ -64,6 +65,7 @@ export function FractionBlock({
   onBlockRef,
   dragDisabled = false,
   animateIn = false,
+  isHighlighted = false,
 }: FractionBlockProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -81,6 +83,18 @@ export function FractionBlock({
       { duration: 400, easing: 'ease-out' }
     );
   }, [animateIn]);
+
+  useEffect(() => {
+    if (!isHighlighted || !rootRef.current) return;
+    const el = rootRef.current;
+    el.animate(
+      [
+        { boxShadow: '0 0 0 0 rgba(255, 215, 0, 0.7)' },
+        { boxShadow: '0 0 0 12px rgba(255, 215, 0, 0)' },
+      ],
+      { duration: 600, iterations: 2, easing: 'ease-out' }
+    );
+  }, [isHighlighted]);
 
   const bind = useDrag(
     ({ first, last, movement: [mx, my] }) => {
