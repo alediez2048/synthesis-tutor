@@ -78,7 +78,7 @@ export function FractionBlock({
         { transform: 'scaleX(0)', opacity: 0.5 },
         { transform: 'scaleX(1)', opacity: 1 },
       ],
-      { duration: 350, easing: 'ease-in-out', fill: 'forwards' }
+      { duration: 400, easing: 'ease-out', fill: 'forwards' }
     );
   }, [animateIn]);
 
