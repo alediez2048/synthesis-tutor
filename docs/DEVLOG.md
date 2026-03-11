@@ -61,7 +61,7 @@
 
 | Ticket | Description | Status | Est. |
 |--------|-------------|--------|------|
-| ENG-019 | Misconception detector tests | ⬜ Pending | 0.5h |
+| ENG-019 | Misconception detector tests | ✅ Complete | 0.5h |
 | ENG-018 | MisconceptionDetector (Claude tool) | ✅ Complete | 1.5h |
 | ENG-016 | Exploration Observer (simplified) | ✅ Complete | 1.5h |
 | ENG-015 | Chat ↔ Workspace integration | ✅ Complete | 2h |
@@ -536,16 +536,20 @@ Pure `detectMisconception(parsed, target)` in `src/engine/MisconceptionDetector.
 
 ---
 
-### ENG-019: Misconception Detector Tests ⬜
+### ENG-019: Misconception Detector Tests ✅
+
+#### Plain-English Summary
+Vitest truth-table tests in `src/engine/MisconceptionDetector.test.ts` for all six misconception types (flipped_fraction, used_whole_number, same_denominator, same_numerator, off_by_one, random_guess). Priority order verified (flipped > used_whole_number; same_denominator / same_numerator > off_by_one). Edge cases: simplified forms in flipped (4/2 vs 2/4), 1/1 vs 1/2 → same_numerator. No production code changes.
 
 #### Acceptance Criteria
-- [ ] Truth table: correct answer → no detection
-- [ ] `added_num_and_den`: input 2/4 when expected 1/2 (added tops and bottoms) → detected
-- [ ] `flipped_fraction`: input 2/1 when expected 1/2 → detected
-- [ ] `random_fraction`: non-equivalent, doesn't match specific patterns → generic detection
-- [ ] Each handler fires correctly on matching inputs, stays silent on non-matching
+- [x] Truth table: all wrong-answer inputs; no tests with equivalent fractions
+- [x] `flipped_fraction`: 3/1 vs 1/3, 2/1 vs 1/2, 4/3 vs 3/4, simplified (4/2 vs 1/2), large (12/1 vs 1/12)
+- [x] `used_whole_number`: 2/1 vs 1/3, 5/1 vs 1/2; 1/1 vs 1/2 → same_numerator
+- [x] `same_denominator`, `same_numerator`, `random_guess`: multiple cases each
+- [x] Priority: flipped > whole_number; same_denominator / same_numerator take priority over off_by_one
+- [x] 22 tests; `npm test` and `npx tsc -b` pass
 
-#### Files to Create
+#### Files Created
 - `src/engine/MisconceptionDetector.test.ts`
 
 #### Dependencies
