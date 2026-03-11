@@ -86,7 +86,7 @@
 | ENG-008 | Combine interaction + animation | ⬜ Pending | 2h |
 | ENG-007 | Split interaction + animation | ⬜ Pending | 2h |
 | ENG-006 | FractionWorkspace component | ⬜ Pending | 2h |
-| ENG-005 | FractionBlock component | ⬜ Pending | 3h |
+| ENG-005 | FractionBlock component | ✅ Complete | 3h |
 
 ### Phase 1: Foundation (Day 1 — Monday)
 
@@ -1098,6 +1098,46 @@ Defined the shared TypeScript contract in `src/state/types.ts` (Fraction re-expo
 - [x] getInitialLessonState() returns valid initial state
 - [x] npm test and npx tsc -b pass
 - [x] DEVLOG updated with ENG-004 entry
+- [x] Feature branch created
+
+---
+
+### ENG-005: FractionBlock Component ✅
+
+#### Plain-English Summary
+Implemented the FractionBlock presentational component: colored rectangle with denominator grid lines, width proportional to fraction value (via optional referenceWidth), 60×60pt minimum touch target, label (e.g. "1/4"), selected state (blue glow), and aria-label with spoken fraction. Tap invokes optional onSelect. App updated to render one block from getInitialLessonState for manual verification.
+
+#### Metadata
+- **Status:** Complete
+- **Date:** Mar 10, 2026
+- **Ticket:** ENG-005
+- **Branch:** `feature/eng-005-fraction-block`
+
+#### Key Achievements
+- `FractionBlock.tsx`: props block, referenceWidth (default 200), onSelect; DOM-based (no Canvas)
+- Width = max(60, value × referenceWidth); grid lines via absolute-positioned dividers; uses block.color
+- getSpokenFraction() for aria-label (e.g. "One fourth", "Two halves"); keyboard Enter/Space trigger onSelect
+- App shows single block from initial state for manual check
+
+#### Files Created
+- `src/components/Workspace/FractionBlock.tsx` — FractionBlock component and FractionBlockProps
+
+#### Files Modified
+- `src/App.tsx` — render one FractionBlock from getInitialLessonState().blocks[0]
+- `docs/DEVLOG.md` — ENG-005 entry
+
+#### Verification
+- `npx tsc -b` — zero errors
+- `npm run lint` — zero errors
+- `npm test` — 61 passed
+- `npm run build` — success
+
+#### Acceptance Criteria
+- [x] FractionBlock.tsx under src/components/Workspace/
+- [x] Props: block, optional referenceWidth, optional onSelect
+- [x] Colored rectangle, width proportional to fraction value, grid lines, block.color, min 60×60pt
+- [x] Label and selected-state blue glow; aria-label with spoken fraction
+- [x] Manual verification via App; no reducer/dispatch inside component
 - [x] Feature branch created
 
 ---
