@@ -64,7 +64,7 @@
 | ENG-018 | MisconceptionDetector (Claude tool) | ⬜ Pending | 1.5h |
 | ENG-016 | Exploration Observer (simplified) | ⬜ Pending | 1.5h |
 | ENG-015 | Chat ↔ Workspace integration | ⬜ Pending | 2h |
-| ENG-040 | Langfuse observability integration | ⬜ Pending | 2h |
+| ENG-040 | LangSmith observability integration | ⬜ Pending | 2h |
 | ENG-039 | Wire ChatPanel to LLM | ⬜ Pending | 2h |
 | ENG-017 | Reducer additions (TUTOR_RESPONSE, SET_LOADING) | ⬜ Pending | 1h |
 | ENG-014 | useTutorChat hook (SSE streaming) | ⬜ Pending | 3h |
@@ -85,7 +85,7 @@
 | ENG-009 | Wire blocks to reducer | ⬜ Pending | 1h |
 | ENG-008 | Combine interaction + animation | ⬜ Pending | 2h |
 | ENG-007 | Split interaction + animation | ⬜ Pending | 2h |
-| ENG-006 | FractionWorkspace component | ⬜ Pending | 2h |
+| ENG-006 | FractionWorkspace component | ✅ Complete | 2h |
 | ENG-005 | FractionBlock component | ✅ Complete | 3h |
 
 ### Phase 1: Foundation (Day 1 — Monday)
@@ -421,7 +421,7 @@ Craft the system prompt that defines Sam's persona, voice constraints, pedagogic
 ## Phase 4: Integration + Voice + Observability (Day 4 — Thursday)
 
 **Objective:** Chat and manipulative work together. Voice mode and observability added.
-**Day 4 Deliverable:** Full intro-to-guided-practice flow with LLM. Voice mode functional on iPad. All LLM calls traced in Langfuse.
+**Day 4 Deliverable:** Full intro-to-guided-practice flow with LLM. Voice mode functional on iPad. All LLM calls traced in LangSmith.
 
 ---
 
@@ -517,18 +517,18 @@ Connect the ChatPanel UI to the useTutorChat hook. Show streaming responses with
 
 ---
 
-### ENG-040: Langfuse Observability ⬜
+### ENG-040: LangSmith Observability ⬜
 
 #### Plain-English Summary
-Integrate Langfuse tracing into the edge function. Trace all Claude calls, tool executions, token usage, and latency.
+Integrate LangSmith tracing into the edge function. Trace all Claude calls, tool executions, token usage, and latency.
 
 #### Acceptance Criteria
-- [ ] Langfuse SDK initialized in edge function
+- [ ] LangSmith SDK (`langsmith`) initialized in edge function
 - [ ] Each `/api/chat` request creates a trace with lesson phase metadata
-- [ ] Claude API call logged as a generation (input, output, tokens)
-- [ ] Each tool call logged as a span within the trace
+- [ ] Claude API call logged as a run (input, output, tokens)
+- [ ] Each tool call logged as a child run within the trace
 - [ ] Latency (total + TTFB) recorded
-- [ ] LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY in Vercel env vars
+- [ ] LANGSMITH_API_KEY and LANGSMITH_PROJECT in Vercel env vars
 - [ ] Async flush — never blocks response
 
 #### Files to Modify
@@ -761,14 +761,14 @@ Script that runs eval dataset against /api/chat and checks math correctness, too
 #### Acceptance Criteria
 - [ ] Runs all test cases against `/api/chat`
 - [ ] Checks: correct tool called, math answer correct, response within voice constraints
-- [ ] Results logged to Langfuse with eval metadata
+- [ ] Results logged to LangSmith with eval metadata
 - [ ] Summary report (pass/fail/accuracy)
 
 #### Files to Create
 - `eval/run.ts`
 
 #### Dependencies
-- ENG-043 (dataset), ENG-040 (Langfuse)
+- ENG-043 (dataset), ENG-040 (LangSmith)
 
 ---
 
@@ -1142,6 +1142,45 @@ Implemented the FractionBlock presentational component: colored rectangle with d
 
 ---
 
+### ENG-006: FractionWorkspace Component ✅
+
+#### Plain-English Summary
+Implemented the FractionWorkspace layout: reference bar (1 whole) at top, ComparisonZone for blocks with position 'comparison', and active blocks area for position 'workspace'. Workspace and ComparisonZone receive blocks from props; no internal state. App renders Workspace with getInitialLessonState().blocks for manual verification. touch-action: none on workspace for future drag (ENG-008).
+
+#### Metadata
+- **Status:** Complete
+- **Date:** Mar 10, 2026
+- **Ticket:** ENG-006
+- **Branch:** `feature/eng-006-fraction-workspace`
+
+#### Key Achievements
+- Workspace.tsx: props blocks, referenceWidth (default 300), onSelectBlock; reference bar (#9E9E9E, 1/1), ComparisonZone, active area; blocks split by position
+- ComparisonZone.tsx: props blocks, referenceWidth, onSelectBlock; empty state "Drop blocks here to compare"; renders FractionBlock per block
+- App uses Workspace with state.blocks; reference bar and zones in logical order (reference → comparison → workspace)
+
+#### Files Created
+- `src/components/Workspace/Workspace.tsx` — layout and block placement by position
+- `src/components/Workspace/ComparisonZone.tsx` — comparison blocks + empty state
+
+#### Files Modified
+- `src/App.tsx` — render Workspace with state.blocks, referenceWidth 300
+- `docs/DEVLOG.md` — ENG-006 entry
+
+#### Verification
+- `npx tsc -b` — zero errors
+- `npm run lint` — zero errors
+- `npm test` — 61 passed
+- `npm run build` — success
+
+#### Acceptance Criteria
+- [x] Workspace.tsx: reference bar, comparison zone, active blocks area; blocks from props
+- [x] ComparisonZone.tsx: comparison blocks and empty state
+- [x] FractionBlock used for all blocks with shared referenceWidth and onSelectBlock
+- [x] No internal state for blocks; App passes getInitialLessonState().blocks
+- [x] Feature branch created
+
+---
+
 ## Architecture Decisions Log
 
 | Date | Decision | Rationale |
@@ -1157,5 +1196,5 @@ Implemented the FractionBlock presentational component: colored rectangle with d
 | Mar 10 | LLM-powered tutor (Claude) over scripted JSON | Delivers genuinely adaptive, conversational experience; scripted feels dated in 2026; math safety preserved via tool use |
 | Mar 10 | Vercel Edge Functions for API proxy | Already on Vercel; <50ms cold start; streaming-native; zero infra overhead |
 | Mar 10 | Web Speech API for STT/TTS over OpenAI TTS | Free; local; works on iPad Safari; no additional API keys or latency |
-| Mar 10 | Langfuse for observability | Open-source; generous free tier; simple SDK; great tracing UI for tool call chains |
+| Mar 10 | LangSmith for observability | Native LangChain ecosystem; excellent tracing UI; built-in evals, datasets, and playground; great for tool call chain debugging |
 | Mar 10 | Server-side tool execution | Avoids client-server round-trips for tool calls; keeps FractionEngine as single source of truth |
