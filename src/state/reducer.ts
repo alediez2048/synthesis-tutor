@@ -67,6 +67,8 @@ export function getInitialLessonState(): LessonState {
     conceptsDiscovered: [],
     isDragging: false,
     nextBlockId: 1,
+    isLoading: false,
+    isStreaming: false,
   };
 }
 
@@ -191,6 +193,36 @@ export const lessonReducer: LessonReducer = (state, action) => {
 
     case 'DRAG_END':
       return { ...state, isDragging: false };
+
+    case 'SET_LOADING':
+      return { ...state, isLoading: action.loading };
+
+    case 'TUTOR_RESPONSE': {
+      const msgs = [...state.chatMessages];
+      const lastMsg = msgs[msgs.length - 1];
+      if (action.isStreaming) {
+        if (lastMsg && lastMsg.sender === 'tutor') {
+          msgs[msgs.length - 1] = { ...lastMsg, content: action.content };
+        } else {
+          msgs.push({
+            id: `msg-tutor-${Date.now()}`,
+            sender: 'tutor',
+            content: action.content,
+          });
+        }
+        return { ...state, chatMessages: msgs, isStreaming: true };
+      }
+      if (lastMsg && lastMsg.sender === 'tutor') {
+        msgs[msgs.length - 1] = { ...lastMsg, content: action.content };
+      } else if (action.content) {
+        msgs.push({
+          id: `msg-tutor-${Date.now()}`,
+          sender: 'tutor',
+          content: action.content,
+        });
+      }
+      return { ...state, chatMessages: msgs, isStreaming: false };
+    }
 
     default: {
       const _exhaust: never = action;

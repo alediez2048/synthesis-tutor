@@ -217,4 +217,43 @@ describe('lesson reducer', () => {
       expect(next.isDragging).toBe(false);
     });
   });
+
+  describe('SET_LOADING', () => {
+    it('sets isLoading', () => {
+      const state = getInitialLessonState();
+      expect(lessonReducer(state, { type: 'SET_LOADING', loading: true }).isLoading).toBe(true);
+      expect(lessonReducer(state, { type: 'SET_LOADING', loading: false }).isLoading).toBe(false);
+    });
+  });
+
+  describe('TUTOR_RESPONSE', () => {
+    it('appends or updates tutor message; streaming sets isStreaming true', () => {
+      const state = getInitialLessonState();
+      const next = lessonReducer(state, {
+        type: 'TUTOR_RESPONSE',
+        content: 'Hello!',
+        isStreaming: true,
+      });
+      expect(next.chatMessages).toHaveLength(1);
+      expect(next.chatMessages[0]!.sender).toBe('tutor');
+      expect(next.chatMessages[0]!.content).toBe('Hello!');
+      expect(next.isStreaming).toBe(true);
+    });
+    it('final message sets isStreaming false', () => {
+      let state = getInitialLessonState();
+      state = lessonReducer(state, {
+        type: 'TUTOR_RESPONSE',
+        content: 'Hi',
+        isStreaming: true,
+      });
+      const next = lessonReducer(state, {
+        type: 'TUTOR_RESPONSE',
+        content: 'Hi there!',
+        isStreaming: false,
+      });
+      expect(next.chatMessages).toHaveLength(1);
+      expect(next.chatMessages[0]!.content).toBe('Hi there!');
+      expect(next.isStreaming).toBe(false);
+    });
+  });
 });
