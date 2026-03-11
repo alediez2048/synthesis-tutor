@@ -75,7 +75,7 @@
 |--------|-------------|--------|------|
 | ENG-013 | System prompt engineering (Sam persona) | ⬜ Pending | 2h |
 | ENG-012 | Claude tool definitions (FractionEngine → tools) | ⬜ Pending | 2h |
-| ENG-011 | Vercel edge function + Claude API proxy | ⬜ Pending | 3h |
+| ENG-011 | Vercel edge function + Claude API proxy | ✅ Complete | 3h |
 | ENG-010 | Chat panel UI | ⬜ Pending | 2h |
 
 ### Phase 2: Visual Manipulative (Day 2 — Tuesday)
@@ -1220,6 +1220,46 @@ Implemented drag-to-combine using `@use-gesture/react`: FractionBlock has useDra
 - [x] will-change: transform during drag
 - [x] Combined block width = sum of original (reducer/engine)
 - [x] Feature branch created
+
+---
+
+### ENG-011: Vercel Edge Function + Claude API Proxy ✅
+
+#### Plain-English Summary
+Added the server-side API layer: Vercel Edge Function at `api/chat.ts` that accepts POST `{ messages, lessonState }`, streams Claude's response via SSE (`text_delta`, `done`), and uses a stub system prompt with no tools until ENG-012/ENG-013. API key from `ANTHROPIC_API_KEY`; 500 on missing key, 400 on invalid body.
+
+#### Metadata
+- **Status:** Complete
+- **Date:** Mar 11, 2026
+- **Ticket:** ENG-011
+- **Branch:** `feature/eng-011-edge-function`
+
+#### Key Achievements
+- **api/chat.ts:** Edge runtime, POST only; validates messages array; Anthropic `messages.stream()` with model `claude-sonnet-4-20250514`; stub system prompt; no tools; ReadableStream that enqueues SSE events on `text` and `end`; `encodeSSE('text_delta', { content })` and `encodeSSE('done', {})`; error handler closes stream safely.
+- **vercel.json:** rewrites `/api/:path*` to self for local `vercel dev`.
+- **@anthropic-ai/sdk** added as dependency.
+- **Error handling:** 405 Method not allowed, 500 API key not configured, 400 Invalid request (non-JSON or missing messages).
+
+#### Files Created
+- `api/chat.ts` — Edge Function, SSE streaming
+- `vercel.json` — API rewrites
+
+#### Files Modified
+- `package.json` — added @anthropic-ai/sdk
+- `docs/DEVLOG.md` — ENG-011 entry
+
+#### Verification
+- `npm run build` — success (client build; api/ built by Vercel on deploy)
+- `npm run lint` — zero errors
+- `npm test` — 61 passed
+
+#### Acceptance Criteria
+- [x] api/chat.ts exists with runtime: 'edge'
+- [x] POST with { messages, lessonState }; streams text_delta and done
+- [x] Stub system prompt; tools omitted (ENG-012 later)
+- [x] ANTHROPIC_API_KEY env; 500 when missing
+- [x] vercel.json with rewrites; @anthropic-ai/sdk installed
+- [x] DEVLOG updated; feature branch created
 
 ---
 
