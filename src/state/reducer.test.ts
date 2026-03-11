@@ -226,6 +226,22 @@ describe('lesson reducer', () => {
     });
   });
 
+  describe('DISCOVER_CONCEPT', () => {
+    it('adds concept to conceptsDiscovered once', () => {
+      const state = getInitialLessonState();
+      const next = lessonReducer(state, { type: 'DISCOVER_CONCEPT', concept: 'splitting' });
+      expect(next.conceptsDiscovered).toEqual(['splitting']);
+      const next2 = lessonReducer(next, { type: 'DISCOVER_CONCEPT', concept: 'splitting' });
+      expect(next2.conceptsDiscovered).toEqual(['splitting']);
+    });
+    it('appends new concepts', () => {
+      let state = getInitialLessonState();
+      state = lessonReducer(state, { type: 'DISCOVER_CONCEPT', concept: 'splitting' });
+      state = lessonReducer(state, { type: 'DISCOVER_CONCEPT', concept: 'combining' });
+      expect(state.conceptsDiscovered).toEqual(['splitting', 'combining']);
+    });
+  });
+
   describe('TUTOR_RESPONSE', () => {
     it('appends or updates tutor message; streaming sets isStreaming true', () => {
       const state = getInitialLessonState();

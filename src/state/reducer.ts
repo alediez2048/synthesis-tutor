@@ -224,6 +224,14 @@ export const lessonReducer: LessonReducer = (state, action) => {
       return { ...state, chatMessages: msgs, isStreaming: false };
     }
 
+    case 'DISCOVER_CONCEPT': {
+      if (state.conceptsDiscovered.includes(action.concept)) return state;
+      return {
+        ...state,
+        conceptsDiscovered: [...state.conceptsDiscovered, action.concept],
+      };
+    }
+
     default: {
       const _exhaust: never = action;
       void _exhaust;

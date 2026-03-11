@@ -58,4 +58,5 @@ export type LessonAction =
   | { type: 'DRAG_START'; blockId: string }
   | { type: 'DRAG_END' }
   | { type: 'TUTOR_RESPONSE'; content: string; isStreaming: boolean }
-  | { type: 'SET_LOADING'; loading: boolean };
+  | { type: 'SET_LOADING'; loading: boolean }
+  | { type: 'DISCOVER_CONCEPT'; concept: string };

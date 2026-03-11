@@ -63,7 +63,7 @@
 |--------|-------------|--------|------|
 | ENG-019 | Misconception detector tests | ⬜ Pending | 0.5h |
 | ENG-018 | MisconceptionDetector (Claude tool) | ⬜ Pending | 1.5h |
-| ENG-016 | Exploration Observer (simplified) | ⬜ Pending | 1.5h |
+| ENG-016 | Exploration Observer (simplified) | ✅ Complete | 1.5h |
 | ENG-015 | Chat ↔ Workspace integration | ✅ Complete | 2h |
 | ENG-040 | LangSmith observability integration | ⬜ Pending | 2h |
 | ENG-039 | Wire ChatPanel to LLM | ⬜ Pending | 2h |
@@ -428,22 +428,13 @@ Workspace→chat: notifySam(description) in useTutorChat with 500ms debounce; sp
 
 ---
 
-### ENG-016: Exploration Observer (simplified) ⬜
+### ENG-016: Exploration Observer (simplified) ✅
+
+#### Plain-English Summary
+useExplorationObserver hook tracks 3 discovery goals (splitting, combining, equivalence), fires bracket-form nudges via sendMessage, dispatches DISCOVER_CONCEPT and PHASE_TRANSITION. Config in exploration-config.json + .ts; reducer DISCOVER_CONCEPT case; hook called from App during explore only.
 
 #### Acceptance Criteria
-- [ ] `ExplorationObserver` tracks 3 discovery goals: splitting → smaller pieces, combining → larger pieces, equivalence discovery
-- [ ] 15s inactivity nudge: "Try tapping a block and then pressing Split!"
-- [ ] 5 consecutive splits nudge: "You're great at splitting! Now try combining."
-- [ ] Denominator > 8 nudge: "Those pieces are tiny! Let's start fresh."
-- [ ] 3-minute timeout → demonstrate undiscovered concepts → transition to Guided Practice
-- [ ] All 3 goals discovered → "You've already figured out the big idea!" → transition
-
-#### Files to Create
-- `src/observers/ExplorationObserver.ts`
-- `src/content/exploration-config.json`
-
-#### Dependencies
-- ENG-015 (chat ↔ workspace integration working)
+- [x] 3 goals tracked; 15s inactivity / 5 consecutive splits / denom>8 overwhelm / 3-min timeout / all-goals transition; DISCOVER_CONCEPT; config; DEVLOG
 
 ---
 
@@ -1379,6 +1370,45 @@ Bidirectional integration: (1) Workspace→Chat: useTutorChat now returns notify
 #### Acceptance Criteria
 - [x] Workspace actions auto-notify Sam; 500ms debounce; bracket convention; Sam responds
 - [x] Tutor fraction refs → gold pulse on blocks; 1500ms clear; parseFractionReferences; isHighlighted/highlightedBlockIds; system prompt updated; no feedback loops
+
+---
+
+### ENG-016: Exploration Observer (simplified) ✅
+
+#### Plain-English Summary
+Implemented ExplorationObserver as a React hook `useExplorationObserver({ state, dispatch, sendMessage, isLoading })`. Only active when `state.phase === 'explore'`. Tracks: (1) discovery goals — splitting (blocks increase), combining (blocks decrease by 1), equivalence (2+ blocks in comparison zone with different denominators but areEquivalent); dispatches `DISCOVER_CONCEPT` for each. (2) Nudges via bracket messages to Sam: 15s inactivity + &lt;3 actions; 5 consecutive splits; all workspace blocks denominator &gt;8 (then RESET_WORKSPACE); 3-minute phase timeout → PHASE_TRANSITION to guided; all 3 goals discovered → celebration message + 3s delay → PHASE_TRANSITION. Config in `src/content/exploration-config.json` and `exploration-config.ts`; reducer `DISCOVER_CONCEPT` case; phaseStartTime/lastActionTime set in effect to satisfy purity lint. App calls the hook with state, dispatch, sendMessage, isLoading.
+
+#### Metadata
+- **Status:** Complete
+- **Date:** Mar 11, 2026
+- **Ticket:** ENG-016
+- **Branch:** `feature/eng-016-exploration-observer`
+
+#### Key Achievements
+- **src/state/types.ts:** DISCOVER_CONCEPT added to LessonAction
+- **src/state/reducer.ts:** DISCOVER_CONCEPT case (append to conceptsDiscovered if not present)
+- **src/content/exploration-config.json + .ts:** Tunable thresholds (inactivity 15s, 5 splits, denom&gt;8, 3min timeout, check interval 5s)
+- **src/observers/useExplorationObserver.ts:** Refs for stats, prevBlocks, phase; effects for phase-start init, block-change detection (split/combine/equivalence/overwhelm), interval (inactivity + timeout), all-goals transition
+- **src/App.tsx:** useExplorationObserver(state, dispatch, sendMessage, isLoading)
+- **src/state/reducer.test.ts:** DISCOVER_CONCEPT tests
+
+#### Files Modified
+- `src/state/types.ts` — DISCOVER_CONCEPT
+- `src/state/reducer.ts` — DISCOVER_CONCEPT case
+- `src/content/exploration-config.json` — created
+- `src/content/exploration-config.ts` — created (typed export)
+- `src/observers/useExplorationObserver.ts` — created
+- `src/App.tsx` — useExplorationObserver call
+- `src/state/reducer.test.ts` — DISCOVER_CONCEPT tests
+- `docs/DEVLOG.md` — ENG-016 entry
+
+#### Verification
+- `npx tsc -b` — zero errors
+- `npm run lint` — zero errors
+- `npm test` — 66 passed
+
+#### Acceptance Criteria
+- [x] Observer tracks splitting, combining, equivalence; nudges (15s, 5 splits, overwhelm, 3min, all-goals); bracket messages; config; DISCOVER_CONCEPT; hook in App; DEVLOG updated
 
 ---
 
