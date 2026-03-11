@@ -1,4 +1,4 @@
-# LLM-001 Primer: Vercel Edge Function + Claude API Proxy
+# ENG-011 Primer: Vercel Edge Function + Claude API Proxy
 
 **For:** New Cursor Agent session
 **Project:** Synthesis Tutor — Interactive AI-Powered Fractions Tutor for Ages 8–12
@@ -9,7 +9,7 @@
 
 ## What Is This Ticket?
 
-LLM-001 creates the **server-side API layer** that connects the frontend to Claude. It implements a single Vercel Edge Function at `api/chat.ts` that accepts student messages and lesson state, streams Claude's response back via Server-Sent Events (SSE), and executes tool calls server-side against the FractionEngine. This is the backbone of the entire LLM integration — every student interaction flows through this endpoint.
+ENG-011 creates the **server-side API layer** that connects the frontend to Claude. It implements a single Vercel Edge Function at `api/chat.ts` that accepts student messages and lesson state, streams Claude's response back via Server-Sent Events (SSE), and executes tool calls server-side against the FractionEngine. This is the backbone of the entire LLM integration — every student interaction flows through this endpoint.
 
 ### Why Does This Exist?
 
@@ -41,7 +41,7 @@ The tutor needs a streaming connection to Claude that:
 
 ---
 
-## LLM-001 Contract
+## ENG-011 Contract
 
 ### Edge Function: `api/chat.ts`
 
@@ -104,7 +104,7 @@ Event types:
 
 When Claude emits a `tool_use` event:
 1. Import FractionEngine functions
-2. Execute the requested tool with the provided input (use the `executeToolCall` function from `api/tools.ts` — implemented in LLM-002)
+2. Execute the requested tool with the provided input (use the `executeToolCall` function from `api/tools.ts` — implemented in ENG-012)
 3. Send the tool result back to Claude within the same streaming session (as a `tool_result` message in the Anthropic API format)
 4. Emit a `tool_result` SSE event to the client for transparency
 5. Continue streaming Claude's response after it processes the tool result
@@ -178,8 +178,8 @@ This ensures the Vite dev server and Vercel Edge Functions coexist during local 
 
 ### E. Repo Housekeeping
 
-- [ ] Update `docs/DEVLOG.md` with LLM-001 entry when complete
-- [ ] Feature branch: `feature/llm-001-edge-function`
+- [ ] Update `docs/DEVLOG.md` with ENG-011 entry when complete
+- [ ] Feature branch: `feature/eng-011-edge-function`
 
 ---
 
@@ -187,11 +187,11 @@ This ensures the Vite dev server and Vercel Edge Functions coexist during local 
 
 ```bash
 git switch main && git pull
-git switch -c feature/llm-001-edge-function
+git switch -c feature/eng-011-edge-function
 # ... implement ...
 git add api/chat.ts vercel.json package.json package-lock.json
-git commit -m "feat: add Vercel Edge Function for Claude API proxy (LLM-001)"
-git push -u origin feature/llm-001-edge-function
+git commit -m "feat: add Vercel Edge Function for Claude API proxy (ENG-011)"
+git push -u origin feature/eng-011-edge-function
 ```
 
 Use Conventional Commits: `feat:`, `fix:`, `chore:`.
@@ -221,8 +221,8 @@ export default async function handler(req: Request): Promise<Response> {
 
   const { messages, lessonState } = await req.json();
 
-  // Build system prompt (LLM-003 — stub for now)
-  // Get tool definitions (LLM-002 — stub for now)
+  // Build system prompt (ENG-013 — stub for now)
+  // Get tool definitions (ENG-012 — stub for now)
   // Create streaming response with Anthropic SDK
   // Handle tool_use events server-side
   // Emit SSE events to client
@@ -279,7 +279,7 @@ When the Anthropic stream emits a `content_block_start` with `type: 'tool_use'`:
 | File | Action |
 |------|--------|
 | `package.json` | Add `@anthropic-ai/sdk` dependency |
-| `docs/DEVLOG.md` | Add LLM-001 entry when complete |
+| `docs/DEVLOG.md` | Add ENG-011 entry when complete |
 
 ### Files You Should NOT Modify
 
@@ -299,7 +299,7 @@ When the Anthropic stream emits a `content_block_start` with `type: 'tool_use'`:
 
 ---
 
-## Definition of Done for LLM-001
+## Definition of Done for ENG-011
 
 - [ ] `api/chat.ts` exists as a Vercel Edge Function with `runtime: 'edge'`
 - [ ] Accepts POST with messages and lessonState
@@ -315,8 +315,8 @@ When the Anthropic stream emits a `content_block_start` with `type: 'tool_use'`:
 
 ---
 
-## After LLM-001
+## After ENG-011
 
-- **LLM-002** (Claude Tool Definitions) — define the 9 tool schemas and `executeToolCall` function used by this edge function.
-- **LLM-003** (System Prompt Engineering) — build the system prompt that shapes Sam's personality and behavior.
-- **LLM-004** (useTutorChat Hook) — React hook that connects the frontend to this edge function via SSE.
+- **ENG-012** (Claude Tool Definitions) — define the 9 tool schemas and `executeToolCall` function used by this edge function.
+- **ENG-013** (System Prompt Engineering) — build the system prompt that shapes Sam's personality and behavior.
+- **ENG-014** (useTutorChat Hook) — React hook that connects the frontend to this edge function via SSE.

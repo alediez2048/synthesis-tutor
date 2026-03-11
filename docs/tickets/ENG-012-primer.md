@@ -1,19 +1,19 @@
-# LLM-002 Primer: Claude Tool Definitions
+# ENG-012 Primer: Claude Tool Definitions
 
 **For:** New Cursor Agent session
 **Project:** Synthesis Tutor — Interactive AI-Powered Fractions Tutor for Ages 8–12
 **Date:** Mar 10, 2026
-**Previous work:** LLM-001 (Edge Function), ENG-002 (FractionEngine) complete. See `docs/DEVLOG.md`.
+**Previous work:** ENG-011 (Edge Function), ENG-002 (FractionEngine) complete. See `docs/DEVLOG.md`.
 
 ---
 
 ## What Is This Ticket?
 
-LLM-002 defines the **9 tools** that Claude can call during a tutoring session. These are declared in Anthropic's tool schema format and paired with an `executeToolCall` dispatcher that runs each tool server-side using the FractionEngine. This file is the bridge between Claude's reasoning and the deterministic math layer — Claude decides *when* to check an answer; the tool *executes* the check with zero hallucination risk.
+ENG-012 defines the **9 tools** that Claude can call during a tutoring session. These are declared in Anthropic's tool schema format and paired with an `executeToolCall` dispatcher that runs each tool server-side using the FractionEngine. This file is the bridge between Claude's reasoning and the deterministic math layer — Claude decides *when* to check an answer; the tool *executes* the check with zero hallucination risk.
 
 ### Why Does This Exist?
 
-Claude must never compute fraction math itself. The system prompt (LLM-003) tells Claude to always use tools. This file provides:
+Claude must never compute fraction math itself. The system prompt (ENG-013) tells Claude to always use tools. This file provides:
 1. **Tool schemas** — so Claude knows what tools exist, what parameters they accept, and when to use them
 2. **`executeToolCall`** — a dispatcher that routes tool calls to the correct FractionEngine function and returns structured results
 3. **Composite tools** — `check_answer` combines parsing, equivalence checking, and misconception detection into one call
@@ -22,10 +22,10 @@ Claude must never compute fraction math itself. The system prompt (LLM-003) tell
 
 | Component | Status |
 |-----------|--------|
-| `api/` directory | **Exists** (from LLM-001) |
+| `api/` directory | **Exists** (from ENG-011) |
 | `api/tools.ts` | **Does not exist** — create here |
 | `src/engine/FractionEngine.ts` | **Complete** (ENG-002) — all pure math functions available |
-| `api/chat.ts` | **Complete** (LLM-001) — imports and calls `executeToolCall` |
+| `api/chat.ts` | **Complete** (ENG-011) — imports and calls `executeToolCall` |
 | `src/state/types.ts` | **Complete** (ENG-004) — `LessonState` type defined |
 
 ---
@@ -33,12 +33,12 @@ Claude must never compute fraction math itself. The system prompt (LLM-003) tell
 ## What Was Already Done
 
 - ENG-002: FractionEngine with simplify, areEquivalent, split, combine, toCommonDenominator, isValidFraction, parseStudentInput
-- LLM-001: Edge function that intercepts tool_use events and calls `executeToolCall`
+- ENG-011: Edge function that intercepts tool_use events and calls `executeToolCall`
 - ENG-004: LessonState type with phases, blocks, score, conceptsDiscovered
 
 ---
 
-## LLM-002 Contract
+## ENG-012 Contract
 
 ### Tool Schema Format
 
@@ -376,13 +376,13 @@ export function executeToolCall(name: string, input: Record<string, any>, lesson
 
 ### C. Integration
 
-- [ ] `api/chat.ts` (LLM-001) can import `toolDefinitions` and `executeToolCall`
+- [ ] `api/chat.ts` (ENG-011) can import `toolDefinitions` and `executeToolCall`
 - [ ] Tool definitions compatible with Anthropic SDK `tools` parameter
 
 ### D. Repo Housekeeping
 
-- [ ] Update `docs/DEVLOG.md` with LLM-002 entry when complete
-- [ ] Feature branch: `feature/llm-002-tool-definitions`
+- [ ] Update `docs/DEVLOG.md` with ENG-012 entry when complete
+- [ ] Feature branch: `feature/eng-012-tool-definitions`
 
 ---
 
@@ -390,11 +390,11 @@ export function executeToolCall(name: string, input: Record<string, any>, lesson
 
 ```bash
 git switch main && git pull
-git switch -c feature/llm-002-tool-definitions
+git switch -c feature/eng-012-tool-definitions
 # ... implement ...
 git add api/tools.ts
-git commit -m "feat: define Claude tool schemas and executeToolCall dispatcher (LLM-002)"
-git push -u origin feature/llm-002-tool-definitions
+git commit -m "feat: define Claude tool schemas and executeToolCall dispatcher (ENG-012)"
+git push -u origin feature/eng-012-tool-definitions
 ```
 
 Use Conventional Commits: `feat:`.
@@ -503,14 +503,14 @@ The import path from `api/tools.ts` to `src/engine/FractionEngine.ts` uses `../s
 
 | File | Action |
 |------|--------|
-| `docs/DEVLOG.md` | Add LLM-002 entry when complete |
+| `docs/DEVLOG.md` | Add ENG-012 entry when complete |
 
 ### Files You Should NOT Modify
 
 - `src/engine/FractionEngine.ts` — import only, do not modify
 - `src/state/types.ts` — import types only
 - `src/state/reducer.ts` — do not modify
-- `api/chat.ts` — LLM-001 already imports from this file; do not modify unless fixing integration issues
+- `api/chat.ts` — ENG-011 already imports from this file; do not modify unless fixing integration issues
 - `src/components/*` — no UI changes
 
 ### Files to READ for Context
@@ -524,7 +524,7 @@ The import path from `api/tools.ts` to `src/engine/FractionEngine.ts` uses `../s
 
 ---
 
-## Definition of Done for LLM-002
+## Definition of Done for ENG-012
 
 - [ ] `api/tools.ts` exists with 9 tool schemas in Anthropic format
 - [ ] `toolDefinitions` array exported and compatible with Anthropic SDK `tools` parameter
@@ -539,8 +539,8 @@ The import path from `api/tools.ts` to `src/engine/FractionEngine.ts` uses `../s
 
 ---
 
-## After LLM-002
+## After ENG-012
 
-- **LLM-003** (System Prompt Engineering) — the system prompt will reference these tools by name and tell Claude when to use them.
-- **LLM-004** (useTutorChat Hook) — the frontend hook will parse `tool_use` SSE events to update workspace state.
+- **ENG-013** (System Prompt Engineering) — the system prompt will reference these tools by name and tell Claude when to use them.
+- **ENG-014** (useTutorChat Hook) — the frontend hook will parse `tool_use` SSE events to update workspace state.
 - **ENG-018** (MisconceptionDetector) — future ticket will provide specific misconception identification for `check_answer`.

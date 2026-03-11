@@ -1,15 +1,15 @@
-# LLM-004 Primer: useTutorChat Hook
+# ENG-014 Primer: useTutorChat Hook
 
 **For:** New Cursor Agent session
 **Project:** Synthesis Tutor — Interactive AI-Powered Fractions Tutor for Ages 8–12
 **Date:** Mar 10, 2026
-**Previous work:** LLM-001 (Edge Function), ENG-004 (Reducer/Types) complete. See `docs/DEVLOG.md`.
+**Previous work:** ENG-011 (Edge Function), ENG-004 (Reducer/Types) complete. See `docs/DEVLOG.md`.
 
 ---
 
 ## What Is This Ticket?
 
-LLM-004 creates the **`useTutorChat` React hook** in `src/brain/useTutorChat.ts`. This hook is the frontend's interface to the Claude-powered tutor. It sends student messages to the `/api/chat` edge function, parses the SSE stream, dispatches actions to the lesson reducer, and manages conversation history. This is the glue between the React UI and the AI backend.
+ENG-014 creates the **`useTutorChat` React hook** in `src/brain/useTutorChat.ts`. This hook is the frontend's interface to the Claude-powered tutor. It sends student messages to the `/api/chat` edge function, parses the SSE stream, dispatches actions to the lesson reducer, and manages conversation history. This is the glue between the React UI and the AI backend.
 
 ### Why Does This Exist?
 
@@ -24,22 +24,22 @@ The UI components need a clean, simple API to interact with Sam:
 |-----------|--------|
 | `src/brain/` directory | **Exists** — currently empty |
 | `src/brain/useTutorChat.ts` | **Does not exist** — create here |
-| `api/chat.ts` | **Complete** (LLM-001) — SSE streaming endpoint |
+| `api/chat.ts` | **Complete** (ENG-011) — SSE streaming endpoint |
 | `src/state/types.ts` | **Complete** (ENG-004) — LessonState, LessonAction |
 | `src/state/reducer.ts` | **Complete** (ENG-004) — handles STUDENT_RESPONSE |
-| LLM-005 additions | **Required** — TUTOR_RESPONSE, SET_LOADING actions must exist in reducer |
+| ENG-017 additions | **Required** — TUTOR_RESPONSE, SET_LOADING actions must exist in reducer |
 
 ---
 
 ## What Was Already Done
 
-- LLM-001: Edge function at `/api/chat` that streams SSE events (text_delta, tool_use, tool_result, done)
+- ENG-011: Edge function at `/api/chat` that streams SSE events (text_delta, tool_use, tool_result, done)
 - ENG-004: LessonState with chatHistory, LessonAction with STUDENT_RESPONSE, reducer with full lesson logic
-- LLM-005: (dependency) Adds TUTOR_RESPONSE and SET_LOADING actions to the reducer
+- ENG-017: (dependency) Adds TUTOR_RESPONSE and SET_LOADING actions to the reducer
 
 ---
 
-## LLM-004 Contract
+## ENG-014 Contract
 
 ### Hook Signature
 
@@ -240,8 +240,8 @@ The `isLoading` return value comes from `state.isLoading` (set by the reducer vi
 
 ### F. Repo Housekeeping
 
-- [ ] Update `docs/DEVLOG.md` with LLM-004 entry when complete
-- [ ] Feature branch: `feature/llm-004-use-tutor-chat`
+- [ ] Update `docs/DEVLOG.md` with ENG-014 entry when complete
+- [ ] Feature branch: `feature/eng-014-use-tutor-chat`
 
 ---
 
@@ -249,11 +249,11 @@ The `isLoading` return value comes from `state.isLoading` (set by the reducer vi
 
 ```bash
 git switch main && git pull
-git switch -c feature/llm-004-use-tutor-chat
+git switch -c feature/eng-014-use-tutor-chat
 # ... implement ...
 git add src/brain/useTutorChat.ts
-git commit -m "feat: implement useTutorChat hook for Claude streaming (LLM-004)"
-git push -u origin feature/llm-004-use-tutor-chat
+git commit -m "feat: implement useTutorChat hook for Claude streaming (ENG-014)"
+git push -u origin feature/eng-014-use-tutor-chat
 ```
 
 Use Conventional Commits: `feat:`.
@@ -382,11 +382,11 @@ export function useTutorChat(
 }
 ```
 
-### Dependency on LLM-005
+### Dependency on ENG-017
 
-This hook dispatches `TUTOR_RESPONSE` and `SET_LOADING` actions, which are added to the reducer by LLM-005. If implementing LLM-004 before LLM-005, you can:
-1. Implement LLM-005 first (it's a ~1 hour ticket)
-2. Or stub the action types and implement the hook, knowing the reducer will handle them after LLM-005
+This hook dispatches `TUTOR_RESPONSE` and `SET_LOADING` actions, which are added to the reducer by ENG-017. If implementing ENG-014 before ENG-017, you can:
+1. Implement ENG-017 first (it's a ~1 hour ticket)
+2. Or stub the action types and implement the hook, knowing the reducer will handle them after ENG-017
 
 ---
 
@@ -402,14 +402,14 @@ This hook dispatches `TUTOR_RESPONSE` and `SET_LOADING` actions, which are added
 
 | File | Action |
 |------|--------|
-| `docs/DEVLOG.md` | Add LLM-004 entry when complete |
+| `docs/DEVLOG.md` | Add ENG-014 entry when complete |
 
 ### Files You Should NOT Modify
 
 - `api/*` — edge function and tools are separate tickets; do not modify
 - `src/engine/*` — no engine changes
-- `src/state/types.ts` — types are modified by LLM-005, not this ticket
-- `src/state/reducer.ts` — reducer is modified by LLM-005, not this ticket
+- `src/state/types.ts` — types are modified by ENG-017, not this ticket
+- `src/state/reducer.ts` — reducer is modified by ENG-017, not this ticket
 - `src/components/*` — UI integration happens in a later ticket
 
 ### Files to READ for Context
@@ -423,7 +423,7 @@ This hook dispatches `TUTOR_RESPONSE` and `SET_LOADING` actions, which are added
 
 ---
 
-## Definition of Done for LLM-004
+## Definition of Done for ENG-014
 
 - [ ] `src/brain/useTutorChat.ts` exists and exports `useTutorChat`
 - [ ] Hook accepts `(state, dispatch)` and returns `{ sendMessage, isLoading }`
@@ -438,8 +438,8 @@ This hook dispatches `TUTOR_RESPONSE` and `SET_LOADING` actions, which are added
 
 ---
 
-## After LLM-004
+## After ENG-014
 
 - **UI integration** — a component (likely ChatPanel or similar) will use `useTutorChat` to connect the text input to Sam.
-- **LLM-005** (Reducer Additions) — must be complete for this hook's dispatches to work. Can be implemented in parallel or before this ticket.
+- **ENG-017** (Reducer Additions) — must be complete for this hook's dispatches to work. Can be implemented in parallel or before this ticket.
 - **Testing** — end-to-end testing with `vercel dev` to verify the full flow: student types → hook sends → edge function streams → hook dispatches → UI updates.
