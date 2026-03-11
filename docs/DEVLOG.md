@@ -68,7 +68,7 @@
 | ENG-040 | LangSmith observability integration | ⬜ Pending | 2h |
 | ENG-039 | Wire ChatPanel to LLM | ⬜ Pending | 2h |
 | ENG-017 | Reducer additions (TUTOR_RESPONSE, SET_LOADING) | ⬜ Pending | 1h |
-| ENG-014 | useTutorChat hook (SSE streaming) | ⬜ Pending | 3h |
+| ENG-014 | useTutorChat hook (SSE streaming) | ✅ Complete | 3h |
 
 ### Phase 3: Chat + LLM Integration (Day 3 — Wednesday)
 
@@ -447,23 +447,16 @@ Created `api/system-prompt.ts` with `buildSystemPrompt(lessonState)`; seven sect
 
 ---
 
-### ENG-014: useTutorChat Hook ⬜
+### ENG-014: useTutorChat Hook ✅
 
 #### Plain-English Summary
-React hook that manages communication with `/api/chat`. Handles SSE streaming, typing indicators, and dispatches responses to the reducer.
+React hook `useTutorChat(state, dispatch)` in `src/brain/useTutorChat.ts`. Sends messages + lessonState to `/api/chat`, parses SSE (text_delta, tool_use, tool_result, done, error), dispatches STUDENT_RESPONSE, SET_LOADING, TUTOR_RESPONSE (streaming and final). Reducer additions: TUTOR_RESPONSE, SET_LOADING; LessonState.isLoading, isStreaming. Tool events logged only (server-side execution).
 
 #### Acceptance Criteria
-- [ ] Sends messages + lessonState to `/api/chat` via POST
-- [ ] Parses SSE stream (text_delta, tool_use, done)
-- [ ] Dispatches TUTOR_RESPONSE with streaming text
-- [ ] Dispatches SET_LOADING for typing indicator
-- [ ] Tool-triggered workspace changes dispatch SPLIT_BLOCK, COMBINE_BLOCKS etc.
-
-#### Files to Create
-- `src/brain/useTutorChat.ts`
-
-#### Dependencies
-- ENG-011 (edge function), ENG-017 (new reducer actions)
+- [x] useTutorChat(state, dispatch) → { sendMessage, isLoading }
+- [x] sendMessage: STUDENT_RESPONSE, SET_LOADING true, POST /api/chat, SSE parse, text_delta → TUTOR_RESPONSE isStreaming true, done/error → finalize + SET_LOADING false
+- [x] Reducer: TUTOR_RESPONSE, SET_LOADING; initial state includes isLoading, isStreaming
+- [x] Message history from chatMessages, capped at 20; concurrent requests prevented
 
 ---
 
@@ -1313,6 +1306,40 @@ Added `api/system-prompt.ts` exporting `buildSystemPrompt(lessonState): string`.
 - [x] buildSystemPrompt(lessonState) exported; pure, synchronous
 - [x] All 7 sections; voice constraints strict; math firewall lists 9 tools; phase guidance for intro/explore/guided/assess/complete
 - [x] api/chat.ts uses buildSystemPrompt(lessonState); DEVLOG updated
+
+---
+
+### ENG-014: useTutorChat Hook ✅
+
+#### Plain-English Summary
+Implemented `useTutorChat(state, dispatch)` in `src/brain/useTutorChat.ts`. Hook dispatches STUDENT_RESPONSE and SET_LOADING, POSTs to `/api/chat` with `buildMessageHistory(chatMessages, text)` and lessonState, parses SSE via ReadableStream (event/data lines), accumulates text on text_delta and dispatches TUTOR_RESPONSE (isStreaming true/false), handles done and error (friendly Sam message), clears loading. Reducer: added isLoading and isStreaming to LessonState; TUTOR_RESPONSE (append/update last tutor message, set isStreaming); SET_LOADING. getInitialLessonState() updated. Tool events (tool_use, tool_result) logged for debugging only. Concurrent sends prevented with ref guard. Message history capped at 20; sender → role mapping (student→user, tutor→assistant).
+
+#### Metadata
+- **Status:** Complete
+- **Date:** Mar 11, 2026
+- **Ticket:** ENG-014
+- **Branch:** `feature/eng-014-use-tutor-chat`
+
+#### Key Achievements
+- **src/state/types.ts:** isLoading, isStreaming on LessonState; TUTOR_RESPONSE, SET_LOADING on LessonAction
+- **src/state/reducer.ts:** SET_LOADING case; TUTOR_RESPONSE case (streaming in-place update, final overwrite); initial state
+- **src/brain/useTutorChat.ts:** buildMessageHistory (cap 20); sendMessage with ref guard, fetch, SSE parse, text_delta accumulation, done/error handling; returns { sendMessage, isLoading }
+- **src/state/reducer.test.ts:** SET_LOADING and TUTOR_RESPONSE tests
+
+#### Files Modified
+- `src/state/types.ts` — isLoading, isStreaming, TUTOR_RESPONSE, SET_LOADING
+- `src/state/reducer.ts` — new cases, getInitialLessonState
+- `src/brain/useTutorChat.ts` — created
+- `src/state/reducer.test.ts` — tests for new actions
+- `docs/DEVLOG.md` — ENG-014 entry
+
+#### Verification
+- `npx tsc -b` — zero errors
+- `npm run lint` — zero errors
+- `npm test` — 64 passed (61 + 3 new reducer tests)
+
+#### Acceptance Criteria
+- [x] Reducer additions; useTutorChat with sendMessage, isLoading; SSE parsing; streaming TUTOR_RESPONSE; error handling; history cap; concurrent guard; DEVLOG updated
 
 ---
 

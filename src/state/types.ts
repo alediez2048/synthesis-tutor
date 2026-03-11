@@ -40,6 +40,8 @@ export interface LessonState {
   conceptsDiscovered: string[];
   isDragging: boolean;
   nextBlockId: number;
+  isLoading: boolean;
+  isStreaming: boolean;
 }
 
 export type LessonAction =
@@ -54,4 +56,6 @@ export type LessonAction =
   | { type: 'SELECT_BLOCK'; blockId: string }
   | { type: 'DESELECT_ALL' }
   | { type: 'DRAG_START'; blockId: string }
-  | { type: 'DRAG_END' };
+  | { type: 'DRAG_END' }
+  | { type: 'TUTOR_RESPONSE'; content: string; isStreaming: boolean }
+  | { type: 'SET_LOADING'; loading: boolean };
