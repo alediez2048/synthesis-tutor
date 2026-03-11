@@ -1,22 +1,64 @@
+import { useRef, useCallback } from 'react';
 import type { FractionBlock } from '../../state/types';
 import { FractionBlock as FractionBlockComponent } from './FractionBlock';
 import { ComparisonZone } from './ComparisonZone';
 
 const REFERENCE_BAR_COLOR = '#9E9E9E';
 
+function findDropTarget(
+  blockRefs: Map<string, HTMLElement>,
+  draggedId: string,
+  draggedRect: DOMRect
+): string | null {
+  for (const [id, el] of blockRefs) {
+    if (id === draggedId) continue;
+    const rect = el.getBoundingClientRect();
+    const overlapX =
+      Math.min(draggedRect.right, rect.right) - Math.max(draggedRect.left, rect.left);
+    const overlapY =
+      Math.min(draggedRect.bottom, rect.bottom) - Math.max(draggedRect.top, rect.top);
+    if (overlapX > 0 && overlapY > 0) return id;
+  }
+  return null;
+}
+
 export interface WorkspaceProps {
   blocks: FractionBlock[];
   referenceWidth?: number;
   onSelectBlock?: (blockId: string) => void;
+  onDragStart?: (blockId: string) => void;
+  onCombineAttempt?: (draggedId: string, targetId: string | null) => void;
+  isDragging?: boolean;
+  draggingBlockId?: string | null;
+  combinedBlockId?: string | null;
 }
 
 export function Workspace({
   blocks,
   referenceWidth = 300,
   onSelectBlock,
+  onDragStart,
+  onCombineAttempt,
+  isDragging = false,
+  draggingBlockId = null,
+  combinedBlockId = null,
 }: WorkspaceProps) {
   const workspaceBlocks = blocks.filter((b) => b.position === 'workspace');
   const comparisonBlocks = blocks.filter((b) => b.position === 'comparison');
+  const blockRefs = useRef<Map<string, HTMLElement>>(new Map());
+
+  const setBlockRef = useCallback((blockId: string, element: HTMLElement | null) => {
+    if (element) blockRefs.current.set(blockId, element);
+    else blockRefs.current.delete(blockId);
+  }, []);
+
+  const handleDragEnd = useCallback(
+    (draggedId: string, dropRect: DOMRect) => {
+      const targetId = findDropTarget(blockRefs.current, draggedId, dropRect);
+      onCombineAttempt?.(draggedId, targetId);
+    },
+    [onCombineAttempt]
+  );
 
   return (
     <div
@@ -77,6 +119,12 @@ export function Workspace({
             block={block}
             referenceWidth={referenceWidth}
             onSelect={onSelectBlock ? () => onSelectBlock(block.id) : undefined}
+            onDragStart={onDragStart ? () => onDragStart(block.id) : undefined}
+            onDragEnd={onCombineAttempt ? handleDragEnd : undefined}
+            onBlockRef={setBlockRef}
+            isDragging={isDragging}
+            dragDisabled={isDragging && draggingBlockId !== block.id}
+            animateIn={block.id === combinedBlockId}
           />
         ))}
       </section>
