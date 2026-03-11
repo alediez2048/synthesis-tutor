@@ -11,6 +11,8 @@ function App() {
   const [combineRejectionMessage, setCombineRejectionMessage] = useState<string | null>(null);
   const [combinedBlockId, setCombinedBlockId] = useState<string | null>(null);
 
+  const selectedBlockId = state.blocks.find((b) => b.isSelected)?.id ?? null;
+
   useEffect(() => {
     if (!combinedBlockId) return;
     const t = setTimeout(() => setCombinedBlockId(null), 350);
@@ -48,6 +50,16 @@ function App() {
     }
   };
 
+  const handleDropOnComparisonZone = (draggedId: string) => {
+    dispatch({ type: 'DRAG_END' });
+    setDraggingBlockId(null);
+    dispatch({ type: 'COMPARE_BLOCKS', blockIds: [draggedId, draggedId] });
+  };
+
+  const handleWorkspaceBackgroundClick = () => {
+    dispatch({ type: 'DESELECT_ALL' });
+  };
+
   return (
     <div style={{ padding: '2rem', fontFamily: 'system-ui, sans-serif' }}>
       <h1>Synthesis Tutor</h1>
@@ -72,9 +84,12 @@ function App() {
         <Workspace
           blocks={state.blocks}
           referenceWidth={300}
+          selectedBlockId={selectedBlockId}
           onSelectBlock={handleSelectBlock}
           onDragStart={handleDragStart}
           onCombineAttempt={handleCombineAttempt}
+          onDropOnComparisonZone={handleDropOnComparisonZone}
+          onWorkspaceBackgroundClick={handleWorkspaceBackgroundClick}
           isDragging={state.isDragging}
           draggingBlockId={draggingBlockId}
           combinedBlockId={combinedBlockId}

@@ -1,3 +1,4 @@
+import { forwardRef } from 'react';
 import type { FractionBlock } from '../../state/types';
 import { FractionBlock as FractionBlockComponent } from './FractionBlock';
 
@@ -7,10 +8,12 @@ export interface ComparisonZoneProps {
   onSelectBlock?: (blockId: string) => void;
 }
 
-export function ComparisonZone({ blocks, referenceWidth, onSelectBlock }: ComparisonZoneProps) {
-  return (
-    <section
-      aria-label="Comparison zone"
+export const ComparisonZone = forwardRef<HTMLElement, ComparisonZoneProps>(
+  function ComparisonZone({ blocks, referenceWidth, onSelectBlock }, ref) {
+    return (
+      <section
+        ref={ref}
+        aria-label="Comparison zone"
       style={{
         minHeight: 80,
         padding: 12,
@@ -44,5 +47,6 @@ export function ComparisonZone({ blocks, referenceWidth, onSelectBlock }: Compar
         </div>
       )}
     </section>
-  );
-}
+    );
+  }
+);
