@@ -62,12 +62,12 @@
 | Ticket | Description | Status | Est. |
 |--------|-------------|--------|------|
 | ENG-019 | Misconception detector tests | ⬜ Pending | 0.5h |
-| ENG-018 | MisconceptionDetector (Claude tool) | ⬜ Pending | 1.5h |
+| ENG-018 | MisconceptionDetector (Claude tool) | ✅ Complete | 1.5h |
 | ENG-016 | Exploration Observer (simplified) | ✅ Complete | 1.5h |
 | ENG-015 | Chat ↔ Workspace integration | ✅ Complete | 2h |
 | ENG-040 | LangSmith observability integration | ⬜ Pending | 2h |
-| ENG-039 | Wire ChatPanel to LLM | ⬜ Pending | 2h |
-| ENG-017 | Reducer additions (TUTOR_RESPONSE, SET_LOADING) | ⬜ Pending | 1h |
+| ENG-039 | Wire ChatPanel to LLM | ✅ Complete | 2h |
+| ENG-017 | Reducer additions (TUTOR_RESPONSE, SET_LOADING) | ✅ Complete | 1h |
 | ENG-014 | useTutorChat hook (SSE streaming) | ✅ Complete | 3h |
 
 ### Phase 3: Chat + LLM Integration (Day 3 — Wednesday)
@@ -451,17 +451,17 @@ React hook `useTutorChat(state, dispatch)` in `src/brain/useTutorChat.ts`. Sends
 
 ---
 
-### ENG-017: Reducer Additions ⬜
+### ENG-017: Reducer Additions ✅
 
 #### Plain-English Summary
-Add TUTOR_RESPONSE and SET_LOADING actions to the reducer and types for async LLM integration.
+Add TUTOR_RESPONSE and SET_LOADING actions to the reducer and types for async LLM integration. Absorbed into ENG-014 implementation.
 
 #### Acceptance Criteria
-- [ ] `TUTOR_RESPONSE` action: appends tutor message, supports `isStreaming` flag
-- [ ] `SET_LOADING` action: toggles loading state for typing indicator
-- [ ] `isLoading: boolean` added to LessonState
-- [ ] Types updated in `src/state/types.ts`
-- [ ] Existing tests still pass
+- [x] `TUTOR_RESPONSE` action: appends tutor message, supports `isStreaming` flag
+- [x] `SET_LOADING` action: toggles loading state for typing indicator
+- [x] `isLoading: boolean` added to LessonState
+- [x] Types updated in `src/state/types.ts`
+- [x] Existing tests still pass
 
 #### Files to Modify
 - `src/state/types.ts`
@@ -473,10 +473,10 @@ Add TUTOR_RESPONSE and SET_LOADING actions to the reducer and types for async LL
 
 ---
 
-### ENG-039: Wire ChatPanel to LLM ⬜
+### ENG-039: Wire ChatPanel to LLM ✅
 
 #### Plain-English Summary
-Connect the ChatPanel UI to the useTutorChat hook. Show streaming responses with typing indicator.
+Connect the ChatPanel UI to the useTutorChat hook. Show streaming responses with typing indicator. Implemented alongside ENG-015.
 
 #### Acceptance Criteria
 - [ ] Student messages sent via useTutorChat hook
@@ -514,19 +514,25 @@ Integrate LangSmith tracing into the edge function. Trace all Claude calls, tool
 
 ---
 
-### ENG-018: MisconceptionDetector (Claude tool) ⬜
+### ENG-018: MisconceptionDetector (Claude tool) ✅
+
+#### Plain-English Summary
+Pure `detectMisconception(parsed, target)` in `src/engine/MisconceptionDetector.ts` classifies wrong answers (flipped_fraction, used_whole_number, same_denominator, same_numerator, off_by_one, random_guess). `executeCheckAnswer` in `api/tools.ts` calls it when answer is wrong and returns `misconception` + `misconceptionType` so Claude can scaffold by type. Parse failures return `misconceptionType: 'parse_error'`. Math firewall: detector is deterministic; Claude only uses the label.
 
 #### Acceptance Criteria
-- [ ] `parseStudentInput → FractionEngine.areEquivalent → boolean → branch selection` flow works
-- [ ] Misconception detection: `added_num_and_den`, `flipped_fraction`, `random_fraction`, `wrong_equivalence`
-- [ ] Each misconception triggers a specific Sam response and remediation action
-- [ ] The boolean from the engine is the SOLE AUTHORITY — never text matching
+- [x] `parseStudentInput → areEquivalent → on wrong: detectMisconception` flow in `executeCheckAnswer`
+- [x] Misconception types: `flipped_fraction`, `used_whole_number`, `same_denominator`, `same_numerator`, `off_by_one`, `random_guess` (and `parse_error` for unparseable input)
+- [x] Tool returns `misconception` and `misconceptionType` for wrong answers; Claude uses for targeted scaffolding
+- [x] Correctness is FractionEngine-only; detector is pure, no LLM
 
-#### Files to Create
+#### Files Created
 - `src/engine/MisconceptionDetector.ts`
 
+#### Files Modified
+- `api/tools.ts` (import + `executeCheckAnswer` branches)
+
 #### Dependencies
-- ENG-002 (FractionEngine), ENG-013 (TutorBrain evaluateResponse)
+- ENG-002 (FractionEngine), ENG-012 (check_answer tool)
 
 ---
 
