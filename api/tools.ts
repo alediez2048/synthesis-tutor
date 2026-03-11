@@ -13,6 +13,7 @@ import {
   parseStudentInput,
 } from '../src/engine/FractionEngine';
 import type { Fraction } from '../src/engine/FractionEngine';
+import { detectMisconception } from '../src/engine/MisconceptionDetector';
 import type { LessonState } from '../src/state/types';
 
 const fractionSchema = {
@@ -145,17 +146,32 @@ export const toolDefinitions: ToolDefinition[] = [
 function executeCheckAnswer(
   studentInput: string,
   target: Fraction
-): { correct: boolean; parsed: Fraction | null; misconception?: string } {
+): {
+  correct: boolean;
+  parsed: Fraction | null;
+  misconception?: string;
+  misconceptionType?: string;
+} {
   const parsed = parseStudentInput(studentInput);
   if (parsed === null) {
     return {
       correct: false,
       parsed: null,
       misconception: 'Could not parse input as a fraction',
+      misconceptionType: 'parse_error',
     };
   }
   const correct = areEquivalent(parsed, target);
-  return { correct, parsed };
+  if (correct) {
+    return { correct: true, parsed };
+  }
+  const detection = detectMisconception(parsed, target);
+  return {
+    correct: false,
+    parsed,
+    misconception: detection.description,
+    misconceptionType: detection.type,
+  };
 }
 
 function extractWorkspaceState(lessonState: LessonState): Record<string, unknown> {
