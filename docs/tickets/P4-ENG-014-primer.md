@@ -1,10 +1,10 @@
 # ENG-014 Primer: useTutorChat Hook
 
 **For:** New Cursor Agent session
-**Project:** Synthesis Tutor — Interactive AI-Powered Fractions Tutor for Ages 8–12
+**Project:** Fraction Quest — Interactive AI-Powered Fractions Tutor for Ages 8–12
 **Phase:** Phase 4: Integration + Voice + Observability (Day 4)
-**Date:** Mar 10, 2026
-**Previous work:** ENG-011 (Edge Function), ENG-004 (Reducer/Types) complete. See `docs/DEVLOG.md`.
+**Date:** Mar 11, 2026
+**Previous work:** ENG-011 (Edge Function), ENG-012 (Tools), ENG-013 (System Prompt), ENG-004 (Reducer/Types) complete. See `docs/DEVLOG.md`.
 
 ---
 
@@ -14,7 +14,7 @@ ENG-014 creates the **`useTutorChat` React hook** in `src/brain/useTutorChat.ts`
 
 ### Why Does This Exist?
 
-The UI components need a clean, simple API to interact with Sam:
+The UI components need a clean, simple API to interact with Sam the Wizard Owl:
 1. Student types a message → `sendMessage("2/4")`
 2. The hook handles everything: dispatching actions, calling the API, parsing the stream, updating state
 3. Components only need `sendMessage` and `isLoading` — all complexity is encapsulated in the hook
@@ -23,20 +23,84 @@ The UI components need a clean, simple API to interact with Sam:
 
 | Component | Status |
 |-----------|--------|
-| `src/brain/` directory | **Exists** — currently empty |
+| `src/brain/` directory | **Exists** — contains only `.gitkeep` |
 | `src/brain/useTutorChat.ts` | **Does not exist** — create here |
-| `api/chat.ts` | **Complete** (ENG-011) — SSE streaming endpoint |
-| `src/state/types.ts` | **Complete** (ENG-004) — LessonState, LessonAction |
-| `src/state/reducer.ts` | **Complete** (ENG-004) — handles STUDENT_RESPONSE |
-| ENG-017 additions | **Required** — TUTOR_RESPONSE, SET_LOADING actions must exist in reducer |
+| `api/chat.ts` | **Complete** (ENG-011/012/013) — SSE streaming endpoint with tool use and system prompt |
+| `src/state/types.ts` | **Complete** (ENG-004) — LessonState, LessonAction, ChatMessage |
+| `src/state/reducer.ts` | **Complete** (ENG-004) — handles STUDENT_RESPONSE and other actions |
 
 ---
 
 ## What Was Already Done
 
-- ENG-011: Edge function at `/api/chat` that streams SSE events (text_delta, tool_use, tool_result, done)
-- ENG-004: LessonState with chatHistory, LessonAction with STUDENT_RESPONSE, reducer with full lesson logic
-- ENG-017: (dependency) Adds TUTOR_RESPONSE and SET_LOADING actions to the reducer
+- ENG-011: Edge function at `/api/chat` that streams SSE events (`text_delta`, `tool_use`, `tool_result`, `done`, `error`)
+- ENG-012: 9 fraction tools defined and executed server-side in `api/tools.ts`
+- ENG-013: System prompt in `api/system-prompt.ts` with Wizard Owl persona, math firewall, phase guidance
+- ENG-004: LessonState with `chatMessages: ChatMessage[]`, LessonAction with `STUDENT_RESPONSE`, reducer with full lesson logic
+
+---
+
+## Reducer Actions to Add
+
+This hook dispatches `TUTOR_RESPONSE` and `SET_LOADING` actions that **do not yet exist** in the reducer. ENG-014 must add them.
+
+### 1. Add to `src/state/types.ts` — LessonAction union
+
+```typescript
+| { type: 'TUTOR_RESPONSE'; content: string; isStreaming: boolean }
+| { type: 'SET_LOADING'; loading: boolean }
+```
+
+### 2. Add to `src/state/types.ts` — LessonState
+
+```typescript
+isLoading: boolean;    // add this field
+isStreaming: boolean;   // add this field
+```
+
+### 3. Add to `src/state/reducer.ts` — new cases
+
+```typescript
+case 'SET_LOADING':
+  return { ...state, isLoading: action.loading };
+
+case 'TUTOR_RESPONSE': {
+  if (action.isStreaming) {
+    // Update the last tutor message in-place, or create one if none exists
+    const msgs = [...state.chatMessages];
+    const lastMsg = msgs[msgs.length - 1];
+    if (lastMsg && lastMsg.sender === 'tutor') {
+      msgs[msgs.length - 1] = { ...lastMsg, content: action.content };
+    } else {
+      msgs.push({
+        id: `msg-tutor-${Date.now()}`,
+        sender: 'tutor',
+        content: action.content,
+      });
+    }
+    return { ...state, chatMessages: msgs, isStreaming: true };
+  }
+  // Final message (isStreaming: false) — finalize the tutor message
+  const msgs = [...state.chatMessages];
+  const lastMsg = msgs[msgs.length - 1];
+  if (lastMsg && lastMsg.sender === 'tutor') {
+    msgs[msgs.length - 1] = { ...lastMsg, content: action.content };
+  } else if (action.content) {
+    msgs.push({
+      id: `msg-tutor-${Date.now()}`,
+      sender: 'tutor',
+      content: action.content,
+    });
+  }
+  return { ...state, chatMessages: msgs, isStreaming: false };
+}
+```
+
+### 4. Update `getInitialLessonState()` in reducer.ts
+
+Add `isLoading: false` and `isStreaming: false` to the initial state.
+
+**IMPORTANT**: After adding these new action cases, the exhaustive `default` case (`const _exhaust: never = action`) will type-check correctly only if the new variants are in the LessonAction union.
 
 ---
 
@@ -58,9 +122,9 @@ export function useTutorChat(
 
 When `sendMessage(text)` is called:
 
-1. **Dispatch `STUDENT_RESPONSE`** — synchronously adds the student's message to chat history
+1. **Dispatch `STUDENT_RESPONSE`** — synchronously adds the student's message to chatMessages
    ```typescript
-   dispatch({ type: 'STUDENT_RESPONSE', input: text });
+   dispatch({ type: 'STUDENT_RESPONSE', value: text });
    ```
 
 2. **Dispatch `SET_LOADING` true** — shows loading indicator in UI
@@ -74,7 +138,7 @@ When `sendMessage(text)` is called:
      method: 'POST',
      headers: { 'Content-Type': 'application/json' },
      body: JSON.stringify({
-       messages: buildMessageHistory(state.chatHistory, text),
+       messages: buildMessageHistory(state.chatMessages, text),
        lessonState: state,
      }),
    });
@@ -86,16 +150,17 @@ When `sendMessage(text)` is called:
 
    | Event | Action |
    |-------|--------|
-   | `text_delta` | Dispatch `TUTOR_RESPONSE` with `isStreaming: true`, append content to current message |
-   | `tool_use` | If tool triggers a workspace change (split, combine), dispatch the corresponding workspace action |
+   | `text_delta` | Dispatch `TUTOR_RESPONSE` with `isStreaming: true`, append content to accumulated message |
+   | `tool_use` | Log for debugging; no client-side dispatch (tools execute server-side in api/chat.ts) |
    | `tool_result` | Log for debugging; no dispatch needed |
    | `done` | Dispatch `TUTOR_RESPONSE` with `isStreaming: false`; dispatch `SET_LOADING` false |
+   | `error` | Dispatch friendly error as TUTOR_RESPONSE; clear loading |
 
-6. **On error** — Sam says a friendly error message
+6. **On fetch/network error** — Sam says a friendly error message
    ```typescript
    dispatch({
      type: 'TUTOR_RESPONSE',
-     content: "Hmm, something went wrong. Let me try again.",
+     content: "Hmm, my magic fizzled! Let's try that again.",
      isStreaming: false,
    });
    dispatch({ type: 'SET_LOADING', loading: false });
@@ -119,6 +184,7 @@ while (true) {
   const lines = buffer.split('\n');
   buffer = lines.pop() || '';
 
+  let currentEvent: string | null = null;
   for (const line of lines) {
     if (line.startsWith('event: ')) {
       currentEvent = line.slice(7).trim();
@@ -133,21 +199,25 @@ while (true) {
 
 ### Message History Management
 
-Build the messages array for Claude from `state.chatHistory`:
+Build the messages array for Claude from `state.chatMessages`:
 
 ```typescript
 function buildMessageHistory(
-  chatHistory: ChatMessage[],
+  chatMessages: ChatMessage[],
   newMessage: string
 ): Array<{ role: 'user' | 'assistant'; content: string }> {
-  const messages = chatHistory.map(msg => ({
-    role: msg.sender === 'student' ? 'user' as const : 'assistant' as const,
-    content: msg.text,
-  }));
+  const messages = chatMessages
+    .slice(-MAX_HISTORY_MESSAGES)
+    .map(msg => ({
+      role: (msg.sender === 'student' ? 'user' : 'assistant') as 'user' | 'assistant',
+      content: msg.content,
+    }));
   messages.push({ role: 'user', content: newMessage });
   return messages;
 }
 ```
+
+**Key field mapping**: `ChatMessage.sender` → Claude `role` (`'student'` → `'user'`, `'tutor'` → `'assistant'`). The content field is `ChatMessage.content` (NOT `.text`).
 
 Keep conversation history manageable:
 - If history exceeds ~20 messages, include only the most recent 20 to stay within Claude's context window budget (system prompt + tools + history must fit)
@@ -170,77 +240,86 @@ case 'text_delta':
 
 This means the reducer will update the last tutor message in-place as text streams in. On `done`, dispatch the final message with `isStreaming: false`.
 
-### Tool-Triggered Workspace Actions
+### Tool Events — Server-Side Only
 
-Some tools, when called by Claude, should trigger workspace changes in the UI:
+Tool execution happens entirely server-side in `api/chat.ts`. The SSE stream sends `tool_use` and `tool_result` events for observability, but the client should **not** dispatch workspace actions from them. Reasons:
+- `tool_use` events carry fraction data (`{numerator, denominator}`), not `blockId`s needed by `SPLIT_BLOCK` / `COMBINE_BLOCKS`
+- The tool use loop in `api/chat.ts` already executes tools and feeds results back to Claude
+- Claude's text response (which arrives as `text_delta`) is the user-facing output
 
+Log tool events for debugging only:
 ```typescript
 case 'tool_use':
-  if (data.name === 'split_fraction') {
-    // Dispatch workspace action to split the block visually
-    // The specific action depends on the workspace action types from ENG-004
-  } else if (data.name === 'combine_fractions') {
-    // Dispatch workspace action to combine blocks visually
-  }
-  // Other tools (check_answer, etc.) don't trigger workspace changes
+  console.debug('[useTutorChat] tool_use:', data.name, data.input);
+  break;
+case 'tool_result':
+  console.debug('[useTutorChat] tool_result:', data.id, data.result);
   break;
 ```
-
-Note: the exact workspace action types depend on what ENG-004 defined. Check `src/state/types.ts` for the available action types.
 
 ### Preventing Concurrent Requests
 
 Don't send a new message while one is still streaming:
 
 ```typescript
-const [isLoading, setIsLoadingLocal] = useState(false);
+const isStreamingRef = useRef(false);
 
-const sendMessage = useCallback((text: string) => {
-  if (isLoading) return; // Ignore if already streaming
+const sendMessage = useCallback(async (text: string) => {
+  if (isStreamingRef.current) return; // Ignore if already streaming
+  isStreamingRef.current = true;
   // ... proceed with sending
-}, [isLoading, state]);
+  // In finally block: isStreamingRef.current = false;
+}, [state, dispatch]);
 ```
 
-The `isLoading` return value comes from `state.isLoading` (set by the reducer via SET_LOADING). The local guard prevents double-sends.
+The `isLoading` return value comes from `state.isLoading` (set by the reducer via SET_LOADING). The ref guard prevents double-sends even before state updates propagate.
 
 ---
 
 ## Deliverables Checklist
 
-### A. Hook Implementation
+### A. Reducer Additions (prerequisite)
+
+- [ ] `LessonState` has `isLoading: boolean` and `isStreaming: boolean` fields
+- [ ] `LessonAction` union includes `TUTOR_RESPONSE` and `SET_LOADING` variants
+- [ ] `lessonReducer` handles both new action types
+- [ ] `getInitialLessonState()` includes `isLoading: false` and `isStreaming: false`
+- [ ] Exhaustive switch still compiles (`npx tsc -b` passes)
+
+### B. Hook Implementation
 
 - [ ] `useTutorChat` hook exported from `src/brain/useTutorChat.ts`
 - [ ] Accepts `(state: LessonState, dispatch: React.Dispatch<LessonAction>)`
 - [ ] Returns `{ sendMessage, isLoading }`
 
-### B. Message Flow
+### C. Message Flow
 
-- [ ] `sendMessage` dispatches `STUDENT_RESPONSE` synchronously
+- [ ] `sendMessage` dispatches `STUDENT_RESPONSE` with `value:` field (not `input:`)
 - [ ] `sendMessage` dispatches `SET_LOADING` true
 - [ ] POST to `/api/chat` with messages + lessonState
 - [ ] SSE stream parsed correctly using ReadableStream
 - [ ] `text_delta` dispatches `TUTOR_RESPONSE` with `isStreaming: true`
 - [ ] `done` dispatches `TUTOR_RESPONSE` with `isStreaming: false` and `SET_LOADING` false
 
-### C. Tool Handling
-
-- [ ] `tool_use` events for split/combine dispatch corresponding workspace actions
-- [ ] Other tool events logged but don't trigger dispatches
-
 ### D. Error Handling
 
 - [ ] Network errors caught and dispatched as a friendly Sam message
+- [ ] SSE `error` events handled (dispatch error message, clear loading)
 - [ ] Loading state cleared on error
-- [ ] Concurrent requests prevented (ignore sendMessage while loading)
+- [ ] Concurrent requests prevented (ignore sendMessage while streaming)
 
 ### E. Message History
 
-- [ ] Conversation history built from `state.chatHistory`
-- [ ] History capped at ~20 messages to manage context window
+- [ ] Conversation history built from `state.chatMessages` (NOT `chatHistory`)
+- [ ] Uses `ChatMessage.content` (NOT `.text`)
+- [ ] Maps `sender: 'student'` → `role: 'user'`, `sender: 'tutor'` → `role: 'assistant'`
+- [ ] History capped at ~20 messages
 - [ ] New student message always included
 
 ### F. Repo Housekeeping
 
+- [ ] `npx tsc -b` passes with zero errors
+- [ ] `npm run lint` passes
 - [ ] Update `docs/DEVLOG.md` with ENG-014 entry when complete
 - [ ] Feature branch: `feature/eng-014-use-tutor-chat`
 
@@ -252,7 +331,7 @@ The `isLoading` return value comes from `state.isLoading` (set by the reducer vi
 git switch main && git pull
 git switch -c feature/eng-014-use-tutor-chat
 # ... implement ...
-git add src/brain/useTutorChat.ts
+git add src/state/types.ts src/state/reducer.ts src/brain/useTutorChat.ts
 git commit -m "feat: implement useTutorChat hook for Claude streaming (ENG-014)"
 git push -u origin feature/eng-014-use-tutor-chat
 ```
@@ -261,179 +340,63 @@ Use Conventional Commits: `feat:`.
 
 ---
 
-## Technical Specification
-
-### Full Hook Skeleton
-
-```typescript
-// src/brain/useTutorChat.ts
-
-import { useCallback, useRef } from 'react';
-import type { LessonState, LessonAction } from '../state/types';
-
-const MAX_HISTORY_MESSAGES = 20;
-
-function buildMessageHistory(
-  chatHistory: Array<{ sender: string; text: string }>,
-  newMessage: string
-): Array<{ role: 'user' | 'assistant'; content: string }> {
-  const messages = chatHistory
-    .slice(-MAX_HISTORY_MESSAGES)
-    .map(msg => ({
-      role: (msg.sender === 'student' ? 'user' : 'assistant') as 'user' | 'assistant',
-      content: msg.text,
-    }));
-  messages.push({ role: 'user', content: newMessage });
-  return messages;
-}
-
-export function useTutorChat(
-  state: LessonState,
-  dispatch: React.Dispatch<LessonAction>
-): { sendMessage: (text: string) => void; isLoading: boolean } {
-  const isStreamingRef = useRef(false);
-
-  const sendMessage = useCallback(async (text: string) => {
-    if (isStreamingRef.current || state.isLoading) return;
-    isStreamingRef.current = true;
-
-    // 1. Dispatch student message
-    dispatch({ type: 'STUDENT_RESPONSE', input: text });
-
-    // 2. Set loading
-    dispatch({ type: 'SET_LOADING', loading: true });
-
-    try {
-      // 3. POST to edge function
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: buildMessageHistory(state.chatHistory, text),
-          lessonState: state,
-        }),
-      });
-
-      if (!response.ok) throw new Error(`API error: ${response.status}`);
-
-      // 4. Parse SSE stream
-      const reader = response.body!.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let currentEvent: string | null = null;
-      let accumulatedContent = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (line.startsWith('event: ')) {
-            currentEvent = line.slice(7).trim();
-          } else if (line.startsWith('data: ') && currentEvent) {
-            const data = JSON.parse(line.slice(6));
-
-            switch (currentEvent) {
-              case 'text_delta':
-                accumulatedContent += data.content;
-                dispatch({
-                  type: 'TUTOR_RESPONSE',
-                  content: accumulatedContent,
-                  isStreaming: true,
-                });
-                break;
-
-              case 'tool_use':
-                // Handle workspace-affecting tools
-                break;
-
-              case 'done':
-                dispatch({
-                  type: 'TUTOR_RESPONSE',
-                  content: accumulatedContent,
-                  isStreaming: false,
-                });
-                dispatch({ type: 'SET_LOADING', loading: false });
-                break;
-            }
-            currentEvent = null;
-          }
-        }
-      }
-    } catch (error) {
-      dispatch({
-        type: 'TUTOR_RESPONSE',
-        content: "Hmm, something went wrong. Let me try again.",
-        isStreaming: false,
-      });
-      dispatch({ type: 'SET_LOADING', loading: false });
-    } finally {
-      isStreamingRef.current = false;
-    }
-  }, [state, dispatch]);
-
-  return {
-    sendMessage,
-    isLoading: state.isLoading,
-  };
-}
-```
-
-### Dependency on ENG-017
-
-This hook dispatches `TUTOR_RESPONSE` and `SET_LOADING` actions, which are added to the reducer by ENG-017. If implementing ENG-014 before ENG-017, you can:
-1. Implement ENG-017 first (it's a ~1 hour ticket)
-2. Or stub the action types and implement the hook, knowing the reducer will handle them after ENG-017
-
----
-
-## Important Context
-
-### Files to Create
+## Files to Create
 
 | File | Action |
 |------|--------|
 | `src/brain/useTutorChat.ts` | React hook for Claude streaming integration |
 
-### Files to Modify
+## Files to Modify
 
-| File | Action |
+| File | Change |
 |------|--------|
+| `src/state/types.ts` | Add `isLoading`, `isStreaming` to LessonState; add `TUTOR_RESPONSE`, `SET_LOADING` to LessonAction |
+| `src/state/reducer.ts` | Add cases for `TUTOR_RESPONSE` and `SET_LOADING`; update `getInitialLessonState()` |
 | `docs/DEVLOG.md` | Add ENG-014 entry when complete |
 
-### Files You Should NOT Modify
+## Files You Should NOT Modify
 
-- `api/*` — edge function and tools are separate tickets; do not modify
+- `api/*` — edge function, tools, and system prompt are separate completed tickets
 - `src/engine/*` — no engine changes
-- `src/state/types.ts` — types are modified by ENG-017, not this ticket
-- `src/state/reducer.ts` — reducer is modified by ENG-017, not this ticket
-- `src/components/*` — UI integration happens in a later ticket
+- `src/components/*` — UI integration happens in a later ticket (ENG-039)
 
-### Files to READ for Context
+## Files to READ for Context
 
 | File | Why |
 |------|-----|
-| `src/state/types.ts` | `LessonState`, `LessonAction`, `ChatMessage` shapes — essential for building message history and dispatching |
-| `src/state/reducer.ts` | How STUDENT_RESPONSE is handled; understand existing action flow |
-| `api/chat.ts` | SSE event format — must match parsing logic in this hook |
-| `docs/prd.md` Section 5 | LLM integration architecture |
+| `src/state/types.ts` | `LessonState`, `LessonAction`, `ChatMessage` shapes — essential for field names and types |
+| `src/state/reducer.ts` | How `STUDENT_RESPONSE` is handled; exhaustive switch pattern; `getInitialLessonState()` |
+| `api/chat.ts` | SSE event format — `encodeSSE(event, data)` produces `event: X\ndata: {...}\n\n` |
+
+---
+
+## SSE Event Reference (from api/chat.ts)
+
+The edge function emits these SSE events via `encodeSSE(event, data)`:
+
+| Event | Data shape | When |
+|-------|-----------|------|
+| `text_delta` | `{ content: string }` | Each text block from Claude's response |
+| `tool_use` | `{ id: string, name: string, input: object }` | Claude calls a tool |
+| `tool_result` | `{ id: string, result: object }` | Server-side tool execution result |
+| `done` | `{}` | Response complete |
+| `error` | `{ message: string }` | Upstream API error |
 
 ---
 
 ## Definition of Done for ENG-014
 
+- [ ] `src/state/types.ts` updated with `isLoading`, `isStreaming`, `TUTOR_RESPONSE`, `SET_LOADING`
+- [ ] `src/state/reducer.ts` handles new actions; initial state updated
 - [ ] `src/brain/useTutorChat.ts` exists and exports `useTutorChat`
 - [ ] Hook accepts `(state, dispatch)` and returns `{ sendMessage, isLoading }`
-- [ ] `sendMessage` dispatches STUDENT_RESPONSE, SET_LOADING, POSTs to /api/chat
-- [ ] SSE stream parsed correctly — text_delta, tool_use, done handled
+- [ ] `sendMessage` dispatches STUDENT_RESPONSE (with `value:`), SET_LOADING, POSTs to /api/chat
+- [ ] SSE stream parsed correctly — text_delta, done, error handled; tool events logged
 - [ ] Streaming text accumulated and dispatched as TUTOR_RESPONSE with isStreaming flag
 - [ ] Errors produce a friendly Sam message, not a crash
 - [ ] Concurrent requests prevented
-- [ ] Message history capped at ~20 messages
+- [ ] Message history built from `chatMessages` with `content` field, capped at ~20
+- [ ] `npx tsc -b` and `npm run lint` pass
 - [ ] DEVLOG updated
 - [ ] Feature branch pushed
 
@@ -441,6 +404,5 @@ This hook dispatches `TUTOR_RESPONSE` and `SET_LOADING` actions, which are added
 
 ## After ENG-014
 
-- **UI integration** — a component (likely ChatPanel or similar) will use `useTutorChat` to connect the text input to Sam.
-- **ENG-017** (Reducer Additions) — must be complete for this hook's dispatches to work. Can be implemented in parallel or before this ticket.
+- **ENG-039** (Wire ChatPanel to LLM) — ChatPanel will call `useTutorChat` to connect the text input to Sam. This is the ticket that makes the chat panel actually work.
 - **Testing** — end-to-end testing with `vercel dev` to verify the full flow: student types → hook sends → edge function streams → hook dispatches → UI updates.
