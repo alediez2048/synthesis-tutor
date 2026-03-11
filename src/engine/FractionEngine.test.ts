@@ -1,3 +1,4 @@
+import * as fc from 'fast-check';
 import { describe, it, expect } from 'vitest';
 import {
   type Fraction,
@@ -9,6 +10,12 @@ import {
   isValidFraction,
   parseStudentInput,
 } from './FractionEngine';
+
+/** Lesson-scope valid fraction: numerator 1..100, denominator 1..12 (integers). */
+const arbitraryFraction: fc.Arbitrary<Fraction> = fc.record({
+  numerator: fc.integer({ min: 1, max: 100 }),
+  denominator: fc.integer({ min: 1, max: 12 }),
+});
 
 describe('FractionEngine', () => {
   describe('simplify', () => {
@@ -172,6 +179,39 @@ describe('FractionEngine', () => {
     });
     it('parses multi-digit numerator and denominator', () => {
       expect(parseStudentInput('12/4')).toEqual({ numerator: 12, denominator: 4 });
+    });
+  });
+
+  describe('FractionEngine property-based', () => {
+    it('areEquivalent is reflexive (10k runs)', () => {
+      fc.assert(
+        fc.property(arbitraryFraction, (f) => areEquivalent(f, f)),
+        { numRuns: 10_000 }
+      );
+    });
+    it('areEquivalent is symmetric (10k runs)', () => {
+      fc.assert(
+        fc.property(arbitraryFraction, arbitraryFraction, (a, b) => areEquivalent(a, b) === areEquivalent(b, a)),
+        { numRuns: 10_000 }
+      );
+    });
+    it('split then combine is equivalent to original (10k runs)', () => {
+      const partsArb = fc.integer({ min: 2, max: 6 });
+      fc.assert(
+        fc.property(arbitraryFraction, partsArb, (f, parts) =>
+          areEquivalent(combine(split(f, parts)), f)
+        ),
+        { numRuns: 10_000 }
+      );
+    });
+    it('simplify preserves value and does not increase denominator (10k runs)', () => {
+      fc.assert(
+        fc.property(arbitraryFraction, (f) => {
+          const s = simplify(f);
+          return areEquivalent(f, s) && s.denominator <= f.denominator;
+        }),
+        { numRuns: 10_000 }
+      );
     });
   });
 });

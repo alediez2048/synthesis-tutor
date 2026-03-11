@@ -87,7 +87,7 @@
 | Ticket | Description | Status | Est. |
 |--------|-------------|--------|------|
 | ENG-004 | LessonState types + reducer skeleton | ⬜ Pending | 2h |
-| ENG-003 | Engine property-based tests | ⬜ Pending | 2h |
+| ENG-003 | Engine property-based tests | ✅ Complete | 2h |
 | ENG-002 | Fraction type + engine core | ✅ Complete | 3h |
 | ENG-001 | Project scaffold | ✅ Complete | 1h |
 
@@ -893,6 +893,49 @@ Implemented the FractionEngine as a standalone TypeScript module with the `Fract
 - [x] Denominator 1–12 enforced in isValidFraction and parseStudentInput
 - [x] Unit tests pass; implementation ready for ENG-003 property-based tests
 - [x] DEVLOG updated with ENG-002 entry
+
+---
+
+### ENG-003: Engine Property-Based Tests ✅
+
+#### Plain-English Summary
+Added property-based tests for the FractionEngine using fast-check. Four invariants are asserted over 10,000 random valid fractions each: reflexivity and symmetry of `areEquivalent`, split-combine roundtrip, and simplify preserves value and does not increase denominator. Existing ENG-002 unit tests (including edge cases: den 0, den > 12, negative, non-integer parse) were confirmed and left unchanged.
+
+#### Metadata
+- **Status:** Complete
+- **Date:** Mar 10, 2026
+- **Ticket:** ENG-003
+- **Branch:** `feature/eng-003-engine-property-tests`
+
+#### Key Achievements
+- fast-check added as dev dependency
+- `arbitraryFraction`: numerator 1–100, denominator 1–12 (integers)
+- Reflexivity: `areEquivalent(f, f)` for 10k runs
+- Symmetry: `areEquivalent(a, b) === areEquivalent(b, a)` for 10k runs
+- Split-combine roundtrip: `areEquivalent(combine(split(f, parts)), f)` for parts 2–6, 10k runs
+- Simplify preserves value: `areEquivalent(f, simplify(f))` and `simplify(f).denominator <= f.denominator` for 10k runs
+- All 37 tests pass (32 unit + 4 property-based + 1 smoke)
+
+#### Files Modified
+- `package.json` — devDependency `fast-check`
+- `src/engine/FractionEngine.test.ts` — import fc, arbitraryFraction, new describe "FractionEngine property-based" with 4 `fc.assert` tests
+
+#### Verification
+- `npx tsc -b` — zero errors
+- `npm test` — 37 tests passed (property tests complete in ~150 ms)
+- `npm run lint` — zero errors
+- `npm run build` — success
+
+#### Acceptance Criteria
+- [x] fast-check available as dev dependency
+- [x] Reflexivity property: 10,000 runs, passing
+- [x] Symmetry property: 10,000 runs, passing
+- [x] Split-combine roundtrip property: 10,000 runs, passing
+- [x] Simplify preserves value property: 10,000 runs, passing
+- [x] Existing ENG-002 edge case unit tests confirmed present and passing
+- [x] `npm test` passes (all unit + property tests)
+- [x] DEVLOG updated with ENG-003 entry
+- [x] Feature branch created
 
 ---
 
