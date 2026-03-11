@@ -88,7 +88,7 @@
 |--------|-------------|--------|------|
 | ENG-004 | LessonState types + reducer skeleton | ⬜ Pending | 2h |
 | ENG-003 | Engine property-based tests | ⬜ Pending | 2h |
-| ENG-002 | Fraction type + engine core | ⬜ Pending | 3h |
+| ENG-002 | Fraction type + engine core | ✅ Complete | 3h |
 | ENG-001 | Project scaffold | ✅ Complete | 1h |
 
 **Total estimated hours: ~56h across 7 days**
@@ -852,6 +852,47 @@ Scaffolded the Vite + React + TypeScript project in the existing repo directory.
 - [x] All src/ subdirectories created per PRD Section 15
 - [x] .gitignore covers standard exclusions
 - [x] DEVLOG updated with ENG-001 entry
+
+---
+
+### ENG-002: Fraction Type + Engine Core ✅
+
+#### Plain-English Summary
+Implemented the FractionEngine as a standalone TypeScript module with the `Fraction` type and seven pure functions: `simplify`, `areEquivalent`, `split`, `combine`, `toCommonDenominator`, `isValidFraction`, and `parseStudentInput`. All functions are pure, synchronous, and fully typed. Added unit tests covering invariants and edge cases. Precondition violations (split parts < 2, simplify/toCommonDenominator with den 0) throw; combine no longer floors numerators.
+
+#### Metadata
+- **Status:** Complete
+- **Date:** Mar 10, 2026
+- **Ticket:** ENG-002
+- **Branch:** `feature/eng-002-fraction-engine`
+
+#### Key Achievements
+- `Fraction` interface exported; all operations use cross-multiplication for equivalence (no floats)
+- `simplify` via GCD; `split`/`combine` roundtrip preserves equivalence
+- `combine` throws on empty array or mismatched denominators (programming errors)
+- `split` throws when parts < 2; `simplify`/`toCommonDenominator` throw on invalid denominator
+- `parseStudentInput` returns `Fraction | null`; rejects den 0, den > 12, non-positive
+- `isValidFraction` enforces positive integers, 1 ≤ denominator ≤ 12
+- Private `gcd` and `lcm` helpers; 32 unit tests in `FractionEngine.test.ts` — all passing
+
+#### Files Created
+- `src/engine/FractionEngine.ts` — Fraction type + 7 exported functions + gcd/lcm helpers
+- `src/engine/FractionEngine.test.ts` — unit tests for all functions and invariants
+
+#### Verification
+- `npx tsc -b` — zero errors
+- `npm test` — 33 tests passed (smoke + 32 engine tests)
+- `npm run lint` — zero errors
+- `npm run build` — success
+
+#### Acceptance Criteria
+- [x] Fraction interface defined and exported
+- [x] simplify, areEquivalent, split, combine, toCommonDenominator, isValidFraction, parseStudentInput implemented and exported
+- [x] All functions pure, synchronous, fully typed
+- [x] Cross-multiply used for equivalence; no floating-point comparison
+- [x] Denominator 1–12 enforced in isValidFraction and parseStudentInput
+- [x] Unit tests pass; implementation ready for ENG-003 property-based tests
+- [x] DEVLOG updated with ENG-002 entry
 
 ---
 
