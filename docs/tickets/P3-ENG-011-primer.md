@@ -3,14 +3,23 @@
 **For:** New Cursor Agent session
 **Project:** Synthesis Tutor — Interactive AI-Powered Fractions Tutor for Ages 8–12
 **Phase:** Phase 3: Chat + LLM Integration (Day 3)
-**Date:** Mar 10, 2026
-**Previous work:** ENG-001 through ENG-004 complete. See `docs/DEVLOG.md`.
+**Date:** Mar 11, 2026
+**Previous work:** ENG-001 through ENG-010 complete. See `docs/DEVLOG.md`. The `api/` directory and `vercel.json` do not exist yet; this ticket creates them.
+
+---
+
+## Prerequisites
+
+- **ENG-011 can be implemented before or after ENG-010** (Chat Panel). The edge function is the backend for the chat UI; the Chat Panel (ENG-010) will eventually call `/api/chat` from the frontend (ENG-014).
+- **ENG-012** (Claude tool definitions) and **ENG-013** (system prompt) are usually done after ENG-011. For ENG-011, **stub** both if those tickets are not complete: use a minimal system prompt (e.g. "You are Sam, a friendly math tutor.") and an **empty `tools` array** (or a single no-op tool) so the endpoint accepts POST, streams SSE, and returns text. Once ENG-012 exists, `api/chat.ts` can import `executeToolCall` and the real tool definitions; until then, the stream should still emit `text_delta` and `done` so the endpoint is testable via curl or the future useTutorChat hook.
 
 ---
 
 ## What Is This Ticket?
 
-ENG-011 creates the **server-side API layer** that connects the frontend to Claude. It implements a single Vercel Edge Function at `api/chat.ts` that accepts student messages and lesson state, streams Claude's response back via Server-Sent Events (SSE), and executes tool calls server-side against the FractionEngine. This is the backbone of the entire LLM integration — every student interaction flows through this endpoint.
+ENG-011 creates the **server-side API layer** that connects the frontend to Claude. It implements a single Vercel Edge Function at `api/chat.ts` that accepts student messages and lesson state, streams Claude's response back via Server-Sent Events (SSE), and (when ENG-012 is done) executes tool calls server-side against the FractionEngine. This is the backbone of the entire LLM integration — every student interaction flows through this endpoint.
+
+**Scope boundary:** ENG-011 delivers the edge function shell, request/response contract, and SSE streaming. It does **not** define the 9 tools (that is ENG-012) or the full Sam system prompt (ENG-013). Use stubs for tools and prompt so the endpoint is deployable and testable before those tickets are complete.
 
 ### Why Does This Exist?
 
@@ -27,9 +36,10 @@ The tutor needs a streaming connection to Claude that:
 | `api/` directory | **Does not exist** — create it at project root |
 | `vercel.json` | **Does not exist** — create it at project root |
 | `@anthropic-ai/sdk` | **Not installed** — add as dependency |
-| `src/engine/FractionEngine.ts` | **Complete** (ENG-002) — import server-side for tool execution |
-| `src/state/types.ts` | **Complete** (ENG-004) — `LessonState` type defined |
-| ENG-001–ENG-004 | **Complete** — scaffold, engine, tests, reducer all in place |
+| `src/engine/FractionEngine.ts` | **Complete** (ENG-002) — import server-side for tool execution once ENG-012 exists |
+| `src/state/types.ts` | **Complete** (ENG-004) — `LessonState`, `ChatMessage`, etc. defined |
+| `api/tools.ts` | **Does not exist** (ENG-012) — stub tool handling in chat.ts if ENG-012 not done |
+| ENG-001–ENG-010 | **Complete** — scaffold, engine, reducer, workspace, chat panel UI (see DEVLOG) |
 
 ---
 
@@ -38,7 +48,9 @@ The tutor needs a streaming connection to Claude that:
 - ENG-001: Project scaffold with Vite, React, TypeScript, Vitest
 - ENG-002: FractionEngine with all pure math functions (simplify, areEquivalent, split, combine, toCommonDenominator, isValidFraction, parseStudentInput)
 - ENG-003: Property-based tests for FractionEngine
-- ENG-004: LessonState types, LessonAction union, reducer, and initial state
+- ENG-004: LessonState types, LessonAction union, reducer, initial state
+- ENG-005–ENG-009: FractionBlock, Workspace, combine/drag, comparison zone drop, derived state, DESELECT_ALL
+- ENG-010: Chat Panel UI (message list, bubbles, input) — layout and STUDENT_RESPONSE wiring
 
 ---
 
@@ -66,7 +78,7 @@ interface ChatRequest {
 ```
 
 - `messages`: the conversation history for Claude's context window
-- `lessonState`: current lesson state, used to build the system prompt and passed to tool calls
+- `lessonState`: current lesson state (see `LessonState` in `src/state/types.ts`); used to build the system prompt and passed to tool calls. For curl testing, a minimal valid object is enough (e.g. `{ "phase": "intro", "stepIndex": 0, "blocks": [], "score": { "correct": 0, "total": 0 }, "hintCount": 0, "chatMessages": [], "assessmentPool": [], "conceptsDiscovered": [], "isDragging": false, "nextBlockId": 1 }`).
 
 ### Response Format: Server-Sent Events (SSE)
 
@@ -166,10 +178,9 @@ This ensures the Vite dev server and Vercel Edge Functions coexist during local 
 
 ### C. Tool Execution
 
-- [ ] Tool calls intercepted and executed server-side
-- [ ] FractionEngine imported and used for tool execution
-- [ ] Tool results sent back to Claude within the same session
-- [ ] Tool execution errors handled gracefully (no stream crash)
+- [ ] When ENG-012 is complete: tool calls intercepted and executed server-side via `executeToolCall` from `api/tools.ts`; FractionEngine used for execution; tool results sent back to Claude; emit `tool_use` and `tool_result` SSE events.
+- [ ] When ENG-012 is **not** complete: use `tools: []` (or omit tools) in the Claude API call so the endpoint still streams `text_delta` and `done`; no tool_use handling required. This allows ENG-011 to be merged and tested before ENG-012.
+- [ ] Tool execution errors (when tools exist) handled gracefully — do not crash the stream; send a safe error result back to Claude.
 
 ### D. Configuration
 
@@ -256,13 +267,15 @@ for await (const event of stream) {
 }
 ```
 
-### Tool Execution During Stream
+### Tool Execution During Stream (when ENG-012 is complete)
 
 When the Anthropic stream emits a `content_block_start` with `type: 'tool_use'`:
 1. Accumulate the tool input from `content_block_delta` events
-2. On `content_block_stop`, execute the tool via `executeToolCall(name, input, lessonState)`
+2. On `content_block_stop`, execute the tool via `executeToolCall(name, input, lessonState)` from `api/tools.ts`
 3. Send the tool result back to Claude by continuing the conversation
 4. Emit `tool_use` and `tool_result` SSE events to the client
+
+If ENG-012 is not done, omit tools from the API call (`tools: []` or no tools param); the stream will only contain text deltas and a final stop. Stub the system prompt (e.g. a single sentence) so Claude still responds.
 
 ---
 
@@ -303,14 +316,14 @@ When the Anthropic stream emits a `content_block_start` with `type: 'tool_use'`:
 ## Definition of Done for ENG-011
 
 - [ ] `api/chat.ts` exists as a Vercel Edge Function with `runtime: 'edge'`
-- [ ] Accepts POST with messages and lessonState
-- [ ] Streams SSE response with `text_delta`, `tool_use`, `tool_result`, `done` events
-- [ ] Uses `claude-sonnet-4-20250514` model
-- [ ] API key read from `process.env.ANTHROPIC_API_KEY`
-- [ ] `vercel.json` created with rewrites
+- [ ] Accepts POST with body `{ messages, lessonState }` (see Contract for shapes)
+- [ ] Streams SSE response with at least `text_delta` and `done` events; `tool_use` and `tool_result` required only when ENG-012 is integrated (stub with empty tools otherwise)
+- [ ] Uses `claude-sonnet-4-20250514` (or current Sonnet model id)
+- [ ] API key read from `process.env.ANTHROPIC_API_KEY`; 500 on missing key
+- [ ] `vercel.json` created with API rewrites
 - [ ] `@anthropic-ai/sdk` installed as dependency
 - [ ] Deployable locally with `vercel dev`
-- [ ] Testable via curl: `curl -X POST http://localhost:3000/api/chat -H "Content-Type: application/json" -d '{"messages":[{"role":"user","content":"Hi"}],"lessonState":{}}'`
+- [ ] Testable via curl: `curl -X POST http://localhost:3000/api/chat -H "Content-Type: application/json" -d '{"messages":[{"role":"user","content":"Hi"}],"lessonState":{...}}'` returns SSE stream
 - [ ] DEVLOG updated
 - [ ] Feature branch pushed
 

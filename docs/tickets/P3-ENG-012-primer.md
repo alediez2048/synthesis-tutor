@@ -3,8 +3,16 @@
 **For:** New Cursor Agent session
 **Project:** Synthesis Tutor — Interactive AI-Powered Fractions Tutor for Ages 8–12
 **Phase:** Phase 3: Chat + LLM Integration (Day 3)
-**Date:** Mar 10, 2026
-**Previous work:** ENG-011 (Edge Function), ENG-002 (FractionEngine) complete. See `docs/DEVLOG.md`.
+**Date:** Mar 11, 2026
+**Previous work:** ENG-001 through ENG-011 complete. See `docs/DEVLOG.md`. The edge function at `api/chat.ts` currently uses a stub (no tools); this ticket adds `api/tools.ts` so the endpoint can pass real tools and execute them.
+
+---
+
+## Prerequisites
+
+- **ENG-011** is complete: `api/chat.ts` exists, accepts POST, streams SSE. It does not yet pass `tools` to the Anthropic API or handle `tool_use` events.
+- **ENG-002** (FractionEngine) is complete: all pure functions (simplify, areEquivalent, split, combine, toCommonDenominator, isValidFraction, parseStudentInput) are available.
+- **ENG-012 scope:** Create `api/tools.ts` with the 9 tool schemas and `executeToolCall`. As part of this ticket (or as a required follow-up), **update `api/chat.ts`** to import `toolDefinitions` and `executeToolCall`, pass `tools: toolDefinitions` to the Claude API call, and on `tool_use` events execute the tool server-side and send the result back to Claude, emitting `tool_use` and `tool_result` SSE events to the client. Without that wiring, the tools exist but are never used.
 
 ---
 
@@ -302,36 +310,31 @@ For now (before ENG-018), if the answer is incorrect, return a generic `misconce
 
 #### 9. `get_workspace_state`
 
-Summarize the current workspace for Claude's awareness.
+Summarize the current workspace for Claude's awareness. **No input from Claude** — the server provides the current lesson state via `executeToolCall(name, input, lessonState)`.
 
 ```typescript
 {
   name: 'get_workspace_state',
-  description: 'Get a summary of the current lesson workspace state including blocks on the workspace, current phase, score, and concepts discovered. Use this to understand what the student is currently seeing and working with.',
+  description: 'Get a summary of the current lesson workspace state: blocks, phase, step index, score, and concepts discovered. No parameters needed — the server provides the current state. Use this to understand what the student is seeing and working with.',
   input_schema: {
     type: 'object',
-    properties: {
-      lessonState: {
-        type: 'object',
-        description: 'The current lesson state object'
-      }
-    },
-    required: ['lessonState']
+    properties: {},
+    required: []
   }
 }
 ```
 
-**Execution:** Extract and return a structured summary from the `LessonState`:
+**Execution:** Use the `lessonState` argument passed to `executeToolCall(name, input, lessonState)` (not the tool input). Return a structured summary. `LessonState` (see `src/state/types.ts`) has: `phase`, `stepIndex`, `blocks`, `score`, `hintCount`, `chatMessages`, `assessmentPool`, `conceptsDiscovered`, `isDragging`, `nextBlockId`. Return a JSON-serializable subset, e.g.:
 ```typescript
 {
   phase: lessonState.phase,
   stepIndex: lessonState.stepIndex,
-  blocks: lessonState.workspace.blocks,
+  blocks: lessonState.blocks,
   score: lessonState.score,
-  conceptsDiscovered: lessonState.conceptsDiscovered,
-  targetFraction: lessonState.targetFraction
+  conceptsDiscovered: lessonState.conceptsDiscovered
 }
 ```
+(Do not reference `lessonState.workspace` — the type has `blocks` at the top level. There is no `targetFraction` on LessonState unless added elsewhere.)
 
 ### `executeToolCall` Dispatcher
 
@@ -375,9 +378,11 @@ export function executeToolCall(name: string, input: Record<string, any>, lesson
 - [ ] Unknown tools return `{ error: 'Unknown tool' }`
 - [ ] All FractionEngine errors caught and returned as `{ error }` — no thrown exceptions
 
-### C. Integration
+### C. Integration with api/chat.ts
 
-- [ ] `api/chat.ts` (ENG-011) can import `toolDefinitions` and `executeToolCall`
+- [ ] `api/chat.ts` imports `toolDefinitions` and `executeToolCall` from `./tools` (or `./tools.js` as needed for Edge)
+- [ ] When creating the Anthropic stream, pass `tools: toolDefinitions` (and ensure SDK format matches: see Anthropic docs for exact `tools` array shape)
+- [ ] When the stream emits a tool_use (e.g. `content_block_start` with type `tool_use`), accumulate the tool id and input, then on `content_block_stop` call `executeToolCall(name, input, lessonState)` and send the result back to Claude in the same conversation; emit `tool_use` and `tool_result` SSE events to the client
 - [ ] Tool definitions compatible with Anthropic SDK `tools` parameter
 
 ### D. Repo Housekeeping
@@ -488,7 +493,11 @@ function executeCheckAnswer(
 
 ### Import Path Note
 
-The import path from `api/tools.ts` to `src/engine/FractionEngine.ts` uses `../src/engine/FractionEngine`. Verify this resolves correctly in the Vercel Edge Runtime. If there are module resolution issues, the path may need adjustment or a `tsconfig` path alias.
+The import path from `api/tools.ts` to `src/engine/FractionEngine.ts` uses `../src/engine/FractionEngine` (and `../src/state/types` for LessonState). Verify these resolve correctly in the Vercel Edge Runtime. If there are module resolution issues, the path may need adjustment or a `tsconfig` path alias for the `api/` directory.
+
+### Anthropic SDK `tools` Parameter
+
+Confirm the exact shape of the `tools` array for the Anthropic Messages API (e.g. each tool has `name`, `description`, `input_schema`). The SDK may expect a specific format; see the current [Anthropic tool use docs](https://docs.anthropic.com/en/docs/tool-use) and the `@anthropic-ai/sdk` types for the correct structure.
 
 ---
 
@@ -504,6 +513,7 @@ The import path from `api/tools.ts` to `src/engine/FractionEngine.ts` uses `../s
 
 | File | Action |
 |------|--------|
+| `api/chat.ts` | Import `toolDefinitions` and `executeToolCall`; pass tools to Claude API; on tool_use, execute and send result back; emit tool_use and tool_result SSE events |
 | `docs/DEVLOG.md` | Add ENG-012 entry when complete |
 
 ### Files You Should NOT Modify
@@ -511,7 +521,6 @@ The import path from `api/tools.ts` to `src/engine/FractionEngine.ts` uses `../s
 - `src/engine/FractionEngine.ts` — import only, do not modify
 - `src/state/types.ts` — import types only
 - `src/state/reducer.ts` — do not modify
-- `api/chat.ts` — ENG-011 already imports from this file; do not modify unless fixing integration issues
 - `src/components/*` — no UI changes
 
 ### Files to READ for Context
@@ -529,12 +538,13 @@ The import path from `api/tools.ts` to `src/engine/FractionEngine.ts` uses `../s
 
 - [ ] `api/tools.ts` exists with 9 tool schemas in Anthropic format
 - [ ] `toolDefinitions` array exported and compatible with Anthropic SDK `tools` parameter
-- [ ] `executeToolCall` exported and handles all 9 tool names
-- [ ] `check_answer` is composite: parse → equivalence check → misconception stub
-- [ ] `get_workspace_state` returns structured summary from LessonState
+- [ ] `executeToolCall` exported and handles all 9 tool names; receives `(name, input, lessonState)` and returns a JSON-serializable object
+- [ ] `check_answer` is composite: parse → equivalence check; misconception is optional (stub until ENG-018)
+- [ ] `get_workspace_state` takes no required input and returns a summary derived from the `lessonState` argument (phase, stepIndex, blocks, score, conceptsDiscovered)
 - [ ] All FractionEngine calls wrapped in try/catch — errors returned as `{ error }`, never thrown
 - [ ] Unknown tool names return `{ error: 'Unknown tool' }`
 - [ ] Tool descriptions are clear enough for Claude to know when to use each tool
+- [ ] `api/chat.ts` updated to pass `toolDefinitions` to the Claude API and to execute tools on tool_use, sending results back and emitting tool_use/tool_result SSE events
 - [ ] DEVLOG updated
 - [ ] Feature branch pushed
 
