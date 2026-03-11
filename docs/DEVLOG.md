@@ -83,7 +83,7 @@
 | Ticket | Description | Status | Est. |
 |--------|-------------|--------|------|
 | ENG-009 | Wire blocks to reducer | ⬜ Pending | 1h |
-| ENG-008 | Combine interaction + animation | ⬜ Pending | 2h |
+| ENG-008 | Combine interaction + animation | ✅ Complete | 2h |
 | ENG-007 | Split interaction + animation | ⬜ Pending | 2h |
 | ENG-006 | FractionWorkspace component | ✅ Complete | 2h |
 | ENG-005 | FractionBlock component | ✅ Complete | 3h |
@@ -1177,6 +1177,48 @@ Implemented the FractionWorkspace layout: reference bar (1 whole) at top, Compar
 - [x] ComparisonZone.tsx: comparison blocks and empty state
 - [x] FractionBlock used for all blocks with shared referenceWidth and onSelectBlock
 - [x] No internal state for blocks; App passes getInitialLessonState().blocks
+- [x] Feature branch created
+
+---
+
+### ENG-008: Combine Interaction + Animation ✅
+
+#### Plain-English Summary
+Implemented drag-to-combine using `@use-gesture/react`: FractionBlock has useDrag, Workspace does bounding-box drop detection and wires combine flow. App uses useReducer and dispatches DRAG_START/DRAG_END/COMBINE_BLOCKS; pre-dispatch check for same denominator; different-denominator shows Sam rejection message and block snaps back. Combine animation (350ms ease-in-out, scaleX grow-in) on new block; single-touch guard via isDragging.
+
+#### Metadata
+- **Status:** Complete
+- **Date:** Mar 10, 2026
+- **Ticket:** ENG-008
+- **Branch:** `feature/eng-008-combine-interaction`
+
+#### Key Achievements
+- `@use-gesture/react` installed; FractionBlock: useDrag, onDragStart, onDragEnd(blockId, rect), onBlockRef, dragDisabled; transform + scale during drag; will-change
+- Workspace: blockRefs map, findDropTarget(draggedId, rect); passes onCombineAttempt(draggedId, targetId)
+- App: useReducer, handleDragStart (DRAG_START + draggingBlockId), handleCombineAttempt (pre-check denominators; COMBINE_BLOCKS or rejection message); combinedBlockId for animation
+- Rejection: "Those are different sizes — try blocks that are the same size!" in aria-live alert
+- Combine-in animation: Web Animations API scaleX(0)→scaleX(1), 350ms ease-in-out, transform-origin left
+
+#### Files Modified
+- `package.json` — dependency @use-gesture/react
+- `src/App.tsx` — useReducer, drag/combine handlers, rejection message, combinedBlockId
+- `src/components/Workspace/FractionBlock.tsx` — useDrag, drag props, animateIn (350ms)
+- `src/components/Workspace/Workspace.tsx` — blockRefs, findDropTarget, drag/combine props, combinedBlockId
+- `docs/DEVLOG.md` — ENG-008 entry
+
+#### Verification
+- `npx tsc -b` — zero errors
+- `npm run lint` — zero errors
+- `npm test` — 61 passed
+- `npm run build` — success
+
+#### Acceptance Criteria
+- [x] @use-gesture/react installed and used for drag
+- [x] Same-denominator: COMBINE_BLOCKS dispatched; combine animation (350ms); new block correct width
+- [x] Different-denominator: no dispatch; Sam message; block snaps back (transform reset)
+- [x] Single-touch guard via isDragging and dragDisabled
+- [x] will-change: transform during drag
+- [x] Combined block width = sum of original (reducer/engine)
 - [x] Feature branch created
 
 ---
