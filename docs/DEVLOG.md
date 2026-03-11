@@ -74,7 +74,7 @@
 
 | Ticket | Description | Status | Est. |
 |--------|-------------|--------|------|
-| ENG-013 | System prompt engineering (Sam persona) | ⬜ Pending | 2h |
+| ENG-013 | System prompt engineering (Sam persona) | ✅ Complete | 2h |
 | ENG-012 | Claude tool definitions (FractionEngine → tools) | ✅ Complete | 2h |
 | ENG-011 | Vercel edge function + Claude API proxy | ✅ Complete | 3h |
 | ENG-010 | Chat panel UI | ⬜ Pending | 2h |
@@ -397,23 +397,15 @@ Defined 9 tools in Anthropic schema format and executeToolCall dispatcher. api/c
 
 ---
 
-### ENG-013: System Prompt Engineering ⬜
+### ENG-013: System Prompt Engineering ✅
 
 #### Plain-English Summary
-Craft the system prompt that defines Sam's persona, voice constraints, pedagogical rules, phase awareness, and math firewall instructions.
+Created `api/system-prompt.ts` with `buildSystemPrompt(lessonState)`; seven sections (identity, voice, pedagogy, math firewall, phase context, phase guidance, tool usage). Wired into `api/chat.ts`; stub replaced with `buildSystemPrompt(lessonState)`.
 
 #### Acceptance Criteria
-- [ ] Sam's identity, voice constraints (max 15 words/sentence, max 3 sentences), and tone rules
-- [ ] Math firewall: "NEVER compute fraction math. ALWAYS use tools."
-- [ ] Phase-aware: system prompt includes current phase and stepIndex
-- [ ] Lesson flow guidance: intro → explore → guided → assess → complete
-- [ ] Tool usage guidance: when to use each tool
-
-#### Files to Create
-- `api/system-prompt.ts`
-
-#### Dependencies
-- ENG-012 (tool definitions referenced in prompt)
+- [x] Sam's identity (Wizard Owl), voice (15 words/sentence, 3 sentences, contractions, no negative words), pedagogy, math firewall (all 9 tools), phase context + phase guidance (intro/explore/guided/assess/complete), tool usage
+- [x] api/chat.ts uses buildSystemPrompt(lessonState)
+- [x] api/system-prompt.ts created
 
 ---
 
@@ -1290,6 +1282,37 @@ Added `api/tools.ts` with 9 tool definitions (Anthropic schema) and `executeTool
 - [x] api/chat.ts passes tools and handles tool_use loop; emits tool_use/tool_result SSE
 - [x] Errors returned as { error }; no thrown exceptions from tools
 - [x] DEVLOG updated
+
+---
+
+### ENG-013: System Prompt Engineering ✅
+
+#### Plain-English Summary
+Added `api/system-prompt.ts` exporting `buildSystemPrompt(lessonState): string`. Seven sections: Identity (Sam the Wizard Owl, themed vocabulary), Voice Constraints (15 words/sentence, 3 sentences, contractions, no negative words), Pedagogical Approach (celebrate, scaffold, guide), Math Firewall (NEVER compute math; list all 9 tools; tool result is sole authority), Current Lesson State (phase, stepIndex, blocks, score, conceptsDiscovered), Phase-Specific Guidance (intro, explore, guided, assess, complete), When to Use Each Tool. Dynamic content uses safe defaults for missing lessonState fields. `api/chat.ts` now imports `buildSystemPrompt` and replaces the hardcoded stub with `buildSystemPrompt(lessonState)`.
+
+#### Metadata
+- **Status:** Complete
+- **Date:** Mar 11, 2026
+- **Ticket:** ENG-013
+- **Branch:** `feature/eng-013-system-prompt`
+
+#### Key Achievements
+- **api/system-prompt.ts:** Pure, synchronous builder; IDENTITY, VOICE_CONSTRAINTS, PEDAGOGICAL_APPROACH, MATH_FIREWALL, TOOL_USAGE_GUIDANCE constants; buildPhaseContext(lessonState), getPhaseGuidance(phase); all 5 phases covered
+- **api/chat.ts:** Import buildSystemPrompt; systemPrompt = buildSystemPrompt(lessonState)
+
+#### Files Modified
+- `api/system-prompt.ts` — created
+- `api/chat.ts` — buildSystemPrompt import and usage
+- `docs/DEVLOG.md` — ENG-013 entry
+
+#### Verification
+- `npx tsc -b` — zero errors
+- `npm run lint` — zero errors
+
+#### Acceptance Criteria
+- [x] buildSystemPrompt(lessonState) exported; pure, synchronous
+- [x] All 7 sections; voice constraints strict; math firewall lists 9 tools; phase guidance for intro/explore/guided/assess/complete
+- [x] api/chat.ts uses buildSystemPrompt(lessonState); DEVLOG updated
 
 ---
 

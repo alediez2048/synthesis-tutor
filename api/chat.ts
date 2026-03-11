@@ -6,6 +6,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { toolDefinitions, executeToolCall } from './tools';
+import { buildSystemPrompt } from './system-prompt';
 import type { LessonState } from '../src/state/types';
 
 export const config = {
@@ -84,8 +85,7 @@ export default async function handler(req: Request): Promise<Response> {
 
   const anthropic = new Anthropic({ apiKey });
   const model = 'claude-sonnet-4-20250514';
-  const systemPrompt =
-    'You are Sam, a friendly math tutor for kids learning fractions. Keep responses short and encouraging. Use the tools provided to check answers and read workspace state; never compute fraction math yourself.';
+  const systemPrompt = buildSystemPrompt(lessonState);
 
   const streamBody = new ReadableStream({
     async start(controller) {
