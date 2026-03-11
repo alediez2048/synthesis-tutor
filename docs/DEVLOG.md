@@ -33,6 +33,8 @@
 
 | Ticket | Description | Status | Est. |
 |--------|-------------|--------|------|
+| LLM-011 | Eval runner (automated quality checks) | ⬜ Pending | 1.5h |
+| LLM-010 | Eval dataset (50+ test cases) | ⬜ Pending | 2h |
 | ENG-032 | PWA configuration | ⬜ Pending | 0.5h |
 | ENG-031 | Accessibility: ARIA + keyboard | ⬜ Pending | 1.5h |
 | ENG-030 | Responsive layout: portrait mode | ⬜ Pending | 1h |
@@ -46,30 +48,34 @@
 | Ticket | Description | Status | Est. |
 |--------|-------------|--------|------|
 | ENG-025 | Checkpoint + recovery system | ⬜ Pending | 1.5h |
+| LLM-009 | Voice output (TTS via SpeechSynthesis) | ⬜ Pending | 1.5h |
+| LLM-008 | Voice input (STT via Web Speech API) | ⬜ Pending | 2h |
 | ENG-024 | Sound Manager | ⬜ Pending | 1h |
 | ENG-023 | Progress dots | ⬜ Pending | 0.5h |
 | ENG-022 | Completion screen | ⬜ Pending | 1.5h |
 | ENG-021 | Assessment UI | ⬜ Pending | 2.5h |
 | ENG-020 | Assessment problem pools (JSON) | ⬜ Pending | 1h |
 
-### Phase 4: Integration + Guided Practice (Day 4 — Thursday)
+### Phase 4: Integration + Voice + Observability (Day 4 — Thursday)
 
 | Ticket | Description | Status | Est. |
 |--------|-------------|--------|------|
 | ENG-019 | Misconception detector tests | ⬜ Pending | 0.5h |
-| ENG-018 | Math Verification Layer | ⬜ Pending | 1.5h |
-| ENG-017 | Guided practice scripts (JSON) | ⬜ Pending | 2h |
-| ENG-016 | Exploration phase + Observer | ⬜ Pending | 2h |
+| ENG-018 | MisconceptionDetector (Claude tool) | ⬜ Pending | 1.5h |
+| ENG-016 | Exploration Observer (simplified) | ⬜ Pending | 1.5h |
 | ENG-015 | Chat ↔ Workspace integration | ⬜ Pending | 2h |
+| LLM-007 | Langfuse observability integration | ⬜ Pending | 2h |
+| LLM-006 | Wire ChatPanel to LLM | ⬜ Pending | 2h |
+| LLM-005 | Reducer additions (TUTOR_RESPONSE, SET_LOADING) | ⬜ Pending | 1h |
+| LLM-004 | useTutorChat hook (SSE streaming) | ⬜ Pending | 3h |
 
-### Phase 3: Chat Interface + Script Engine (Day 3 — Wednesday)
+### Phase 3: Chat + LLM Integration (Day 3 — Wednesday)
 
 | Ticket | Description | Status | Est. |
 |--------|-------------|--------|------|
-| ENG-014 | Script graph traversal test | ⬜ Pending | 0.5h |
-| ENG-013 | ScriptedTutorBrain implementation | ⬜ Pending | 1.5h |
-| ENG-012 | Introduction phase script (JSON) | ⬜ Pending | 1.5h |
-| ENG-011 | Script engine | ⬜ Pending | 3h |
+| LLM-003 | System prompt engineering (Sam persona) | ⬜ Pending | 2h |
+| LLM-002 | Claude tool definitions (FractionEngine → tools) | ⬜ Pending | 2h |
+| LLM-001 | Vercel edge function + Claude API proxy | ⬜ Pending | 3h |
 | ENG-010 | Chat panel UI | ⬜ Pending | 2h |
 
 ### Phase 2: Visual Manipulative (Day 2 — Tuesday)
@@ -91,7 +97,7 @@
 | ENG-002 | Fraction type + engine core | ✅ Complete | 3h |
 | ENG-001 | Project scaffold | ✅ Complete | 1h |
 
-**Total estimated hours: ~56h across 7 days**
+**Total estimated hours: ~69h across 7 days**
 
 ---
 
@@ -320,11 +326,10 @@ Connect all visual interactions to the state reducer. Visual state is always der
 
 ---
 
-## Phase 3: Chat Interface + Script Engine (Day 3 — Wednesday)
+## Phase 3: Chat + LLM Integration (Day 3 — Wednesday)
 
-**Objective:** Sam talks to the student through a scripted dialogue system.  
-**Day 3 Deliverable:** Intro phase plays through in chat panel. Manipulative visible but not yet connected.  
-**iPad checkpoint:** Test on actual iPad today. Fix viewport, touch-action, and Safari layout issues immediately.
+**Objective:** Sam talks to the student through Claude with FractionEngine tools.
+**Day 3 Deliverable:** Claude responds conversationally via /api/chat. Chat panel shows streaming responses. iPad checkpoint: test on actual iPad today.
 
 ---
 
@@ -352,94 +357,71 @@ Build the scrollable chat interface with Sam's avatar, message bubbles, and stud
 
 ---
 
-### ENG-011: Script Engine ⬜
+### LLM-001: Vercel Edge Function + Claude API Proxy ⬜
 
 #### Plain-English Summary
-Build the engine that loads JSON dialogue scripts, advances on events, interpolates templates, and supports branching.
+Create a Vercel Edge Function at `/api/chat` that proxies requests to the Claude API with SSE streaming. FractionEngine runs server-side as tool execution. API key stored in Vercel env vars.
 
 #### Acceptance Criteria
-- [ ] Loads JSON dialogue scripts at runtime
-- [ ] Advances script on events (STUDENT_RESPONDED, TOOL_ACTION_COMPLETE, TIMER_EXPIRED)
-- [ ] Template interpolation: `{student_answer}`, `{target}`, `{attempt_count}` replaced with actual values
-- [ ] Branching: `on_correct`, `on_incorrect`, `on_second_incorrect` paths
-- [ ] Inactivity handlers trigger after configurable delay
-- [ ] Highlight actions: can reference UI elements by ID for CSS pulse
+- [ ] `/api/chat.ts` edge function accepts POST with messages + lessonState
+- [ ] Streams Claude responses back via SSE (text_delta, tool_use, done events)
+- [ ] Tool calls executed server-side using FractionEngine
+- [ ] ANTHROPIC_API_KEY in Vercel env vars (never client-side)
+- [ ] `vercel.json` routes `/api/*` to edge functions
+- [ ] Testable via curl
 
 #### Files to Create
-- `src/brain/ScriptEngine.ts`
+- `api/chat.ts`
+- `vercel.json`
 
 #### Dependencies
-- ENG-004 (LessonState and LessonAction types)
+- ENG-001 (project scaffold), ENG-002 (FractionEngine for tool execution)
 
 ---
 
-### ENG-012: Introduction Phase Script (JSON) ⬜
+### LLM-002: Claude Tool Definitions ⬜
 
 #### Plain-English Summary
-Write the JSON script for the 7-beat introduction sequence per PRD Section 7.1.
+Define all FractionEngine functions as Claude tool schemas. Build the tool execution dispatcher that maps tool calls to engine functions.
 
 #### Acceptance Criteria
-- [ ] 7 scripted beats: Sam greeting → block highlight → tap prompt → split prompt → split picker → split result → bridge to exploration
-- [ ] All messages conform to Sam's voice constraints (max 15 words/sentence, max 3 sentences)
-- [ ] Inactivity handlers at 10s (no block tap, no split tap)
-- [ ] Template tokens used where appropriate
-- [ ] Auto-advance delays (2s) on non-interactive beats
+- [ ] 9 tools defined: check_equivalence, simplify_fraction, split_fraction, combine_fractions, find_common_denominator, validate_fraction, parse_student_input, check_answer, get_workspace_state
+- [ ] Tool execution dispatcher maps Claude tool_use to FractionEngine calls
+- [ ] check_answer combines parse + areEquivalent + misconception detection
+- [ ] All tool schemas have clear descriptions for Claude
 
 #### Files to Create
-- `src/content/intro-script.json`
+- `api/tools.ts`
 
 #### Dependencies
-- ENG-011 (script engine can load and process JSON)
+- LLM-001 (edge function exists), ENG-002 (FractionEngine)
 
 ---
 
-### ENG-013: ScriptedTutorBrain Implementation ⬜
+### LLM-003: System Prompt Engineering ⬜
 
 #### Plain-English Summary
-Implement the `TutorBrain` interface with a scripted implementation that reads from JSON scripts and delegates math to the engine.
+Craft the system prompt that defines Sam's persona, voice constraints, pedagogical rules, phase awareness, and math firewall instructions.
 
 #### Acceptance Criteria
-- [ ] `TutorBrain` interface defined with `getNextAction()` and `evaluateResponse()`
-- [ ] `ScriptedTutorBrain` implements the interface
-- [ ] `getNextAction` reads from current script position
-- [ ] `evaluateResponse` uses `FractionEngine.areEquivalent()` for correctness — NEVER text matching
-- [ ] `EvaluationResult.isCorrect` is always from the engine (non-negotiable)
-- [ ] Async signatures (`Promise<T>`) even though scripted brain is synchronous
+- [ ] Sam's identity, voice constraints (max 15 words/sentence, max 3 sentences), and tone rules
+- [ ] Math firewall: "NEVER compute fraction math. ALWAYS use tools."
+- [ ] Phase-aware: system prompt includes current phase and stepIndex
+- [ ] Lesson flow guidance: intro → explore → guided → assess → complete
+- [ ] Tool usage guidance: when to use each tool
 
 #### Files to Create
-- `src/brain/TutorBrain.ts` (interface)
-- `src/brain/ScriptedTutorBrain.ts` (implementation)
-- `src/brain/ScriptedTutorBrain.test.ts`
+- `api/system-prompt.ts`
 
 #### Dependencies
-- ENG-002 (FractionEngine), ENG-011 (ScriptEngine)
+- LLM-002 (tool definitions referenced in prompt)
 
 ---
 
-### ENG-014: Script Graph Traversal Test ⬜
+## Phase 4: Integration + Voice + Observability (Day 4 — Thursday)
 
-#### Plain-English Summary
-Write a DFS test that traverses all script JSON files and verifies structural integrity.
-
-#### Acceptance Criteria
-- [ ] DFS traversal of every path in every script file
-- [ ] No dead-end nodes (every non-terminal has at least one outgoing edge)
-- [ ] Every terminal node is in the assessment-complete phase
-- [ ] No orphaned nodes (every node reachable from start)
-- [ ] Test passes with `npm test`
-
-#### Files to Create
-- `src/brain/scriptIntegrity.test.ts`
-
-#### Dependencies
-- ENG-012 (intro script exists to traverse)
-
----
-
-## Phase 4: Integration + Guided Practice (Day 4 — Thursday)
-
-**Objective:** Chat and manipulative work together. Full guided practice with branching.  
-**Day 4 Deliverable:** Student plays through Intro → Exploration → Guided Practice with working feedback.
+**Objective:** Chat and manipulative work together. Voice mode and observability added.
+**Day 4 Deliverable:** Full intro-to-guided-practice flow with LLM. Voice mode functional on iPad. All LLM calls traced in Langfuse.
 
 ---
 
@@ -455,7 +437,7 @@ Write a DFS test that traverses all script JSON files and verifies structural in
 
 ---
 
-### ENG-016: Exploration Phase + Observer ⬜
+### ENG-016: Exploration Observer (simplified) ⬜
 
 #### Acceptance Criteria
 - [ ] `ExplorationObserver` tracks 3 discovery goals: splitting → smaller pieces, combining → larger pieces, equivalence discovery
@@ -474,26 +456,90 @@ Write a DFS test that traverses all script JSON files and verifies structural in
 
 ---
 
-### ENG-017: Guided Practice Scripts (JSON) ⬜
+### LLM-004: useTutorChat Hook ⬜
+
+#### Plain-English Summary
+React hook that manages communication with `/api/chat`. Handles SSE streaming, typing indicators, and dispatches responses to the reducer.
 
 #### Acceptance Criteria
-- [ ] GP-1 "Split to Discover": split 1/2 → 2 parts, comparison prompt
-- [ ] GP-2 "Build an Equivalent": any equivalent to 1/3, misconception-specific responses
-- [ ] GP-3 "Compare and Match": drag 1/2 and 3/6 to comparison zone
-- [ ] GP-4 "The Challenge Round": simplify 2/4 → 1/2
-- [ ] All branching paths: on_correct, on_incorrect (attempt 1), on_incorrect (attempt 2), on_incorrect (attempt 3)
-- [ ] Auto-demonstration on final incorrect attempt
-- [ ] All messages conform to Sam's voice constraints
+- [ ] Sends messages + lessonState to `/api/chat` via POST
+- [ ] Parses SSE stream (text_delta, tool_use, done)
+- [ ] Dispatches TUTOR_RESPONSE with streaming text
+- [ ] Dispatches SET_LOADING for typing indicator
+- [ ] Tool-triggered workspace changes dispatch SPLIT_BLOCK, COMBINE_BLOCKS etc.
 
 #### Files to Create
-- `src/content/guided-practice-script.json`
+- `src/brain/useTutorChat.ts`
 
 #### Dependencies
-- ENG-011 (script engine), ENG-012 (intro script pattern to follow)
+- LLM-001 (edge function), LLM-005 (new reducer actions)
 
 ---
 
-### ENG-018: Math Verification Layer ⬜
+### LLM-005: Reducer Additions ⬜
+
+#### Plain-English Summary
+Add TUTOR_RESPONSE and SET_LOADING actions to the reducer and types for async LLM integration.
+
+#### Acceptance Criteria
+- [ ] `TUTOR_RESPONSE` action: appends tutor message, supports `isStreaming` flag
+- [ ] `SET_LOADING` action: toggles loading state for typing indicator
+- [ ] `isLoading: boolean` added to LessonState
+- [ ] Types updated in `src/state/types.ts`
+- [ ] Existing tests still pass
+
+#### Files to Modify
+- `src/state/types.ts`
+- `src/state/reducer.ts`
+- `src/state/reducer.test.ts`
+
+#### Dependencies
+- ENG-004 (existing types and reducer)
+
+---
+
+### LLM-006: Wire ChatPanel to LLM ⬜
+
+#### Plain-English Summary
+Connect the ChatPanel UI to the useTutorChat hook. Show streaming responses with typing indicator.
+
+#### Acceptance Criteria
+- [ ] Student messages sent via useTutorChat hook
+- [ ] Sam's responses stream in real-time (character by character)
+- [ ] Typing indicator ("Sam is thinking...") while waiting
+- [ ] Auto-scroll to latest message during streaming
+
+#### Files to Modify
+- `src/components/ChatPanel/ChatPanel.tsx`
+
+#### Dependencies
+- ENG-010 (ChatPanel UI), LLM-004 (useTutorChat hook)
+
+---
+
+### LLM-007: Langfuse Observability ⬜
+
+#### Plain-English Summary
+Integrate Langfuse tracing into the edge function. Trace all Claude calls, tool executions, token usage, and latency.
+
+#### Acceptance Criteria
+- [ ] Langfuse SDK initialized in edge function
+- [ ] Each `/api/chat` request creates a trace with lesson phase metadata
+- [ ] Claude API call logged as a generation (input, output, tokens)
+- [ ] Each tool call logged as a span within the trace
+- [ ] Latency (total + TTFB) recorded
+- [ ] LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY in Vercel env vars
+- [ ] Async flush — never blocks response
+
+#### Files to Modify
+- `api/chat.ts`
+
+#### Dependencies
+- LLM-001 (edge function exists)
+
+---
+
+### ENG-018: MisconceptionDetector (Claude tool) ⬜
 
 #### Acceptance Criteria
 - [ ] `parseStudentInput → FractionEngine.areEquivalent → boolean → branch selection` flow works
@@ -642,10 +688,87 @@ Write a DFS test that traverses all script JSON files and verifies structural in
 
 ---
 
+### LLM-008: Voice Input (STT) ⬜
+
+#### Plain-English Summary
+Add speech-to-text via Web Speech API. Microphone button next to text input.
+
+#### Acceptance Criteria
+- [ ] `useVoiceInput` hook using `webkitSpeechRecognition`
+- [ ] Microphone toggle button in ChatPanel input area
+- [ ] Transcript feeds into same STUDENT_RESPONSE path as typed text
+- [ ] Visual indicator when listening (pulsing mic icon)
+- [ ] Graceful fallback if permission denied or API unavailable
+
+#### Files to Create
+- `src/brain/useVoiceInput.ts`
+
+#### Dependencies
+- ENG-010 (ChatPanel UI)
+
+---
+
+### LLM-009: Voice Output (TTS) ⬜
+
+#### Plain-English Summary
+Add text-to-speech via browser SpeechSynthesis API. Sam reads responses aloud.
+
+#### Acceptance Criteria
+- [ ] `useVoiceOutput` hook using `SpeechSynthesis`
+- [ ] Speaker button on each Sam message (tap to hear)
+- [ ] Auto-speak toggle: Sam automatically reads new messages
+- [ ] Rate and pitch tuned for child-friendliness
+- [ ] Respects mute toggle
+
+#### Files to Create
+- `src/brain/useVoiceOutput.ts`
+
+#### Dependencies
+- LLM-006 (ChatPanel wired to LLM)
+
+---
+
 ## Phase 6: Polish + Edge Cases (Day 6 — Saturday)
 
 **Objective:** The experience feels polished, not just functional.  
 **Day 6 Deliverable:** Polished experience with micro-animations, edge case handling, and offline support.
+
+---
+
+### LLM-010: Eval Dataset ⬜
+
+#### Plain-English Summary
+Create 50+ test cases covering happy path, edge cases, and adversarial inputs for automated LLM quality evaluation.
+
+#### Acceptance Criteria
+- [ ] 50+ test cases in JSON format
+- [ ] Categories: happy path, misconceptions, adversarial, multi-step
+- [ ] Each case: input message, expected tool calls, output quality criteria
+
+#### Files to Create
+- `eval/dataset.json`
+
+#### Dependencies
+- LLM-001 through LLM-003 (edge function + tools + prompt)
+
+---
+
+### LLM-011: Eval Runner ⬜
+
+#### Plain-English Summary
+Script that runs eval dataset against /api/chat and checks math correctness, tool selection, and persona adherence.
+
+#### Acceptance Criteria
+- [ ] Runs all test cases against `/api/chat`
+- [ ] Checks: correct tool called, math answer correct, response within voice constraints
+- [ ] Results logged to Langfuse with eval metadata
+- [ ] Summary report (pass/fail/accuracy)
+
+#### Files to Create
+- `eval/run.ts`
+
+#### Dependencies
+- LLM-010 (dataset), LLM-007 (Langfuse)
 
 ---
 
@@ -983,11 +1106,16 @@ Defined the shared TypeScript contract in `src/state/types.ts` (Fraction re-expo
 
 | Date | Decision | Rationale |
 |------|----------|-----------|
-| Mar 10 | Client-only, no backend | COPPA compliance via zero collection; eliminates latency; simplifies deployment |
+| Mar 10 | ~~Client-only, no backend~~ → **SUPERSEDED**: Vercel Edge Function backend for Claude API proxy (see above) | COPPA compliance via zero collection; eliminates latency; simplifies deployment |
 | Mar 10 | `useReducer` over LangGraph for state machine | 7-day sprint; client-side FSM is faster to build and deploy than Python LangGraph backend |
-| Mar 10 | Scripted dialogue over LLM | No latency for 8-year-olds; LLM upgrade seam built via TutorBrain interface |
+| Mar 10 | ~~Scripted dialogue over LLM~~ → **SUPERSEDED**: LLM-powered tutor with FractionEngine tools (see above) | No latency for 8-year-olds; LLM upgrade seam built via TutorBrain interface |
 | Mar 10 | Web Animations API over Framer Motion | Bundle budget (Framer Motion ~30KB gzipped); composited properties only |
 | Mar 10 | DOM elements over Canvas for blocks | Free touch events, built-in accessibility, CSS transitions, easier debugging |
 | Mar 10 | Rectangles over pie charts | Pedagogically superior: clean subdivision, edge alignment, maps to number line |
 | Mar 10 | Web Audio synthesis over audio files | Zero file size, dynamic pitch, zero CORS, consistent latency on mobile Safari |
 | Mar 10 | sessionStorage over localStorage | Dies with tab (COPPA); Safari preserves across tab evictions on iOS |
+| Mar 10 | LLM-powered tutor (Claude) over scripted JSON | Delivers genuinely adaptive, conversational experience; scripted feels dated in 2026; math safety preserved via tool use |
+| Mar 10 | Vercel Edge Functions for API proxy | Already on Vercel; <50ms cold start; streaming-native; zero infra overhead |
+| Mar 10 | Web Speech API for STT/TTS over OpenAI TTS | Free; local; works on iPad Safari; no additional API keys or latency |
+| Mar 10 | Langfuse for observability | Open-source; generous free tier; simple SDK; great tracing UI for tool call chains |
+| Mar 10 | Server-side tool execution | Avoids client-server round-trips for tool calls; keeps FractionEngine as single source of truth |
