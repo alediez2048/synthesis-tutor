@@ -1,0 +1,45 @@
+---
+description: Git branching and commit workflow
+alwaysApply: true
+---
+
+# Git Workflow
+
+## Branch Strategy
+
+Use feature branches off `main`. Never commit directly to `main` for feature work.
+
+```
+git switch main && git pull
+git switch -c feature/<ticket-id>-<short-description>
+```
+
+Examples:
+- `feature/eng-002-fraction-engine`
+- `feature/eng-010-chat-panel`
+- `feature/eng-020-assessment-pools`
+
+## Commit Conventions
+
+Use Conventional Commits: `feat:`, `test:`, `fix:`, `docs:`, `refactor:`, `style:`, `chore:`
+
+Commit in logical increments:
+1. Tests first: `test: add property-based tests for FractionEngine (ENG-003)`
+2. Implementation: `feat: implement FractionEngine core operations (ENG-002)`
+3. Integration: `feat: wire workspace blocks to reducer (ENG-009)`
+
+Reference the ticket ID (ENG-XXX) from the PRD sprint plan in commit messages.
+
+## When Done With a Feature
+
+1. Push the feature branch: `git push -u origin feature/<ticket-id>-<short-description>`
+2. Open a PR against `main`
+3. Do NOT merge without review (or explicit user approval)
+
+## What NOT to Do
+
+- Do NOT commit to `main` directly for feature work
+- Do NOT force-push without explicit approval
+- Do NOT commit `.env`, `node_modules/`, `.DS_Store`, or `dist/`
+- Do NOT commit with failing tests
+- Do NOT amend pushed commits without approval

@@ -1,0 +1,9 @@
+{
+  "name": "Synthesis Tutor",
+  "short_name": "Fractions",
+  "display": "standalone",
+  "theme_color": "#4A90D9",
+  "background_color": "#FFFFFF",
+  "start_url": "/",
+  "icons": []
+}

@@ -1,0 +1,31 @@
+---
+description: Enforce project tech stack — no substitutions without approval
+alwaysApply: true
+---
+
+# Tech Stack — Version Pinning
+
+- Language: TypeScript (strict mode, no `any` types)
+- Framework: Vite + React 18 (functional components + hooks only)
+- State Management: React `useReducer` — no Redux, no Zustand, no MobX
+- Touch/Gestures: `@use-gesture/react`
+- Animation: CSS Transitions + Web Animations API (`element.animate()`)
+- Audio: Web Audio API (synthesized oscillators, zero audio files)
+- Testing: Vitest + fast-check (property-based testing for engine)
+- E2E Testing: Cypress (2 critical paths only)
+- Deployment: Vercel + `vite-plugin-pwa`
+- Package Manager: npm
+
+## Banned Libraries
+
+- Do NOT use Framer Motion — use Web Animations API instead (bundle size)
+- Do NOT use Redux, Zustand, Jotai, or any external state library
+- Do NOT use LangChain or LlamaIndex on the client
+- Do NOT use jQuery or Lodash
+- Do NOT add audio files — all sounds must be Web Audio API synthesized
+- Do NOT add Google Analytics, Mixpanel, Segment, or any tracking scripts
+- Do NOT add any CDN dependencies that set cookies
+
+## Bundle Budget
+
+Total JS bundle (gzipped) must stay under 150 KB. Before adding any dependency, check its size with `npx bundlephobia <package>`. If it pushes the bundle over budget, find an alternative or implement it yourself.

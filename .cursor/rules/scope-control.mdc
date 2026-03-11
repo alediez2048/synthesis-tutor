@@ -1,0 +1,42 @@
+---
+description: Strict scope control — 7-day sprint, no scope creep
+alwaysApply: true
+---
+
+# Scope Control (MANDATORY)
+
+## This Is a 7-Day Sprint
+
+Every decision must pass the filter: "Does this help ship the demo by Sunday?"
+
+## In Scope (build these)
+
+- Single lesson: fraction equivalence (3.NF.A.3a/b, 4.NF.A.1)
+- Deterministic Fraction Engine with property-based tests
+- Scripted dialogue system (ScriptedTutorBrain) with JSON scripts
+- Visual fraction manipulative (split, combine, compare)
+- 4 guided practice problems + 3 assessment problems
+- Chat panel with Sam persona
+- Progress dots, completion screen, sound effects
+- sessionStorage checkpointing + recovery
+- iPad Safari support, PWA offline
+- Vercel deployment
+
+## Out of Scope (do NOT build these)
+
+- LLM-powered conversational agent (build the TutorBrain interface seam, not the implementation)
+- Multiple lessons or a lesson library
+- Student accounts, login, or cross-session persistence
+- Teacher dashboard or classroom management
+- RAG-based pedagogical engine
+- "Smashing" interaction (fraction addition) — acknowledge gracefully in the reducer, do not implement
+- Full accessibility audit beyond Tier 1 ARIA + keyboard fallback
+- Server-side anything — no backend, no database, no API
+
+## When Tempted to Add Scope
+
+- Do NOT add features not listed above
+- Do NOT refactor code that works "to make it cleaner" during the sprint
+- Do NOT build infrastructure for future lessons
+- Do NOT integrate an LLM — the scripted brain is the prototype deliverable
+- If you find a future improvement, note it in a comment or the README — do not build it

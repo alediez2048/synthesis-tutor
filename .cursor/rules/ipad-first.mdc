@@ -1,0 +1,56 @@
+---
+description: iPad-first design — touch, Safari quirks, performance budgets
+alwaysApply: true
+---
+
+# iPad-First Design (MANDATORY)
+
+## Viewport & Safari
+
+- Always include: `<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">`
+- Use CSS `dvh` units instead of `vh` (Safari dynamic toolbar)
+- Set `touch-action: none` on the manipulative workspace
+- Set `display: standalone` in PWA manifest for home-screen launch
+- Test on actual iPad Safari — Chrome DevTools is not sufficient for final validation
+
+## Touch Targets
+
+- Fraction blocks: minimum 60×60 points
+- Buttons: minimum 44×44 points (Apple HIG)
+- No hover-dependent interactions — everything must work with tap/drag
+- Single-touch model: track `isDragging` boolean, process first touch only, ignore subsequent touch points
+
+## Gestures
+
+- Use `@use-gesture/react` for drag-and-drop — never raw `onTouchStart`/`onTouchEnd`
+- Disambiguate scroll vs. drag on the workspace
+- 500ms debounce on Split button (matches animation duration)
+- Queue max depth: 2 actions. Drop extras with a brief visual pulse.
+
+## Performance Budgets
+
+| Metric | Target |
+|---|---|
+| Initial load (LCP) | < 2 seconds |
+| Time to interactive | < 3 seconds |
+| JS bundle (gzipped) | < 150 KB |
+| Animation framerate | 60 fps |
+| Touch response latency | < 100ms |
+| Memory (heap) | < 80 MB |
+| Total asset size | < 500 KB |
+
+Target device: 2020 iPad 8th gen (A12 chip, 3 GB RAM, iPadOS Safari).
+
+## Animation Rules
+
+- Only animate composited properties: `transform` and `opacity`
+- NEVER animate `width`, `height`, `left`, `top` (triggers layout)
+- Use `will-change: transform` on actively dragged blocks only — remove after gesture ends
+- Split animation: 400ms, ease-out. Total width preserved.
+- Combine animation: 350ms, ease-in-out. Combined width = sum of parts.
+
+## Audio
+
+- `AudioContext.resume()` must be called on user gesture (the "Start Lesson" button)
+- Mute toggle always visible in header
+- Respect `prefers-reduced-motion` media query (also mute sounds)

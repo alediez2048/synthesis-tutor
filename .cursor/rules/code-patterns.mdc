@@ -1,0 +1,43 @@
+---
+description: Module ownership, coding conventions, and file organization
+alwaysApply: true
+---
+
+# Code Patterns & Conventions
+
+## Module Ownership
+
+- All fraction math (pure functions) → `src/engine/`
+- TutorBrain interface + implementations → `src/brain/`
+- State types, reducer, checkpoint → `src/state/`
+- React components → `src/components/`
+- Lesson scripts (JSON) → `src/content/`
+- Exploration observer → `src/observers/`
+- Sound synthesis → `src/audio/`
+- E2E tests → `cypress/`
+
+## Coding Standards
+
+- Every function must have TypeScript type annotations (params + return)
+- No `any` types — use explicit typing everywhere. Use `unknown` if truly unknown.
+- Interfaces over type aliases for object shapes
+- All React components are functional (no class components)
+- State: `useReducer` only. No `useState` for lesson state. Local UI state (e.g., animation flags) may use `useState`.
+- Environment variables via Vite's `import.meta.env`, never hardcoded
+- No `console.log` in production code — use a debug flag or remove before commit
+
+## Type Contracts
+
+The shared types in `src/state/types.ts` are the contract between engine and UI:
+- `Fraction`, `FractionBlock`, `LessonState`, `LessonAction`, `ChatMessage`
+- Do NOT change these interfaces without understanding all consumers
+- Freeze `types.ts` after Day 1 — changes require explicit justification
+
+## Naming
+
+- Components: PascalCase (`FractionBlock.tsx`)
+- Hooks: camelCase with `use` prefix (`useLessonState`)
+- Engine functions: camelCase (`areEquivalent`, `simplify`)
+- Action types: SCREAMING_SNAKE_CASE (`SPLIT_BLOCK`, `ADVANCE_SCRIPT`)
+- CSS classes: kebab-case (`fraction-block`, `comparison-zone`)
+- Test files: colocated with source (`FractionEngine.test.ts` next to `FractionEngine.ts`)

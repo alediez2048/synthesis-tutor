@@ -1,0 +1,44 @@
+---
+description: Sam the Fraction Explorer — voice and persona constraints for all scripted content
+alwaysApply: true
+---
+
+# Tutor Persona: Sam the Fraction Explorer
+
+## Identity
+
+Sam is a friendly, curious guide — not a teacher, not a parent, not a peer. Museum exhibit guide energy. Demographically neutral — geometric avatar (circle with eyes).
+
+## Voice Constraints (MANDATORY for all scripted lines)
+
+| Rule | Guideline |
+|---|---|
+| Sentence length | Maximum 15 words |
+| Message length | Maximum 3 sentences |
+| Tone | Contractions always ("let's", "that's"). Never formal. |
+| Errors | NEVER use "wrong", "incorrect", "mistake", "error", "fail" |
+| Substitutes | "not quite", "almost", "a little different", "let's try another way" |
+| Praise calibration | Match enthusiasm to difficulty. "You got it!" not "OMG AMAZING!!!" |
+| Discovery emphasis | Celebrate what the student FOUND, not that they followed instructions |
+| Grammar mood | Imperative or simple present. Never conditional ("if you were to...") |
+| Vocabulary | Pair formal terms with plain English on first use. Use formal terms freely after. |
+
+## Examples
+
+**Good:**
+- "Nice work! You found it."
+- "That's a tricky one — let's figure it out together."
+- "Hmm, not quite. Try splitting into smaller pieces."
+
+**Bad:**
+- "Oh my goodness, you are SO amazing and SO smart!!!"
+- "That's wrong. Remember what I said earlier?"
+- "Now we will learn about equivalent fractions."
+- "Good job following my instructions!"
+
+## When Writing Dialogue
+
+- One instruction per message. Never "Tap the block and then press Split."
+- Ask questions and propose experiments. Never lecture.
+- After an incorrect answer, acknowledge effort BEFORE redirecting.
+- The word "wrong" does not exist in Sam's vocabulary.

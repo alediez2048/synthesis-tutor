@@ -1,0 +1,172 @@
+---
+description: System design patterns — layer boundaries, interface contracts, data flow
+alwaysApply: true
+---
+
+# System Design Patterns
+
+## Layer Architecture
+
+The system has four distinct layers. Each layer has a clear responsibility and communicates through typed interfaces — never by reaching into another layer's internals.
+
+```
+┌─────────────────────────────────────────────┐
+│  PRESENTATION (React Components)            │
+│  Renders state. Dispatches actions. No math. │
+├─────────────────────────────────────────────┤
+│  ORCHESTRATION (Reducer + TutorBrain)       │
+│  Routes actions. Advances scripts. Branches. │
+├─────────────────────────────────────────────┤
+│  DOMAIN (FractionEngine + MisconceptionDet) │
+│  Pure math. Zero side effects. The truth.    │
+├─────────────────────────────────────────────┤
+│  PERSISTENCE (Checkpoint + SessionStorage)  │
+│  Serializes/restores state. Ephemeral only.  │
+└─────────────────────────────────────────────┘
+```
+
+### Allowed Dependencies (top can call down, never up)
+
+- **Presentation → Orchestration:** Components call `dispatch(action)` and read `LessonState`
+- **Orchestration → Domain:** Reducer calls `FractionEngine` to validate and compute
+- **Orchestration → Persistence:** Reducer middleware writes checkpoints after significant actions
+- **Domain → nothing:** Engine functions are pure — no imports from other layers
+
+### Forbidden Dependencies
+
+- Presentation must NEVER call `FractionEngine` directly — always go through the reducer
+- Domain must NEVER import React, reducer, or any UI code
+- Persistence must NEVER trigger side effects in other layers — it only serializes/restores
+- No circular dependencies between any modules
+
+## Interface Contracts
+
+### The TutorBrain Interface (Pedagogy Boundary)
+
+```typescript
+interface TutorBrain {
+  getNextAction(state: LessonState): Promise<TutorAction>;
+  evaluateResponse(input: StudentInput, step: ScriptStep, state: LessonState): Promise<EvaluationResult>;
+}
+```
+
+- `ScriptedTutorBrain` implements this today (scripted, no LLM)
+- `LLMTutorBrain` will implement this tomorrow (generated, with LLM)
+- Both share the same invariant: `EvaluationResult.isCorrect` comes from `FractionEngine`, never from the brain
+- Async signatures are mandatory even for the scripted brain — callers must handle `Promise<T>` now so LLM latency doesn't require refactoring later
+
+### The FractionEngine Interface (Math Boundary)
+
+All functions are pure, synchronous, deterministic:
+
+```typescript
+simplify(f: Fraction): Fraction
+areEquivalent(a: Fraction, b: Fraction): boolean
+split(f: Fraction, parts: number): Fraction[]
+combine(fractions: Fraction[]): Fraction
+toCommonDenominator(a: Fraction, b: Fraction): [Fraction, Fraction]
+isValidFraction(f: Fraction): boolean
+parseStudentInput(raw: string): Fraction | null
+```
+
+No function in this interface may have side effects, call async APIs, or depend on external state.
+
+### The LessonState Contract (State Boundary)
+
+`src/state/types.ts` is the shared contract between ALL layers:
+
+```typescript
+interface LessonState {
+  phase: Phase;
+  stepIndex: number;
+  blocks: FractionBlock[];
+  score: { correct: number; total: number };
+  hintCount: number;
+  chatMessages: ChatMessage[];
+  assessmentPool: AssessmentProblem[];
+  conceptsDiscovered: Set<string>;
+  isDragging: boolean;
+}
+```
+
+- This file is **frozen after Day 1** — changes require explicit justification
+- Every layer reads from this contract — breaking it breaks everything
+- The reducer is the ONLY thing that produces a new `LessonState`
+
+## Component Design Patterns
+
+### Presentational vs. Container
+
+- **Container components** (1–2 total): connect to `useReducer`, pass state and dispatch down as props. `App.tsx` is the primary container.
+- **Presentational components** (everything else): receive props, render UI, call `dispatch` callbacks. No direct state management.
+
+### Props Down, Actions Up
+
+```
+App (useReducer) ─── state ───→ ChatPanel ───→ MessageBubble
+                 ─── state ───→ Workspace ───→ FractionBlock
+                 ←── dispatch ── (any component can dispatch LessonAction)
+```
+
+Components never talk to each other directly. Communication flows through the reducer:
+- Workspace action (split block) → dispatch `SPLIT_BLOCK` → reducer updates state → ChatPanel re-renders with Sam's response
+
+### No Derived State Duplication
+
+If a value can be computed from `LessonState`, compute it — don't store it separately:
+
+- Block color? Derived from `block.fraction.denominator` via a lookup table
+- Current phase label? Derived from `state.phase`
+- Is the split button enabled? Derived from `state.blocks.some(b => b.isSelected)`
+- Score percentage? Derived from `state.score.correct / state.score.total`
+
+Use helper functions or `useMemo` for expensive derivations — never store derived values in state.
+
+## Error Boundaries
+
+### Graceful Degradation Pattern
+
+Every user-facing error must result in a friendly Sam message, never a crash:
+
+```typescript
+case 'SPLIT_BLOCK': {
+  if (block.fraction.denominator * action.parts > 12) {
+    return {
+      ...state,
+      chatMessages: [...state.chatMessages, {
+        sender: 'tutor',
+        text: "Those pieces are as small as they can get!",
+      }],
+    };
+  }
+  // ... proceed with valid split
+}
+```
+
+- Invalid actions → Sam redirects warmly
+- Impossible states → reducer rejects silently + Sam message
+- Never show raw error messages, stack traces, or technical language to the student
+
+### The Impossible State Firewall
+
+The reducer is the last line of defense. It must reject:
+
+- Denominator > 12 after split
+- Combining blocks with different denominators
+- Splitting a block into 0 or 1 parts
+- Advancing past the last assessment problem
+- Phase transitions that skip phases
+- Any action on a block that doesn't exist in `state.blocks`
+
+Rejected actions return the current state unchanged (plus a Sam message if appropriate).
+
+## Separation of Concerns Summary
+
+| Concern | Owner | NOT Allowed In |
+|---------|-------|----------------|
+| Math correctness | `FractionEngine` | Components, reducer, TutorBrain |
+| What to say | `ScriptedTutorBrain` | Components, reducer, engine |
+| State transitions | `reducer.ts` | Components, engine, TutorBrain |
+| Visual rendering | React components | Engine, reducer, TutorBrain |
+| Sound effects | `SoundManager` | Engine, reducer (triggered by components) |
+| Persistence | `checkpoint.ts` | Engine, components, TutorBrain |

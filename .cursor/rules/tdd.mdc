@@ -1,0 +1,69 @@
+---
+description: Test-Driven Development workflow — write tests first, then implement
+alwaysApply: true
+---
+
+# Test-Driven Development (MANDATORY)
+
+## The TDD Cycle
+
+For every new module, function, or feature:
+
+1. **Write the test first** — describe what the code SHOULD do before it exists
+2. **Run the test — confirm it fails** — if it passes, the test is wrong or the code already exists
+3. **Write the minimum code to pass** — no extra features, no premature abstraction
+4. **Run the test — confirm it passes** — if it fails, fix the implementation, not the test
+5. **Refactor** — clean up only after green. Tests must still pass after refactoring.
+
+## Where TDD Is Required
+
+| Module | TDD Mandatory? | Test Type |
+|--------|----------------|-----------|
+| `src/engine/FractionEngine.ts` | **YES — no exceptions** | Property-based (fast-check) + unit |
+| `src/engine/MisconceptionDetector.ts` | **YES** | Truth-table unit tests |
+| `src/state/reducer.ts` | **YES** | Unit tests for transitions + impossible states |
+| `src/brain/ScriptedTutorBrain.ts` | **YES** | Unit tests for evaluation + branching |
+| `src/content/*.json` | **YES** | Script graph traversal (DFS integrity) |
+| `src/components/*` | No — test via E2E | Cypress happy path + struggle path |
+| `src/audio/SoundManager.ts` | No — manual testing | Verify in browser |
+
+## TDD Rules
+
+- **Never write implementation code without a failing test first** for engine, state, and brain modules
+- **Test file lives next to source file:** `FractionEngine.ts` → `FractionEngine.test.ts`
+- **One test file per source file** — do not bundle unrelated tests
+- **Tests must be independent** — no test should depend on another test's state or execution order
+- **No mocking the Fraction Engine** — it's pure functions, always test the real thing
+- **No mocking the reducer** — dispatch real actions, assert real state changes
+
+## Test Naming Convention
+
+Use descriptive names that read as specifications:
+
+```typescript
+describe('FractionEngine.areEquivalent', () => {
+  it('returns true for 1/2 and 2/4', () => { ... });
+  it('returns false for 1/2 and 1/3', () => { ... });
+  it('is reflexive: f is equivalent to itself', () => { ... });
+  it('is symmetric: areEquivalent(a,b) === areEquivalent(b,a)', () => { ... });
+});
+```
+
+**Bad:** `it('works')`, `it('test 1')`, `it('should be correct')`  
+**Good:** `it('rejects denominator > 12 with INVALID_FRACTION error')`
+
+## When Tests Fail
+
+- **Implementation bug:** Fix the implementation, not the test
+- **Test was wrong:** Only change the test if the SPECIFICATION changed (not just because it's inconvenient)
+- **Pre-existing failure:** Note it in commit message, do NOT delete it, do NOT introduce new failures
+- **Flaky test:** Property-based tests should not be flaky — if they are, the implementation has a bug
+
+## Commit Cadence
+
+Commit in TDD increments:
+1. `test: add property-based tests for FractionEngine.split (ENG-003)` — tests written, failing
+2. `feat: implement FractionEngine.split (ENG-002)` — implementation passes tests
+3. `refactor: simplify GCD computation in FractionEngine` — cleanup, tests still green
+
+Never commit with failing tests. Never commit implementation without corresponding tests.
