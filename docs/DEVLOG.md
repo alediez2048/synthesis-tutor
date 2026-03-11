@@ -86,7 +86,7 @@
 
 | Ticket | Description | Status | Est. |
 |--------|-------------|--------|------|
-| ENG-004 | LessonState types + reducer skeleton | ⬜ Pending | 2h |
+| ENG-004 | LessonState types + reducer skeleton | ✅ Complete | 2h |
 | ENG-003 | Engine property-based tests | ✅ Complete | 2h |
 | ENG-002 | Fraction type + engine core | ✅ Complete | 3h |
 | ENG-001 | Project scaffold | ✅ Complete | 1h |
@@ -935,6 +935,46 @@ Added property-based tests for the FractionEngine using fast-check. Four invaria
 - [x] Existing ENG-002 edge case unit tests confirmed present and passing
 - [x] `npm test` passes (all unit + property tests)
 - [x] DEVLOG updated with ENG-003 entry
+- [x] Feature branch created
+
+---
+
+### ENG-004: LessonState Types + Reducer Skeleton ✅
+
+#### Plain-English Summary
+Defined the shared TypeScript contract in `src/state/types.ts` (Fraction re-export, Phase, FractionBlock, ChatMessage, LessonState, AssessmentProblem, LessonAction) and implemented the lesson state reducer in `src/state/reducer.ts`. Reducer is pure, handles all 12 action variants, enforces phase order (intro → explore → guided → assess → complete), rejects split when result denominator > 12, rejects invalid combine, and uses deterministic block IDs via `nextBlockId`. Initial state seeds one 1/2 block per PRD intro.
+
+#### Metadata
+- **Status:** Complete
+- **Date:** Mar 10, 2026
+- **Ticket:** ENG-004
+- **Branch:** `feature/eng-004-lesson-state-reducer`
+
+#### Key Achievements
+- `types.ts`: re-export Fraction from engine; Phase, FractionBlock, ChatMessage, LessonState, AssessmentProblem, LessonAction
+- `getInitialLessonState()`: phase intro, one 1/2 block, stepIndex 0, score 0/0, empty chat/assessment/concepts, isDragging false, nextBlockId 1
+- Reducer: PHASE_TRANSITION (valid next only), SPLIT_BLOCK (engine split + den ≤ 12), COMBINE_BLOCKS (same den, isValidFraction), COMPARE_BLOCKS, STUDENT_RESPONSE (append message), ADVANCE_SCRIPT, REQUEST_HINT, RESET_WORKSPACE, SELECT_BLOCK, DESELECT_ALL, DRAG_START, DRAG_END
+- `getColorForDenominator` for PRD denominator-family colors; deterministic block IDs
+- 24 reducer tests: initial state, phase transitions, SPLIT/COMBINE success and reject, SELECT/DESELECT, DRAG, others
+
+#### Files Created
+- `src/state/types.ts` — shared interfaces and Fraction re-export
+- `src/state/reducer.ts` — lessonReducer, getInitialLessonState, getColorForDenominator
+- `src/state/reducer.test.ts` — 24 unit tests for reducer and phase transitions
+
+#### Verification
+- `npx tsc -b` — zero errors
+- `npm test` — 61 tests passed (37 engine + 24 reducer + 1 smoke)
+- `npm run lint` — zero errors
+
+#### Acceptance Criteria
+- [x] Fraction, FractionBlock, LessonState, LessonAction, ChatMessage, Phase, AssessmentProblem defined in types.ts
+- [x] Reducer handles all LessonAction variants
+- [x] Phase transitions work (intro → explore → guided → assess → complete) and are tested
+- [x] Reducer rejects impossible states (split den > 12, invalid combine)
+- [x] getInitialLessonState() returns valid initial state
+- [x] npm test and npx tsc -b pass
+- [x] DEVLOG updated with ENG-004 entry
 - [x] Feature branch created
 
 ---
