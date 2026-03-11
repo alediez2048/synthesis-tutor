@@ -8,7 +8,7 @@ Timeline: 7-Day Sprint (1-Week Challenge)
 
 1. Executive Summary
 Synthesis Tutor is a web-based, iPad-first interactive math lesson that teaches fraction equivalence to children aged 8–12. It combines a conversational AI tutor ("Sam") with a digital manipulative workspace where students can split, combine, and compare visual fraction blocks. The prototype delivers a single, self-contained lesson covering Common Core Standards 3.NF.A.3a, 3.NF.A.3b, and 4.NF.A.1.
-The system uses a deterministic Fraction Engine for all mathematical operations (zero LLM dependency in prototype), a scripted dialogue system with branching for adaptive responses, and a client-only architecture that requires no backend and is fully COPPA-compliant through zero data collection.
+The system uses a deterministic Fraction Engine for all mathematical operations and an LLM-powered conversational AI tutor (Claude) with FractionEngine tool use for deterministic math verification. The architecture uses a Vercel Edge Function backend for Claude API proxying with SSE streaming and is COPPA-compliant through zero PII collection and Anthropic's zero-retention API policy.
 Deliverables (end of Day 7):
 
 One working prototype of a fraction equivalence lesson, runnable in iPad Safari
@@ -22,13 +22,15 @@ Goals:
 
 Demonstrate the Synthesis learning model: exploration-driven discovery using digital manipulatives, not drill-and-kill quizzing
 Teach fraction equivalence through visual, tactile interaction on iPad
-Prove that a scripted dialogue system with branching can feel adaptive and warm
+Deliver a truly conversational AI tutor powered by Claude, with voice input/output and real-time observability
 Achieve zero mathematical errors through a deterministic verification layer
 Create a polished demo that tells the story "curious → struggling → confident"
+Voice mode: speech-to-text input and text-to-speech output for natural interaction
+Full observability via Langfuse: tracing, token usage, latency, tool call monitoring
 
 Non-Goals (explicitly out of scope for this sprint):
 
-LLM-powered conversational agent (future upgrade, interface seam built now)
+Multiple LLM providers (Claude only for this sprint)
 Multiple lessons or a lesson library
 Student accounts, login, or cross-session persistence
 Teacher dashboard or classroom management
@@ -49,8 +51,8 @@ Prerequisite Knowledge: Basic fraction notation (numerator/denominator), underst
 │                                                               │
 │  ┌──────────────┐    ┌──────────────┐    ┌────────────────┐ │
 │  │ Chat Panel    │    │ Manipulative │    │ Sound Manager  │ │
-│  │ (React)       │    │ Workspace    │    │ (Web Audio API)│ │
-│  │               │    │ (React + DOM)│    │                │ │
+│  │ + Voice I/O   │    │ Workspace    │    │ (Web Audio API)│ │
+│  │ (React)       │    │ (React + DOM)│    │                │ │
 │  └──────┬───────┘    └──────┬───────┘    └────────┬───────┘ │
 │         │                   │                      │         │
 │  ┌──────▼───────────────────▼──────────────────────▼───────┐ │
@@ -60,24 +62,28 @@ Prerequisite Knowledge: Basic fraction notation (numerator/denominator), underst
 │  └──────┬──────────────────┬───────────────────────────────┘ │
 │         │                  │                                  │
 │  ┌──────▼───────┐  ┌──────▼───────────────┐                 │
-│  │ Scripted     │  │ Fraction Engine       │                 │
-│  │ TutorBrain   │  │ (Deterministic Math)  │                 │
-│  │ (JSON scripts)│  │ + Math Verification  │                 │
-│  └──────────────┘  │ + Misconception       │                 │
-│                    │   Detection           │                 │
-│                    └──────────────────────┘                  │
-│                                                               │
-│  ┌──────────────────────────────────────────────────────────┐│
+│  │ useTutorChat │  │ Voice Hooks           │                 │
+│  │ (SSE Client) │  │ (STT + TTS)          │                 │
+│  └──────┬───────┘  └─────────────────────┘                  │
+│         │                                                     │
+│  ┌──────▼──────────────────────────────────────────────────┐│
 │  │ Checkpoint Layer (sessionStorage)                         ││
 │  └──────────────────────────────────────────────────────────┘│
 └─────────────────────────────────────────────────────────────┘
-              │
-              │ Static deploy (no backend)
+              │ SSE streaming
               ▼
-      Vercel / Netlify
-Key principle: This is a fully client-side application. No backend, no API calls, no database. The Fraction Engine, script engine, and all state management run in the browser. This simplifies deployment, eliminates latency, and ensures COPPA compliance through zero data collection.
+┌─────────────────────────────────────────────────────────────┐
+│              VERCEL EDGE FUNCTION (/api/chat)                 │
+│                                                               │
+│  ┌──────────────┐  ┌──────────────┐  ┌────────────────────┐│
+│  │ Claude API    │  │ Fraction     │  │ Langfuse Tracing   ││
+│  │ (Sonnet)      │  │ Engine       │  │ (observability)    ││
+│  │ + Tool Use    │  │ (server-side)│  │                    ││
+│  └──────────────┘  └──────────────┘  └────────────────────┘│
+└─────────────────────────────────────────────────────────────┘
+Key principle: The client handles UI, state management, and voice I/O. The Vercel Edge Function handles Claude API calls, FractionEngine tool execution, and Langfuse tracing. Math correctness always comes from the deterministic FractionEngine — Claude generates pedagogy, never math. COPPA compliance via zero PII collection and Anthropic's zero-retention API policy.
 4.2 Technology Stack
-LayerTechnologyRationaleFrameworkVite + React + TypeScriptFast scaffold, excellent tree-shaking, typed interfacesState ManagementReact useReducerLightweight FSM, no external dependencyTouch/Gesture@use-gesture/reactBattle-tested touch handling, inertia, scroll-vs-dragAnimationCSS Transitions + Web Animations APIZero library overhead, composited properties onlyAudioWeb Audio API (synthesized)No asset loading, dynamic pitch, zero file sizeDeploymentVercel + vite-plugin-pwaAuto-deploy from Git, offline support, standalone modeTestingVitest + fast-checkProperty-based testing for engine, standard unit testsE2E TestingCypress (2 critical paths only)Happy path + struggle path
+LayerTechnologyRationaleFrameworkVite + React + TypeScriptFast scaffold, excellent tree-shaking, typed interfacesState ManagementReact useReducerLightweight FSM, no external dependencyTouch/Gesture@use-gesture/reactBattle-tested touch handling, inertia, scroll-vs-dragAnimationCSS Transitions + Web Animations APIZero library overhead, composited properties onlyAudioWeb Audio API (synthesized)No asset loading, dynamic pitch, zero file sizeLLMClaude Sonnet (via @anthropic-ai/sdk)Conversational tutor with tool useBackendVercel Edge FunctionsAPI proxy, tool execution, streamingObservabilityLangfuseLLM tracing, token/cost trackingVoice (STT)Web Speech API (webkitSpeechRecognition)Free, local, iPad-nativeVoice (TTS)SpeechSynthesis APIFree, instant, offline-capableDeploymentVercel + vite-plugin-pwaAuto-deploy from Git, offline support, standalone modeTestingVitest + fast-checkProperty-based testing for engine, standard unit testsE2E TestingCypress (2 critical paths only)Happy path + struggle path
 Performance Budgets:
 MetricTargetInitial load (LCP)< 2 secondsTime to interactive< 3 secondsJS bundle (gzipped)< 150 KBAnimation framerate60 fpsTouch response latency< 100msMemory (heap)< 80 MBTotal asset size< 500 KB
 4.3 Core Data Models
@@ -138,26 +144,26 @@ FunctionSignatureDescriptionsimplify(f: Fraction) → FractionReduce to lowest t
 Math Verification Layer flow:
 Student Input → parseStudentInput() → FractionEngine.areEquivalent(input, target) → boolean → Script Branch
 The LLM never evaluates mathematical correctness. The boolean from the engine is the sole authority.
-4.5 TutorBrain Interface (LLM Upgrade Seam)
-typescriptinterface TutorBrain {
-  getNextAction(state: LessonState): Promise<TutorAction>;
-  evaluateResponse(
-    input: StudentInput,
-    step: ScriptStep,
-    state: LessonState
-  ): Promise<EvaluationResult>;
-}
+4.5 TutorBrain (LLM-Powered)
+```typescript
+// The TutorBrain is now Claude with FractionEngine tools
+// No ScriptedTutorBrain — Claude handles all conversation
 
-// Prototype implementation
-class ScriptedTutorBrain implements TutorBrain { ... }
+// Claude tools (mapped from FractionEngine):
+// - check_equivalence → areEquivalent(a, b)
+// - simplify_fraction → simplify(f)
+// - split_fraction → split(f, parts)
+// - combine_fractions → combine(fractions)
+// - find_common_denominator → toCommonDenominator(a, b)
+// - validate_fraction → isValidFraction(f)
+// - parse_student_input → parseStudentInput(raw)
+// - check_answer → parse + areEquivalent + misconception detection
+// - get_workspace_state → reads current LessonState
 
-// Future implementation (post-prototype)
-class LLMTutorBrain implements TutorBrain {
-  // isCorrect ALWAYS from FractionEngine — non-negotiable
-  // feedback text generated by LLM
-  // verifyFeedback() catches contradictions, falls back to scripted
-}
-Critical invariant: EvaluationResult.isCorrect is always computed by FractionEngine.areEquivalent(), never by an LLM. This is the zero-hallucination firewall that persists across both implementations.
+// Critical invariant unchanged: mathematical correctness
+// ALWAYS comes from FractionEngine tools, NEVER from Claude's
+// text generation. This is the zero-hallucination firewall.
+```
 
 5. Tutor Persona: "Sam the Fraction Explorer"
 Identity: Friendly, curious guide. Not teacher, not parent, not peer. Museum exhibit guide energy. Demographically neutral — geometric avatar (circle with eyes).
@@ -201,6 +207,8 @@ display: standalone in PWA manifest for home-screen launch without Safari chrome
 
 
 7. Lesson Flow — Complete Scripted Content
+Note: The lesson flow below defines the pedagogical structure. In the LLM-powered architecture, Claude manages the conversational flow within each phase using the system prompt and FractionEngine tools. The beat-by-beat scripts below serve as the prompt engineering reference — they define what Sam should say and when, but Claude generates the actual responses adaptively.
+
 7.1 Phase 1: Introduction (≈ 30 seconds)
 Setup: Workspace pre-loaded with one 1/2 block (blue). No student action needed to begin.
 BeatTimeSam SaysWorkspaceAdvance10s"Hi! I'm Sam. See that blue block over there? →"Arrow pulses toward 1/2 blockAuto (2s delay)22s"That's one-half. Tap on it!"Block awaits tapStudent taps block3—"Now press Split!"Split button pulsesStudent taps Split4—(Split picker appears: [2] [3] [4]) "How many pieces? Try 2!"Picker visibleStudent selects 25—"Whoa! You just split one-half into two quarters. Each piece is 1/4."Split animation playsAuto (2s)6—"Here's the cool part — those two 1/4 pieces together are STILL the same amount as the 1/2 you started with."Both blocks glowAuto (2s)7—"What else can you do with those blocks? Try splitting and combining — see what you discover!"Workspace open→ Phase 2
@@ -291,7 +299,7 @@ Numerical labels always paired with visual blocks
 
 12. Privacy and Compliance
 COPPA strategy: Zero collection.
-ConcernResolutionPersonal informationNone collected. No accounts, no names, no cookies.AnalyticsNone. No Google Analytics, Mixpanel, Segment.Data persistencesessionStorage only (dies with tab). No server-side storage.LLM API callsNone (scripted dialogue). No student data sent externally.Third-party scriptsNone. No CDN dependencies that set cookies.
+ConcernResolutionPersonal informationNone collected. No accounts, no names, no cookies.AnalyticsNone. No Google Analytics, Mixpanel, Segment.Data persistencesessionStorage only (dies with tab). No server-side storage.LLM API callsStudent messages sent to Anthropic API via Vercel Edge Function. No PII collected (no accounts, no names). Anthropic zero-retention policy — messages not stored or used for training.Third-party scriptsNone. No CDN dependencies that set cookies.Privacy noticeDisplayed on start screen: "This tutor uses AI. No personal information is collected or stored."
 Post-prototype (when adding persistence): School contract model (SDPA), anonymous student IDs via school SSO (Clever/ClassLink), zero-retention LLM provider agreement, US data residency, annual compliance audit.
 
 13. Deployment Architecture
@@ -317,26 +325,26 @@ Objective: Fraction blocks that look and feel tangible.
 TicketDescriptionAcceptance CriteriaEst. HoursENG-005FractionBlock componentColored rectangle with subdivision grid lines, sized proportionally to fraction value. Color-coded by denominator family. 60×60pt minimum touch target.3hENG-006FractionWorkspace componentReference bar (1 whole) at top. Active blocks area. Comparison zone. Pre-seeded with initial blocks.2hENG-007Split interaction + animationTap block → select → tap Split → picker [2][3][4] → engine computes → block cracks and separates (400ms, ease-out). Total area preserved during animation. Labels appear on new blocks.2hENG-008Combine interaction + animationDrag two same-denominator blocks together → engine computes → snap animation (350ms) → seam dissolves → new label. Reject different-denominator with Sam message.2hENG-009Wire blocks to reducerAll visual state derived from engine state. isDragging guard for single-touch. Action debouncing (500ms on Split). Impossible-state rejection.1h
 Day 2 Deliverable: Standalone page where you can split and combine fraction blocks visually with smooth animations.
 
-Phase 3: Chat Interface + Script Engine (Day 3 — Wednesday)
-Objective: Sam talks to the student through a scripted dialogue system.
-TicketDescriptionAcceptance CriteriaEst. HoursENG-010Chat panel UIScrollable message list. Sam avatar on tutor messages. Student input area. Auto-scroll to latest message.2hENG-011Script engineLoad JSON dialogue scripts. Advance on events. Template interpolation ({student_answer}, {target}, {attempt_count}). Support for on_correct / on_incorrect / on_second_incorrect branching.3hENG-012Introduction phase script (JSON)7 beats scripted per Section 7.1. Inactivity handlers at 10s. All messages conform to Sam's voice constraints.1.5hENG-013ScriptedTutorBrain implementationImplements TutorBrain interface. getNextAction reads from script. evaluateResponse delegates math to FractionEngine.1.5hENG-014Script graph traversal testDFS over all script JSON files. Verify: no dead-ends, all terminals in assessment-complete, no orphaned nodes.0.5h
-Day 3 Deliverable: Intro phase plays through in chat panel. Manipulative visible but not yet connected.
+Phase 3: Chat + LLM Integration (Day 3 — Wednesday)
+Objective: Sam talks to the student through Claude with FractionEngine tools.
+TicketDescriptionAcceptance CriteriaEst. HoursENG-010Chat panel UIScrollable message list. Sam avatar on tutor messages. Student input area. Auto-scroll to latest message.2hLLM-001Vercel edge function + Claude API proxy + SSE streamingEdge function at /api/chat proxies to Claude API. SSE streaming works end-to-end. Error handling for rate limits and timeouts.3hLLM-002Claude tool definitions (FractionEngine → tools)All FractionEngine functions exposed as Claude tools. Tool execution returns deterministic results. Tool schema validated.2hLLM-003System prompt engineering (Sam persona, phase-aware)System prompt encodes Sam's voice constraints, current lesson phase, and pedagogical goals. Prompt tested against edge cases.2h
+Day 3 Deliverable: Chat panel connected to Claude via edge function. Sam responds conversationally with FractionEngine tool use.
 iPad checkpoint: Test on actual iPad today. Fix viewport, touch-action, and Safari layout issues immediately.
 
-Phase 4: Integration + Guided Practice (Day 4 — Thursday)
-Objective: Chat and manipulative work together. Full guided practice with branching.
-TicketDescriptionAcceptance CriteriaEst. HoursENG-015Chat ↔ Workspace integrationTutor messages trigger workspace highlights (CSS pulse on referenced elements). Workspace actions trigger script advancement.2hENG-016Exploration phase + ObserverExplorationObserver tracks 3 discovery goals. Nudge rules fire on inactivity, repetition, complexity. Phase transitions on all-discovered or 3min timeout.2hENG-017Guided practice scripts (JSON)GP-1 through GP-4 fully scripted per Section 7.3. All branching paths, hints, auto-demonstrations.2hENG-018Math Verification LayerparseStudentInput → FractionEngine.areEquivalent → boolean → branch selection. Misconception detection for: added_num_and_den, flipped_fraction, random_fraction, wrong_equivalence.1.5hENG-019Misconception detector testsTruth table tests: each handler fires correctly on matching inputs, stays silent on non-matching.0.5h
-Day 4 Deliverable: Student plays through Intro → Exploration → Guided Practice with working feedback.
+Phase 4: Integration + Voice + Observability (Day 4 — Thursday)
+Objective: Full integration of chat, workspace, voice, and observability.
+TicketDescriptionAcceptance CriteriaEst. HoursLLM-004useTutorChat hook (SSE client, streaming, typing indicators)React hook manages SSE connection, streams Claude responses, shows typing indicator during generation.3hLLM-005Reducer additions (TUTOR_RESPONSE, SET_LOADING)New action types for LLM responses and loading states. Reducer handles streaming updates.1hLLM-006Wire ChatPanel to LLMChatPanel sends messages via useTutorChat. Streaming responses render in real-time. Error states handled gracefully.2hLLM-007Langfuse integrationAll Claude API calls traced in Langfuse. Token usage, latency, and tool calls tracked. Dashboard accessible.2hENG-015Chat ↔ Workspace integration (modified for LLM)Tutor messages trigger workspace highlights (CSS pulse on referenced elements). Workspace actions sent as context to Claude.2hENG-016Exploration Observer (simplified)ExplorationObserver tracks 3 discovery goals. Nudge rules fire on inactivity, repetition, complexity. Discovery state passed to Claude as context.1.5hENG-018MisconceptionDetector (as Claude tool)parseStudentInput → FractionEngine.areEquivalent → boolean → misconception detection. Exposed as Claude tool for pedagogical response generation.1.5hENG-019Misconception detector testsTruth table tests: each handler fires correctly on matching inputs, stays silent on non-matching.0.5h
+Day 4 Deliverable: Student plays through Intro → Exploration → Guided Practice with LLM-powered conversation, observability active.
 
 Phase 5: Assessment + Core Polish (Day 5 — Friday)
 Objective: Full lesson flow end-to-end on iPad.
-TicketDescriptionAcceptance CriteriaEst. HoursENG-020Assessment problem pools (JSON)A-1, A-2, A-3 pools per Section 7.4. Randomized selection at session start.1hENG-021Assessment UIMultiple-choice cards (A-1). Construction workspace (A-2, A-3). Max-attempt logic. "Submit first / Submit second" for A-3.2.5hENG-022Completion screenScore display. Sam's response by score bracket (3/3, 2/3, 1/3, 0/3). Retry option for 2/3. Loop-back for 1/3 and 0/3.1.5hENG-023Progress dotsPhase indicator in header bar. Filled dot = completed, hollow = upcoming, pulsing = current. Fill animation on transition.0.5hENG-024Sound Manager5 synthesized sounds per Section 8. AudioContext unlock on "Start Lesson" tap. Mute toggle in header. prefers-reduced-motion respect.1hENG-025Checkpoint + recovery systemsessionStorage checkpointing per Section 9. Recovery UI with Sam's greeting. beforeunload + popstate guards.1.5h
-Day 5 Deliverable: Full lesson flow works end-to-end on iPad Safari.
+TicketDescriptionAcceptance CriteriaEst. HoursENG-020Assessment problem pools (JSON)A-1, A-2, A-3 pools per Section 7.4. Randomized selection at session start.1hENG-021Assessment UIMultiple-choice cards (A-1). Construction workspace (A-2, A-3). Max-attempt logic. "Submit first / Submit second" for A-3.2.5hENG-022Completion screenScore display. Sam's response by score bracket (3/3, 2/3, 1/3, 0/3). Retry option for 2/3. Loop-back for 1/3 and 0/3.1.5hENG-023Progress dotsPhase indicator in header bar. Filled dot = completed, hollow = upcoming, pulsing = current. Fill animation on transition.0.5hENG-024Sound Manager5 synthesized sounds per Section 8. AudioContext unlock on "Start Lesson" tap. Mute toggle in header. prefers-reduced-motion respect.1hENG-025Checkpoint + recovery systemsessionStorage checkpointing per Section 9. Recovery UI with Sam's greeting. beforeunload + popstate guards.1.5hLLM-008Voice input (STT)Web Speech API integration for speech-to-text. Microphone button in chat panel. Visual feedback during recording. iPad Safari compatible.2hLLM-009Voice output (TTS)SpeechSynthesis API integration for text-to-speech. Sam's responses read aloud. Toggle for voice on/off. Natural pacing and pauses.1.5h
+Day 5 Deliverable: Full lesson flow works end-to-end on iPad Safari with voice input/output.
 
 Phase 6: Polish + Edge Cases (Day 6 — Saturday)
 Objective: The experience feels polished, not just functional.
-TicketDescriptionAcceptance CriteriaEst. HoursENG-026Equivalence reveal animationGolden pulse + "=" symbol between equivalent blocks in comparison zone (600ms).1hENG-027Incorrect placement animationBlocks bounce apart + "≠" symbol + overhanging portion pulses red (400ms).0.5hENG-028Celebration confettiConfetti particle animation on 3/3 completion. CSS-only or lightweight (< 2KB). Time-boxed: 2 hours max.2hENG-029Edge case handlersAll scenarios from Section 10: rapid tapping, gibberish input, multi-touch, inactivity timers, locked UI elements.2hENG-030Responsive layout: portrait modeManipulative stacks above chat with toggle tab in portrait. Smooth transition on rotation.1hENG-031Accessibility: ARIA + keyboardaria-labels on all blocks, aria-live workspace region, keyboard navigation (Tab/Enter/Arrow/Space), 3px focus ring.1.5hENG-032PWA configurationvite-plugin-pwa setup. Service worker caches all assets. display: standalone. Offline-capable.0.5h
-Day 6 Deliverable: Polished experience with micro-animations, edge case handling, and offline support.
+TicketDescriptionAcceptance CriteriaEst. HoursENG-026Equivalence reveal animationGolden pulse + "=" symbol between equivalent blocks in comparison zone (600ms).1hENG-027Incorrect placement animationBlocks bounce apart + "≠" symbol + overhanging portion pulses red (400ms).0.5hENG-028Celebration confettiConfetti particle animation on 3/3 completion. CSS-only or lightweight (< 2KB). Time-boxed: 2 hours max.2hENG-029Edge case handlersAll scenarios from Section 10: rapid tapping, gibberish input, multi-touch, inactivity timers, locked UI elements.2hENG-030Responsive layout: portrait modeManipulative stacks above chat with toggle tab in portrait. Smooth transition on rotation.1hENG-031Accessibility: ARIA + keyboardaria-labels on all blocks, aria-live workspace region, keyboard navigation (Tab/Enter/Arrow/Space), 3px focus ring.1.5hENG-032PWA configurationvite-plugin-pwa setup. Service worker caches all assets. display: standalone. Offline-capable.0.5hLLM-010Eval datasetCurated dataset of student interactions covering happy path, struggle path, misconceptions, and edge cases. Ground truth responses defined.2hLLM-011Eval runnerAutomated eval runner that replays dataset against Claude, scores responses against ground truth, reports pass/fail metrics.1.5h
+Day 6 Deliverable: Polished experience with micro-animations, edge case handling, offline support, and eval infrastructure.
 
 Phase 7: Demo + Delivery (Day 7 — Sunday)
 Objective: Ship it.
@@ -353,10 +361,12 @@ synthesis-tutor/
 │   │   ├── FractionEngine.test.ts
 │   │   ├── MisconceptionDetector.ts
 │   │   └── MisconceptionDetector.test.ts
-│   ├── brain/                           ← TutorBrain abstraction
+│   ├── brain/                           ← TutorBrain (LLM-powered)
 │   │   ├── TutorBrain.ts                   (interface)
-│   │   ├── ScriptedTutorBrain.ts           (prototype implementation)
-│   │   └── ScriptedTutorBrain.test.ts
+│   │   ├── LLMTutorBrain.ts                (Claude implementation)
+│   │   ├── useTutorChat.ts                 (React hook — SSE client)
+│   │   ├── useVoiceInput.ts                (STT hook)
+│   │   └── useVoiceOutput.ts               (TTS hook)
 │   ├── state/                           ← State management
 │   │   ├── types.ts                        (shared interfaces — THE contract)
 │   │   ├── reducer.ts
@@ -383,10 +393,8 @@ synthesis-tutor/
 │   │       └── SamAvatar.tsx
 │   ├── observers/                       ← Exploration observer
 │   │   └── ExplorationObserver.ts
-│   ├── content/                         ← Lesson scripts (JSON)
-│   │   ├── intro-script.json
+│   ├── content/                         ← Lesson content (JSON)
 │   │   ├── exploration-config.json
-│   │   ├── guided-practice-script.json
 │   │   └── assessment-pools.json
 │   ├── audio/                           ← Sound synthesis
 │   │   └── SoundManager.ts
@@ -395,6 +403,9 @@ synthesis-tutor/
 │   ├── e2e/
 │   │   ├── happy-path.cy.ts
 │   │   └── struggle-path.cy.ts
+├── api/
+│   └── chat.ts                          ← Vercel Edge Function
+├── vercel.json
 ├── package.json
 ├── tsconfig.json
 ├── vite.config.ts
@@ -407,10 +418,22 @@ Shared: src/state/types.ts (frozen after Day 1).
 LayerToolCoveragePriorityTimeFraction EngineVitest + fast-checkProperty-based: reflexivity, symmetry, roundtrip, simplify-preserves-value (10K iterations)P02h (Day 1)Misconception DetectorsVitestTruth table: each detector fires correctly on matching/non-matching inputsP00.5h (Day 4)Script IntegrityVitestDFS graph traversal: no dead-ends, no orphans, all terminals validP10.5h (Day 3)State ReducerVitestKey transitions: phase changes, score updates, impossible-state rejectionP11h (Day 1)E2E Happy PathCypressFull lesson, all correct → 3/3P21h (Day 7)E2E Struggle PathCypressAll incorrect → hints → demonstrations → assessmentP21h (Day 7)
 Total testing time: ~6 hours across the sprint.
 
-17. Risk Register
+17. Architecture Decision: Pivot from Scripted to LLM
+The original architecture used a ScriptedTutorBrain with JSON dialogue scripts and branching logic to simulate adaptive tutoring. The project has pivoted to an LLM-powered architecture for the following reasons:
+
+1. **Conversational quality**: Claude generates naturally varied, contextually appropriate responses rather than selecting from pre-written branches. This dramatically improves the feel of the tutoring interaction.
+2. **Reduced content authoring**: JSON script authoring was projected to consume significant engineering time (ENG-011, ENG-012, ENG-013, ENG-017). The LLM approach replaces all scripted content with a single system prompt.
+3. **True adaptivity**: The scripted system could only respond to anticipated student behaviors. Claude can handle unexpected inputs, novel misconceptions, and freeform conversation.
+4. **Voice mode**: LLM-powered conversation pairs naturally with voice input/output, enabling a more accessible and engaging experience for the target age group (8-12).
+
+**What stays the same**: The FractionEngine remains the sole authority on mathematical correctness. Claude never evaluates math — it calls FractionEngine tools and generates pedagogy around the deterministic results. This zero-hallucination firewall is architecturally unchanged.
+
+**New risks**: LLM latency (mitigated by SSE streaming), API costs (mitigated by Sonnet model selection), prompt injection (mitigated by system prompt hardening and tool-only math evaluation). See Risk Register below.
+
+18. Risk Register
 RiskLikelihoodImpactMitigationiPad Safari breaks layoutHighHighTest on actual iPad by Day 3, not Day 5Drag-and-drop fiddly on touchMediumHighFallback: "tap to select, tap to place" interactionScript writing takes too longMediumMediumStart with 3 GP problems, not 4; cut GP-4 if behindAnimation polish eats scheduleHighLow4-hour time-box on Day 6; ship without confetti if neededScope creep (LLM, multiple lessons)MediumHightypes.ts and TutorBrain interface support it later; resist this weekEngine/visual desyncLowCriticalSingle source of truth architecture; derived rendering; validation on every renderBundle exceeds 150KBLowMediumDrop Framer Motion → Web Animations API; audit with npx vite-bundle-visualizerStudent discovers unhandled interactionMediumMediumEdge case handlers (Section 10) + graceful Sam fallback for any unknown state
 
-18. Success Criteria
+19. Success Criteria
 Technical (Day 7 gate)
 
  App loads in < 3s on iPad Safari (2020 iPad 8th gen)
@@ -434,7 +457,7 @@ Learning (Directional Signal)
  Pre/post one-question test: average improvement of 1+ correct answers (out of 4 fraction-pair comparisons)
 
 
-19. Demo Video Shot List
+20. Demo Video Shot List
 ShotTimeContentPurpose1. Setup0:00–0:08iPad on desk, app loads, split-pane appearsReal device, fast load2. First Discovery0:08–0:25Student taps block, presses Split, pop-pop animation playsMagic moment — tangible manipulative3. Exploration0:25–0:40Free exploration, equivalence reveal animation, Sam celebratesDiscovery over instruction4. Struggle0:40–0:55Wrong answer → Sam helps → retry → successBranching dialogue, pedagogical credibility5. Mastery0:55–1:15Assessment 3/3, confetti, completion screenEmotional payoff6. Close1:15–1:30Quick montage → title cardBreadth + polish
 Recording: iPad built-in screen recording (shows touch indicators). Landscape. Student hands visible, no face (privacy). 720p output.
 
