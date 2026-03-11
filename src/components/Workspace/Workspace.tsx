@@ -39,6 +39,7 @@ export interface WorkspaceProps {
   draggingBlockId?: string | null;
   combinedBlockId?: string | null;
   splitBlockIds?: string[] | null;
+  highlightedBlockIds?: string[];
 }
 
 export function Workspace({
@@ -54,6 +55,7 @@ export function Workspace({
   draggingBlockId = null,
   combinedBlockId = null,
   splitBlockIds = null,
+  highlightedBlockIds = [],
 }: WorkspaceProps) {
   void _selectedBlockId; // Reserved for ActionBar (ENG-007)
   const workspaceBlocks = blocks.filter((b) => b.position === 'workspace');
@@ -158,6 +160,7 @@ export function Workspace({
               block.id === combinedBlockId ||
               (splitBlockIds != null && splitBlockIds.includes(block.id))
             }
+            isHighlighted={highlightedBlockIds.includes(block.id)}
           />
         ))}
       </section>

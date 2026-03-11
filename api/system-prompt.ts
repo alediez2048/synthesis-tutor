@@ -17,7 +17,9 @@ Themed vocabulary (ALWAYS pair with proper math terms):
 - Combining → "fusing crystals" or "combining"
 - Equivalent fractions → "same magical power" or "equivalent"
 
-Example: "You split that crystal into two pieces — each one is one-fourth!"`;
+Example: "You split that crystal into two pieces — each one is one-fourth!"
+
+Messages in [square brackets] describe workspace actions the student performed (e.g. splitting, combining, placing on the spell altar). React to them naturally: "Nice split!" or "I see you combined those crystals!"`;
 
 const VOICE_CONSTRAINTS = `## Voice Constraints
 

@@ -64,7 +64,7 @@
 | ENG-019 | Misconception detector tests | ⬜ Pending | 0.5h |
 | ENG-018 | MisconceptionDetector (Claude tool) | ⬜ Pending | 1.5h |
 | ENG-016 | Exploration Observer (simplified) | ⬜ Pending | 1.5h |
-| ENG-015 | Chat ↔ Workspace integration | ⬜ Pending | 2h |
+| ENG-015 | Chat ↔ Workspace integration | ✅ Complete | 2h |
 | ENG-040 | LangSmith observability integration | ⬜ Pending | 2h |
 | ENG-039 | Wire ChatPanel to LLM | ⬜ Pending | 2h |
 | ENG-017 | Reducer additions (TUTOR_RESPONSE, SET_LOADING) | ⬜ Pending | 1h |
@@ -416,15 +416,15 @@ Created `api/system-prompt.ts` with `buildSystemPrompt(lessonState)`; seven sect
 
 ---
 
-### ENG-015: Chat ↔ Workspace Integration ⬜
+### ENG-015: Chat ↔ Workspace Integration ✅
+
+#### Plain-English Summary
+Workspace→chat: notifySam(description) in useTutorChat with 500ms debounce; split/combine/compare in App call notifySam with bracket-form descriptions; auto-send to Sam. Chat→workspace: parseFractionReferences.ts; tutor message completion triggers gold pulse on matching blocks; highlightedBlockIds state, 1500ms clear; FractionBlock isHighlighted, Workspace highlightedBlockIds. System prompt: bracket-message guidance. ChatPanel wired to useTutorChat (sendMessage, isLoading).
 
 #### Acceptance Criteria
-- [ ] Tutor messages trigger workspace highlights (CSS pulse on referenced blocks/buttons)
-- [ ] Workspace actions (split, combine, compare) trigger script advancement
-- [ ] Bidirectional: chat drives workspace AND workspace drives chat
-
-#### Dependencies
-- ENG-009 (blocks wired to reducer), ENG-010 (chat panel), ENG-013 (TutorBrain)
+- [x] Workspace actions auto-notify Sam (500ms debounce, [brackets]); Sam responds
+- [x] Tutor fraction references highlight matching blocks (gold pulse, 600ms×2); clear after 1500ms
+- [x] parseFractionReferences; isHighlighted prop; system prompt updated
 
 ---
 
@@ -1340,6 +1340,45 @@ Implemented `useTutorChat(state, dispatch)` in `src/brain/useTutorChat.ts`. Hook
 
 #### Acceptance Criteria
 - [x] Reducer additions; useTutorChat with sendMessage, isLoading; SSE parsing; streaming TUTOR_RESPONSE; error handling; history cap; concurrent guard; DEVLOG updated
+
+---
+
+### ENG-015: Chat ↔ Workspace Integration ✅
+
+#### Plain-English Summary
+Bidirectional integration: (1) Workspace→Chat: useTutorChat now returns notifySam(description). App calls notifySam after split (“I split the n/d crystal into parts pieces”), combine (“I combined n/d and n/d”), and drop on comparison zone (“I placed n/d on the spell altar”). Pending context is debounced 500ms then sent as one bracket message so Sam can react. (2) Chat→Workspace: parseFractionReferences(text) extracts n/d from tutor text; when last message is tutor and isStreaming false, matching blocks are highlighted via gold pulse (boxShadow, 600ms×2); highlights clear after 1500ms. FractionBlock got isHighlighted prop; Workspace got highlightedBlockIds. System prompt updated: “Messages in [square brackets] describe workspace actions… React to them naturally.” App also wired ChatPanel to useTutorChat (sendMessage, isLoading) so chat actually hits the API.
+
+#### Metadata
+- **Status:** Complete
+- **Date:** Mar 11, 2026
+- **Ticket:** ENG-015
+- **Branch:** `feature/eng-015-chat-workspace-integration`
+
+#### Key Achievements
+- **src/brain/parseFractionReferences.ts:** parseFractionReferences(text) → FractionRef[] (n/d, denominator ≤12)
+- **src/brain/useTutorChat.ts:** pendingContextRef, autoSendTimerRef, notifySam(description) with 500ms debounce; returns notifySam
+- **src/App.tsx:** useTutorChat, notifySam after split/combine/compare; highlightedBlockIds state; useEffect to set highlights from last tutor message (deferred setState for lint); pass highlightedBlockIds to Workspace, isLoading to ChatPanel
+- **Workspace.tsx:** highlightedBlockIds prop; isHighlighted on FractionBlock
+- **FractionBlock.tsx:** isHighlighted prop; gold pulse animation (boxShadow, 600ms, 2 iterations)
+- **api/system-prompt.ts:** bracket-message guidance in IDENTITY
+
+#### Files Modified
+- `src/brain/parseFractionReferences.ts` — created
+- `src/brain/useTutorChat.ts` — notifySam, pendingContextRef, 500ms debounce
+- `src/App.tsx` — useTutorChat, notifySam calls, highlightedBlockIds, ChatPanel isLoading
+- `src/components/Workspace/Workspace.tsx` — highlightedBlockIds, isHighlighted
+- `src/components/Workspace/FractionBlock.tsx` — isHighlighted, pulse animation
+- `api/system-prompt.ts` — bracket-message guidance
+- `docs/DEVLOG.md` — ENG-015 entry
+
+#### Verification
+- `npx tsc -b` — zero errors
+- `npm run lint` — zero errors
+- `npm test` — 64 passed
+
+#### Acceptance Criteria
+- [x] Workspace actions auto-notify Sam; 500ms debounce; bracket convention; Sam responds
+- [x] Tutor fraction refs → gold pulse on blocks; 1500ms clear; parseFractionReferences; isHighlighted/highlightedBlockIds; system prompt updated; no feedback loops
 
 ---
 

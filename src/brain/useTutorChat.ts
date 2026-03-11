@@ -25,14 +25,19 @@ function buildMessageHistory(
   return messages;
 }
 
+const WORKSPACE_DEBOUNCE_MS = 500;
+
 export function useTutorChat(
   state: LessonState,
   dispatch: React.Dispatch<LessonAction>
 ): {
   sendMessage: (text: string) => void;
+  notifySam: (description: string) => void;
   isLoading: boolean;
 } {
   const isStreamingRef = useRef(false);
+  const pendingContextRef = useRef<string[]>([]);
+  const autoSendTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const sendMessage = useCallback(
     async (text: string) => {
@@ -158,8 +163,25 @@ export function useTutorChat(
     [state, dispatch]
   );
 
+  const notifySam = useCallback(
+    (description: string) => {
+      pendingContextRef.current.push(description);
+      if (autoSendTimerRef.current !== null) {
+        clearTimeout(autoSendTimerRef.current);
+      }
+      autoSendTimerRef.current = setTimeout(() => {
+        const context = pendingContextRef.current.join('. ');
+        pendingContextRef.current = [];
+        autoSendTimerRef.current = null;
+        if (context) sendMessage(`[${context}]`);
+      }, WORKSPACE_DEBOUNCE_MS);
+    },
+    [sendMessage]
+  );
+
   return {
     sendMessage,
+    notifySam,
     isLoading: state.isLoading,
   };
 }

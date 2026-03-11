@@ -6,6 +6,8 @@ import {
 import { Workspace } from './components/Workspace/Workspace';
 import { ChatPanel } from './components/ChatPanel/ChatPanel';
 import { ActionBar } from './components/Workspace/ActionBar';
+import { useTutorChat } from './brain/useTutorChat';
+import { parseFractionReferences } from './brain/parseFractionReferences';
 
 const SPLIT_REJECTION_MESSAGE = 'Those pieces are as small as they can get!';
 const SPLIT_ANIMATION_MS = 400;
@@ -17,8 +19,34 @@ function App() {
   const [combinedBlockId, setCombinedBlockId] = useState<string | null>(null);
   const [splitRejectionMessage, setSplitRejectionMessage] = useState<string | null>(null);
   const [splitBlockIds, setSplitBlockIds] = useState<string[] | null>(null);
+  const [highlightedBlockIds, setHighlightedBlockIds] = useState<string[]>([]);
 
+  const { sendMessage, notifySam, isLoading } = useTutorChat(state, dispatch);
   const selectedBlockId = state.blocks.find((b) => b.isSelected)?.id ?? null;
+
+  useEffect(() => {
+    const lastMsg = state.chatMessages[state.chatMessages.length - 1];
+    if (!lastMsg || lastMsg.sender !== 'tutor' || state.isStreaming) return;
+    const refs = parseFractionReferences(lastMsg.content);
+    if (refs.length === 0) return;
+    const matchingIds = state.blocks
+      .filter((b) =>
+        refs.some(
+          (r) =>
+            r.numerator === b.fraction.numerator &&
+            r.denominator === b.fraction.denominator
+        )
+      )
+      .map((b) => b.id);
+    if (matchingIds.length > 0) {
+      const id = setTimeout(() => setHighlightedBlockIds(matchingIds), 0);
+      const clearId = setTimeout(() => setHighlightedBlockIds([]), 1500);
+      return () => {
+        clearTimeout(id);
+        clearTimeout(clearId);
+      };
+    }
+  }, [state.chatMessages, state.isStreaming, state.blocks]);
 
   useEffect(() => {
     if (!combinedBlockId) return;
@@ -51,6 +79,10 @@ function App() {
     const newIds = Array.from({ length: parts }, (_, i) => `block-${startId + i}`);
     setSplitBlockIds(newIds);
     dispatch({ type: 'SPLIT_BLOCK', blockId: selectedBlockId, parts });
+    const { numerator, denominator } = selectedBlock.fraction;
+    notifySam(
+      `I split the ${numerator}/${denominator} crystal into ${parts} pieces`
+    );
   };
 
   const handleDragStart = (blockId: string) => {
@@ -72,6 +104,10 @@ function App() {
     if (dragged.fraction.denominator === target.fraction.denominator) {
       setCombinedBlockId(`block-${state.nextBlockId}`);
       dispatch({ type: 'COMBINE_BLOCKS', blockIds: [draggedId, targetId] });
+      const d = dragged.fraction.denominator;
+      notifySam(
+        `I combined ${dragged.fraction.numerator}/${d} and ${target.fraction.numerator}/${d}`
+      );
     } else {
       setCombineRejectionMessage(
         'Those are different sizes — try blocks that are the same size!'
@@ -83,15 +119,18 @@ function App() {
     dispatch({ type: 'DRAG_END' });
     setDraggingBlockId(null);
     dispatch({ type: 'COMPARE_BLOCKS', blockIds: [draggedId, draggedId] });
+    const block = state.blocks.find((b) => b.id === draggedId);
+    if (block) {
+      const { numerator, denominator } = block.fraction;
+      notifySam(`I placed ${numerator}/${denominator} on the spell altar`);
+    }
   };
 
   const handleWorkspaceBackgroundClick = () => {
     dispatch({ type: 'DESELECT_ALL' });
   };
 
-  const handleSendMessage = (text: string) => {
-    dispatch({ type: 'STUDENT_RESPONSE', value: text });
-  };
+  const handleSendMessage = sendMessage;
 
   return (
     <div
@@ -125,6 +164,7 @@ function App() {
           <ChatPanel
             messages={state.chatMessages}
             onSendMessage={handleSendMessage}
+            isLoading={isLoading}
           />
         </div>
         <div style={{ flex: '0 0 60%', minWidth: 0, display: 'flex', flexDirection: 'column' }}>
@@ -159,6 +199,7 @@ function App() {
               draggingBlockId={draggingBlockId}
               combinedBlockId={combinedBlockId}
               splitBlockIds={splitBlockIds}
+              highlightedBlockIds={highlightedBlockIds}
             />
             <ActionBar
               selectedBlockId={selectedBlockId}
