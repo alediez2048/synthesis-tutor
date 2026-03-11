@@ -7,7 +7,7 @@ Status: Draft — Pending Engineering Review
 Timeline: 7-Day Sprint (1-Week Challenge)
 
 1. Executive Summary
-Synthesis Tutor is a web-based, iPad-first interactive math lesson that teaches fraction equivalence to children aged 8–12. It combines a conversational AI tutor ("Sam") with a digital manipulative workspace where students can split, combine, and compare visual fraction blocks. The prototype delivers a single, self-contained lesson covering Common Core Standards 3.NF.A.3a, 3.NF.A.3b, and 4.NF.A.1.
+**Fraction Quest** is a web-based, iPad-first interactive math lesson that teaches fraction equivalence to children aged 8–12. Themed as a fantasy adventure, it combines a conversational AI tutor ("Sam the Wizard Owl") with a digital manipulative workspace where students split, combine, and compare enchanted crystal shards. See `docs/theme.md` for the full Fraction Quest design system. The prototype delivers a single, self-contained lesson covering Common Core Standards 3.NF.A.3a, 3.NF.A.3b, and 4.NF.A.1.
 The system uses a deterministic Fraction Engine for all mathematical operations and an LLM-powered conversational AI tutor (Claude) with FractionEngine tool use for deterministic math verification. The architecture uses a Vercel Edge Function backend for Claude API proxying with SSE streaming and is COPPA-compliant through zero PII collection and Anthropic's zero-retention API policy.
 Deliverables (end of Day 7):
 
@@ -165,15 +165,16 @@ The LLM never evaluates mathematical correctness. The boolean from the engine is
 // text generation. This is the zero-hallucination firewall.
 ```
 
-5. Tutor Persona: "Sam the Fraction Explorer"
-Identity: Friendly, curious guide. Not teacher, not parent, not peer. Museum exhibit guide energy. Demographically neutral — geometric avatar (circle with eyes).
+5. Tutor Persona: "Sam the Wizard Owl"
+Identity: Friendly, curious wizard owl guide. Not teacher, not parent, not peer. Wise mentor energy — think Hedwig meets Dumbledore, but approachable. Visual: round owl body, big eyes behind round glasses, crooked purple hat with gold stars, small expressive wings. SVG avatar with 5 expression states (neutral, thinking, happy, encouraging, celebrating). See `docs/theme.md` Section 5 for full character spec.
+Themed vocabulary: Sam uses fantasy terms alongside proper math terms. "Crystal" for fraction block, "spell altar" for comparison zone, "spell table" for workspace. Math terms are never replaced — always paired. Example: "You split that crystal into two pieces — each one is one-fourth!"
 Voice Constraints (mandatory for all scripted lines):
 RuleGuidelineSentence lengthMaximum 15 wordsMessage lengthMaximum 3 sentencesToneContractions always ("let's", "that's"). Never formal.ErrorsNever use "wrong", "incorrect", "mistake", "error", "fail"Substitutes"not quite", "almost", "a little different", "let's try another way"Praise calibrationMatch enthusiasm to difficulty. "You got it!" not "OMG AMAZING!!!"Discovery emphasisCelebrate what the student found, not that they followed instructionsGrammar moodImperative or simple present. Never conditional ("if you were to...")VocabularyPair formal terms with plain English on first use. Use formal terms freely after.
 
 6. UI Layout and Design
 6.1 Screen Layout (iPad Landscape)
 ┌──────────────────────────────────────────────────────┐
-│  [●] [●] [○] [○]  Sam's Fraction Lab     [🔇 Mute] │
+│  [●] [●] [○] [○]  Fraction Quest          [🔇 Mute] │
 ├─────────────────────┬────────────────────────────────┤
 │                     │  ┌──────────────────────────┐  │
 │  Sam: "See that     │  │ REFERENCE: [████████ 1/1]│  │
@@ -192,11 +193,17 @@ RuleGuidelineSentence lengthMaximum 15 wordsMessage lengthMaximum 3 sentencesTon
 └──────────────────────────────────────────────────────┘
       40%                        60%
 iPad Portrait: Manipulative stacks above chat with toggle tab.
-6.2 Visual Design System
-Color coding by denominator:
-DenominatorColorHex1 (whole)Gray#9E9E9E2 (halves)Blue#4A90D93 (thirds)Green#27AE604 (fourths)Purple#8E44AD6 (sixths)Orange#E67E228 (eighths)Teal#16A08512 (twelfths)Pink#E84393
+6.2 Visual Design System — "Fraction Quest" Theme
+**Theme:** Fantasy adventure / RPG. Dark palette with glowing crystal accents. Full design system in `docs/theme.md`.
+**App name:** Fraction Quest — "A Magical Math Adventure"
+**Fonts:** Fredoka One (display/title), Nunito (body/UI) — both from Google Fonts. Base size 16px.
+**Background:** Dark midnight gradient (`#1A1A2E` → `#16213E` → `#0F3460`).
+Crystal colors by denominator (blocks are "enchanted crystals"):
+DenominatorCrystal TypeHex1 (whole)Moonstone#B2BEC32 (halves)Sapphire#4A90D93 (thirds)Emerald#27AE604 (fourths)Amethyst#8E44AD5 (fifths)Citrine#F39C126 (sixths)Topaz#E67E228 (eighths)Aquamarine#16A08512 (twelfths)Rose Quartz#E84393
+Block styling: Crystal gradient + shimmer overlay, 8px border-radius, gold selection ring (#FDCB6E), glowing shadows.
 Block sizing: Width proportional to fraction value relative to the reference bar. 1/2 = 50% of reference bar width, 1/4 = 25%, etc.
 Tap targets: Minimum 60×60 points for fraction blocks, 44×44 points for buttons (Apple HIG minimum).
+Key UI mappings: Workspace → "Spell Table", Comparison Zone → "Spell Altar", Split → "Break Spell", Combine → "Fuse Crystals".
 6.3 Critical iPad/Safari Requirements
 
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
@@ -211,7 +218,7 @@ Note: The lesson flow below defines the pedagogical structure. In the LLM-powere
 
 7.1 Phase 1: Introduction (≈ 30 seconds)
 Setup: Workspace pre-loaded with one 1/2 block (blue). No student action needed to begin.
-BeatTimeSam SaysWorkspaceAdvance10s"Hi! I'm Sam. See that blue block over there? →"Arrow pulses toward 1/2 blockAuto (2s delay)22s"That's one-half. Tap on it!"Block awaits tapStudent taps block3—"Now press Split!"Split button pulsesStudent taps Split4—(Split picker appears: [2] [3] [4]) "How many pieces? Try 2!"Picker visibleStudent selects 25—"Whoa! You just split one-half into two quarters. Each piece is 1/4."Split animation playsAuto (2s)6—"Here's the cool part — those two 1/4 pieces together are STILL the same amount as the 1/2 you started with."Both blocks glowAuto (2s)7—"What else can you do with those blocks? Try splitting and combining — see what you discover!"Workspace open→ Phase 2
+BeatTimeSam SaysWorkspaceAdvance10s"Hi! I'm Sam the Wizard Owl. See that glowing sapphire crystal? →"Arrow pulses toward 1/2 crystalAuto (2s delay)22s"That's one-half of the whole crystal. Tap on it!"Crystal awaits tapStudent taps crystal3—"Now cast a split spell — press Split!"Split button pulsesStudent taps Split4—(Split picker appears: [2] [3] [4]) "How many pieces? Try 2!"Picker visibleStudent selects 25—"Whoa! You just split that crystal into two shards. Each piece is 1/4 — one quarter!"Split animation + sparklesAuto (2s)6—"Here's the magic — those two 1/4 shards together have the SAME power as the 1/2 crystal you started with."Both crystals glowAuto (2s)7—"What other spells can you discover? Try splitting and fusing crystals — see what happens!"Workspace open→ Phase 2
 Inactivity handlers:
 
 10s without tapping block → "Tap the blue block with your finger — right on the screen!" + emphatic arrow
@@ -343,7 +350,7 @@ Day 5 Deliverable: Full lesson flow works end-to-end on iPad Safari with voice i
 
 Phase 6: Polish + Edge Cases (Day 6 — Saturday)
 Objective: The experience feels polished, not just functional.
-TicketDescriptionAcceptance CriteriaEst. HoursENG-026Equivalence reveal animationGolden pulse + "=" symbol between equivalent blocks in comparison zone (600ms).1hENG-027Incorrect placement animationBlocks bounce apart + "≠" symbol + overhanging portion pulses red (400ms).0.5hENG-028Celebration confettiConfetti particle animation on 3/3 completion. CSS-only or lightweight (< 2KB). Time-boxed: 2 hours max.2hENG-029Edge case handlersAll scenarios from Section 10: rapid tapping, gibberish input, multi-touch, inactivity timers, locked UI elements.2hENG-030Responsive layout: portrait modeManipulative stacks above chat with toggle tab in portrait. Smooth transition on rotation.1hENG-031Accessibility: ARIA + keyboardaria-labels on all blocks, aria-live workspace region, keyboard navigation (Tab/Enter/Arrow/Space), 3px focus ring.1.5hENG-032PWA configurationvite-plugin-pwa setup. Service worker caches all assets. display: standalone. Offline-capable.0.5hENG-043Eval datasetCurated dataset of student interactions covering happy path, struggle path, misconceptions, and edge cases. Ground truth responses defined.2hENG-044Eval runnerAutomated eval runner that replays dataset against Claude, scores responses against ground truth, reports pass/fail metrics.1.5h
+TicketDescriptionAcceptance CriteriaEst. HoursENG-026Equivalence reveal animationGolden pulse + "=" symbol between equivalent blocks in comparison zone (600ms).1hENG-027Incorrect placement animationBlocks bounce apart + "≠" symbol + overhanging portion pulses red (400ms).0.5hENG-028Celebration confettiConfetti particle animation on 3/3 completion. CSS-only or lightweight (< 2KB). Time-boxed: 2 hours max.2hENG-029Edge case handlersAll scenarios from Section 10: rapid tapping, gibberish input, multi-touch, inactivity timers, locked UI elements.2hENG-030Responsive layout: portrait modeManipulative stacks above chat with toggle tab in portrait. Smooth transition on rotation.1hENG-031Accessibility: ARIA + keyboardaria-labels on all blocks, aria-live workspace region, keyboard navigation (Tab/Enter/Arrow/Space), 3px focus ring.1.5hENG-032PWA configurationvite-plugin-pwa setup. Service worker caches all assets. display: standalone. Offline-capable.0.5hENG-043Eval datasetCurated dataset of student interactions covering happy path, struggle path, misconceptions, and edge cases. Ground truth responses defined.2hENG-044Eval runnerAutomated eval runner that replays dataset against Claude, scores responses against ground truth, reports pass/fail metrics.1.5hENG-045Fraction Quest theme passFull visual theme: dark background, crystal blocks, wizard owl Sam, Nunito/Fredoka fonts, themed chat panel. See docs/theme.md.5-9h
 Day 6 Deliverable: Polished experience with micro-animations, edge case handling, offline support, and eval infrastructure.
 
 Phase 7: Demo + Delivery (Day 7 — Sunday)
