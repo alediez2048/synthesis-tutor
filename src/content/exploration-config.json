@@ -1,0 +1,12 @@
+{
+  "goals": ["splitting", "combining", "equivalence"],
+  "nudges": {
+    "inactivityDelayMs": 15000,
+    "inactivityMinActions": 3,
+    "consecutiveSplitsThreshold": 5,
+    "overwhelmMinDenominator": 8,
+    "phaseTimeoutMs": 180000
+  },
+  "transitionDelayMs": 3000,
+  "checkIntervalMs": 5000
+}

@@ -8,6 +8,7 @@ import { ChatPanel } from './components/ChatPanel/ChatPanel';
 import { ActionBar } from './components/Workspace/ActionBar';
 import { useTutorChat } from './brain/useTutorChat';
 import { parseFractionReferences } from './brain/parseFractionReferences';
+import { useExplorationObserver } from './observers/useExplorationObserver';
 
 const SPLIT_REJECTION_MESSAGE = 'Those pieces are as small as they can get!';
 const SPLIT_ANIMATION_MS = 400;
@@ -23,6 +24,13 @@ function App() {
 
   const { sendMessage, notifySam, isLoading } = useTutorChat(state, dispatch);
   const selectedBlockId = state.blocks.find((b) => b.isSelected)?.id ?? null;
+
+  useExplorationObserver({
+    state,
+    dispatch,
+    sendMessage,
+    isLoading,
+  });
 
   useEffect(() => {
     const lastMsg = state.chatMessages[state.chatMessages.length - 1];
