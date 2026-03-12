@@ -44,6 +44,8 @@ function defaultLessonState(): LessonState {
     conceptsDiscovered: [],
     isDragging: false,
     nextBlockId: 1,
+    isLoading: false,
+    isStreaming: false,
   };
 }
 
