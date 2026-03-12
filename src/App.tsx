@@ -3,6 +3,7 @@ import {
   getInitialLessonState,
   lessonReducer,
 } from './state/reducer';
+import { loadCheckpoint, saveCheckpoint, clearCheckpoint } from './state/checkpoint';
 import { Workspace } from './components/Workspace/Workspace';
 import { ChatPanel } from './components/ChatPanel/ChatPanel';
 import { ActionBar } from './components/Workspace/ActionBar';
@@ -30,7 +31,14 @@ const COMPLETION_MESSAGES: Record<string, string> = {
 };
 
 function App() {
-  const [state, dispatch] = useReducer(lessonReducer, getInitialLessonState());
+  const [recoveryState, setRecoveryState] = useState<ReturnType<typeof loadCheckpoint>>(
+    () => loadCheckpoint()
+  );
+  const [state, dispatch] = useReducer(
+    lessonReducer,
+    recoveryState ?? getInitialLessonState()
+  );
+  const [showRecovery, setShowRecovery] = useState(recoveryState !== null);
   const [draggingBlockId, setDraggingBlockId] = useState<string | null>(null);
   const [combineRejectionMessage, setCombineRejectionMessage] = useState<string | null>(null);
   const [combinedBlockId, setCombinedBlockId] = useState<string | null>(null);
@@ -73,6 +81,60 @@ function App() {
     }
     prevPhaseRef.current = state.phase;
   }, [state.phase, dispatch]);
+
+  const handleKeepGoing = useCallback(() => {
+    clearCheckpoint();
+    setShowRecovery(false);
+    setRecoveryState(null);
+  }, []);
+
+  const handleStartOver = useCallback(() => {
+    clearCheckpoint();
+    dispatch({ type: 'FULL_RESET' });
+    setShowRecovery(false);
+    setRecoveryState(null);
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (!showRecovery) {
+      saveCheckpoint(state);
+    }
+  }, [
+    showRecovery,
+    state.phase,
+    state.score.correct,
+    state.score.total,
+    state.assessmentStep,
+    state.conceptsDiscovered.length,
+    state.chatMessages.length,
+    state,
+  ]);
+
+  useEffect(() => {
+    if (state.phase === 'complete') return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [state.phase]);
+
+  const hasPushedHistoryRef = useRef(false);
+  useEffect(() => {
+    if (state.phase === 'complete') {
+      hasPushedHistoryRef.current = false;
+      return;
+    }
+    if (!hasPushedHistoryRef.current) {
+      window.history.pushState(null, '', window.location.href);
+      hasPushedHistoryRef.current = true;
+    }
+    const handler = () => {
+      window.history.pushState(null, '', window.location.href);
+    };
+    window.addEventListener('popstate', handler);
+    return () => window.removeEventListener('popstate', handler);
+  }, [state.phase]);
 
   const completionDispatchedRef = useRef<string | null>(null);
   useEffect(() => {
@@ -208,6 +270,93 @@ function App() {
     },
     [ensureAudioUnlocked, sendMessage]
   );
+
+  if (showRecovery) {
+    return (
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="recovery-title"
+        style={{
+          position: 'fixed',
+          inset: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: 'rgba(0,0,0,0.4)',
+          zIndex: 1000,
+          padding: 16,
+        }}
+      >
+        <div
+          style={{
+            backgroundColor: '#fff',
+            borderRadius: 12,
+            padding: 24,
+            maxWidth: 400,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 16,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div
+              aria-hidden
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: '50%',
+                backgroundColor: '#4A90D9',
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            />
+            <p id="recovery-title" style={{ margin: 0, fontSize: 16, lineHeight: 1.4 }}>
+              Hey, welcome back! Want to keep going where we left off?
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: 12, width: '100%', justifyContent: 'center' }}>
+            <button
+              type="button"
+              onClick={handleKeepGoing}
+              style={{
+                padding: '10px 20px',
+                fontSize: 15,
+                fontWeight: 600,
+                backgroundColor: '#4A90D9',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 8,
+                cursor: 'pointer',
+              }}
+            >
+              Keep Going
+            </button>
+            <button
+              type="button"
+              onClick={handleStartOver}
+              style={{
+                padding: '10px 20px',
+                fontSize: 15,
+                fontWeight: 600,
+                backgroundColor: '#f0f0f0',
+                color: '#333',
+                border: '1px solid #ccc',
+                borderRadius: 8,
+                cursor: 'pointer',
+              }}
+            >
+              Start Over
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
