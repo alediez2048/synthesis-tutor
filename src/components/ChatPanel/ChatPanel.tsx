@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { ChatMessage } from '../../state/types';
 import { MessageBubble } from './MessageBubble';
 import { InputField } from './InputField';
+import { useVoiceInput } from '../../brain/useVoiceInput';
 
 export interface ChatPanelProps {
   messages: ChatMessage[];
@@ -15,6 +16,11 @@ export function ChatPanel({
   isLoading = false,
 }: ChatPanelProps) {
   const scrollEndRef = useRef<HTMLDivElement>(null);
+  const [inputValue, setInputValue] = useState('');
+
+  const voice = useVoiceInput((transcript) => {
+    setInputValue(transcript);
+  });
 
   useEffect(() => {
     scrollEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -85,7 +91,35 @@ export function ChatPanel({
         <div ref={scrollEndRef} />
       </div>
       <div style={{ padding: '0 16px 16px' }}>
-        <InputField onSend={onSendMessage} disabled={isLoading} />
+        {voice.error && (
+          <div
+            role="alert"
+            style={{
+              marginBottom: 8,
+              padding: '8px 12px',
+              fontSize: 14,
+              color: '#c0392b',
+              backgroundColor: 'rgba(192, 57, 43, 0.1)',
+              borderRadius: 8,
+            }}
+          >
+            {voice.error}
+          </div>
+        )}
+        <InputField
+          onSend={(text) => {
+            onSendMessage(text);
+            setInputValue('');
+          }}
+          disabled={isLoading}
+          value={inputValue}
+          onChange={setInputValue}
+          voiceSupported={voice.supported}
+          isListening={voice.isListening}
+          transcript={voice.transcript}
+          onStartListening={voice.startListening}
+          onStopListening={voice.stopListening}
+        />
       </div>
     </section>
   );

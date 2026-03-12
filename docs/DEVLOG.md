@@ -50,7 +50,7 @@
 |--------|-------------|--------|------|
 | ENG-025 | Checkpoint + recovery system | ✅ Complete | 1.5h |
 | ENG-042 | Voice output (TTS via SpeechSynthesis) | ⬜ Pending | 1.5h |
-| ENG-041 | Voice input (STT via Web Speech API) | ⬜ Pending | 2h |
+| ENG-041 | Voice input (STT via Web Speech API) | ✅ Complete | 2h |
 | ENG-024 | Sound Manager | ✅ Complete | 1h |
 | ENG-023 | Progress dots | ✅ Complete | 0.5h |
 | ENG-022 | Completion screen | ✅ Complete | 1.5h |
@@ -694,20 +694,25 @@ Created `src/state/checkpoint.ts` — save/load/clear `LessonState` in sessionSt
 
 ---
 
-### ENG-041: Voice Input (STT) ⬜
+### ENG-041: Voice Input (STT) ✅
 
 #### Plain-English Summary
-Add speech-to-text via Web Speech API. Microphone button next to text input.
+Created `useVoiceInput` hook wrapping Web Speech API (webkitSpeechRecognition/SpeechRecognition). Microphone button in InputField between text input and Send. Interim transcript shown in input while listening; final transcript populates as editable text (no auto-send). Pulsing red recording indicator. Error handling for not-allowed, network, no-speech, aborted. Input value lifted to ChatPanel for transcript sync.
 
 #### Acceptance Criteria
-- [ ] `useVoiceInput` hook using `webkitSpeechRecognition`
-- [ ] Microphone toggle button in ChatPanel input area
-- [ ] Transcript feeds into same STUDENT_RESPONSE path as typed text
-- [ ] Visual indicator when listening (pulsing mic icon)
-- [ ] Graceful fallback if permission denied or API unavailable
+- [x] `useVoiceInput` hook using `webkitSpeechRecognition`
+- [x] Microphone toggle button in ChatPanel input area
+- [x] Transcript feeds into same STUDENT_RESPONSE path as typed text
+- [x] Visual indicator when listening (pulsing red dot)
+- [x] Graceful fallback if permission denied or API unavailable
 
-#### Files to Create
+#### Files Created
 - `src/brain/useVoiceInput.ts`
+- `src/types/web-speech.d.ts`
+
+#### Files Modified
+- `src/components/ChatPanel/InputField.tsx` — mic button, voice props, controlled value support
+- `src/components/ChatPanel/ChatPanel.tsx` — useVoiceInput, lifted input value, error display
 
 #### Dependencies
 - ENG-010 (ChatPanel UI)
