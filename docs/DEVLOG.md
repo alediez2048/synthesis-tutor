@@ -48,7 +48,7 @@
 
 | Ticket | Description | Status | Est. |
 |--------|-------------|--------|------|
-| ENG-025 | Checkpoint + recovery system | ⬜ Pending | 1.5h |
+| ENG-025 | Checkpoint + recovery system | ✅ Complete | 1.5h |
 | ENG-042 | Voice output (TTS via SpeechSynthesis) | ⬜ Pending | 1.5h |
 | ENG-041 | Voice input (STT via Web Speech API) | ⬜ Pending | 2h |
 | ENG-024 | Sound Manager | ✅ Complete | 1h |
@@ -667,19 +667,27 @@ Created SoundManager singleton (Web Audio API) with 5 synthesized sounds: pop-po
 
 ---
 
-### ENG-025: Checkpoint + Recovery System ⬜
+### ENG-025: Checkpoint + Recovery System ✅
+
+#### Plain-English Summary
+Created `src/state/checkpoint.ts` — save/load/clear `LessonState` in sessionStorage with schema version and 30-min max age. App.tsx: checkpoint-aware init, recovery dialog ("Hey, welcome back! Want to keep going where we left off?" with Keep Going / Start Over), save effect on significant state changes, beforeunload and popstate guards. Added `FULL_RESET` action for Start Over. Transient fields (isDragging, isLoading, isStreaming) reset on restore.
 
 #### Acceptance Criteria
-- [ ] Serialize `LessonState` to `sessionStorage` on PHASE_TRANSITION, PROBLEM_COMPLETED, STUDENT_RESPONSE, SCORE_UPDATED
-- [ ] Checkpoint includes timestamp and schema version
-- [ ] On load: valid checkpoint (< 30 min old, matching schema) → recovery UI
-- [ ] Recovery UI: Sam says "Hey, welcome back!" with [Keep Going] and [Start Over]
-- [ ] Stale/invalid checkpoint → clear and start fresh
-- [ ] `beforeunload` event triggers "Leave site?" if lesson not complete
-- [ ] `popstate` handler absorbs back-button navigation
+- [x] Serialize `LessonState` to `sessionStorage` on significant actions (phase, score, assessmentStep, conceptsDiscovered, chatMessages)
+- [x] Checkpoint includes timestamp and schema version
+- [x] On load: valid checkpoint (< 30 min old, matching schema) → recovery UI
+- [x] Recovery UI: Sam says "Hey, welcome back!" with [Keep Going] and [Start Over]
+- [x] Stale/invalid checkpoint → clear and start fresh
+- [x] `beforeunload` event triggers "Leave site?" if lesson not complete
+- [x] `popstate` handler absorbs back-button navigation
 
-#### Files to Create
+#### Files Created
 - `src/state/checkpoint.ts`
+
+#### Files Modified
+- `src/state/types.ts` — added `FULL_RESET` action
+- `src/state/reducer.ts` — handle `FULL_RESET` → `getInitialLessonState()`
+- `src/App.tsx` — checkpoint init, recovery dialog, save effect, navigation guards
 
 #### Dependencies
 - ENG-004 (LessonState and reducer)

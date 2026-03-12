@@ -89,4 +89,5 @@ export type LessonAction =
   | { type: 'RESET_ASSESSMENT_WORKSPACE' }
   | { type: 'RETRY_MISSED' }
   | { type: 'LOOP_TO_PRACTICE' }
-  | { type: 'RESTART_LESSON' };
+  | { type: 'RESTART_LESSON' }
+  | { type: 'FULL_RESET' };

@@ -377,6 +377,9 @@ export const lessonReducer: LessonReducer = (state, action) => {
       };
     }
 
+    case 'FULL_RESET':
+      return getInitialLessonState();
+
     default: {
       const _exhaust: never = action;
       void _exhaust;
