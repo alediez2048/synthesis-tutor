@@ -66,6 +66,7 @@ export function getInitialLessonState(): LessonState {
     assessmentPool: [],
     assessmentStep: 0,
     assessmentAttempts: 0,
+    assessmentResults: [],
     conceptsDiscovered: [],
     isDragging: false,
     nextBlockId: 1,
@@ -262,6 +263,7 @@ export const lessonReducer: LessonReducer = (state, action) => {
         assessmentPool: pool,
         assessmentStep: 0,
         assessmentAttempts: 0,
+        assessmentResults: [],
         blocks: blocks as FractionBlock[],
         nextBlockId: state.nextBlockId + (blocks !== state.blocks ? 1 : 0),
       };
@@ -280,10 +282,14 @@ export const lessonReducer: LessonReducer = (state, action) => {
         correct: state.score.correct + (correct ? 1 : 0),
         total: state.score.total + (doneWithProblem ? 1 : 0),
       };
+      const newResults = doneWithProblem
+        ? [...state.assessmentResults, correct]
+        : state.assessmentResults;
       return {
         ...state,
         assessmentAttempts: newAttempts,
         score: newScore,
+        assessmentResults: newResults,
       };
     }
 
@@ -310,6 +316,64 @@ export const lessonReducer: LessonReducer = (state, action) => {
         assessmentAttempts: 0,
         blocks: blocks as FractionBlock[],
         nextBlockId: state.nextBlockId + (blocks !== state.blocks ? 1 : 0),
+      };
+    }
+
+    case 'RETRY_MISSED': {
+      const missed = state.assessmentPool.filter(
+        (_, i) => state.assessmentResults[i] === false
+      );
+      if (missed.length === 0) return state;
+      const first = missed[0];
+      const blocks =
+        first && 'startingBlock' in first
+          ? [createBlock(`block-${state.nextBlockId}`, first.startingBlock, 'workspace', false)]
+          : first && 'requiredCount' in first
+            ? [createBlock(`block-${state.nextBlockId}`, { numerator: 1, denominator: 1 }, 'workspace', false)]
+            : state.blocks;
+      return {
+        ...state,
+        assessmentPool: missed,
+        assessmentStep: 0,
+        assessmentAttempts: 0,
+        assessmentResults: [],
+        phase: 'assess',
+        blocks: blocks as FractionBlock[],
+        nextBlockId: state.nextBlockId + (blocks !== state.blocks ? 1 : 0),
+      };
+    }
+
+    case 'LOOP_TO_PRACTICE': {
+      const GP3_STEP = 2;
+      return {
+        ...state,
+        phase: 'guided',
+        stepIndex: GP3_STEP,
+        assessmentStep: 0,
+        assessmentAttempts: 0,
+        assessmentResults: [],
+        assessmentPool: [],
+      };
+    }
+
+    case 'RESTART_LESSON': {
+      const exploreBlock = createBlock(
+        `block-${state.nextBlockId}`,
+        { numerator: 1, denominator: 2 },
+        'workspace',
+        false
+      );
+      return {
+        ...state,
+        phase: 'explore',
+        stepIndex: 0,
+        blocks: [exploreBlock],
+        score: { correct: 0, total: 0 },
+        assessmentPool: [],
+        assessmentStep: 0,
+        assessmentAttempts: 0,
+        assessmentResults: [],
+        nextBlockId: state.nextBlockId + 1,
       };
     }
 

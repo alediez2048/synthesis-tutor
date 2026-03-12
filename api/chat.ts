@@ -46,6 +46,7 @@ function defaultLessonState(): LessonState {
     assessmentPool: [],
     assessmentStep: 0,
     assessmentAttempts: 0,
+    assessmentResults: [],
     conceptsDiscovered: [],
     isDragging: false,
     nextBlockId: 1,

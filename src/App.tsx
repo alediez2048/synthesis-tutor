@@ -7,6 +7,7 @@ import { Workspace } from './components/Workspace/Workspace';
 import { ChatPanel } from './components/ChatPanel/ChatPanel';
 import { ActionBar } from './components/Workspace/ActionBar';
 import { AssessmentPhase } from './components/Assessment/AssessmentPhase';
+import { CompletionScreen } from './components/Assessment/CompletionScreen';
 import { selectAssessmentProblems } from './content/assessment-pools';
 import { useTutorChat } from './brain/useTutorChat';
 import { parseFractionReferences } from './brain/parseFractionReferences';
@@ -14,6 +15,17 @@ import { useExplorationObserver } from './observers/useExplorationObserver';
 
 const SPLIT_REJECTION_MESSAGE = 'Those pieces are as small as they can get!';
 const SPLIT_ANIMATION_MS = 400;
+
+const COMPLETION_MESSAGES: Record<string, string> = {
+  '3/3':
+    "You're a fraction master! You proved that the same amount can be written in lots of different ways.",
+  '2/3':
+    "Great job! You really understand equivalent fractions. Want to try the one you missed again?",
+  '1/3':
+    "You're getting there! Want to practice a little more?",
+  '0/3':
+    "Fractions take practice, and you did great exploring today! Let's try again.",
+};
 
 function App() {
   const [state, dispatch] = useReducer(lessonReducer, getInitialLessonState());
@@ -42,6 +54,19 @@ function App() {
     }
     prevPhaseRef.current = state.phase;
   }, [state.phase, dispatch]);
+
+  const completionDispatchedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (state.phase !== 'complete') {
+      completionDispatchedRef.current = null;
+      return;
+    }
+    const key = `${state.score.correct}/${state.score.total}`;
+    if (completionDispatchedRef.current === key) return;
+    completionDispatchedRef.current = key;
+    const msg = COMPLETION_MESSAGES[key] ?? COMPLETION_MESSAGES['0/3'];
+    dispatch({ type: 'TUTOR_RESPONSE', content: msg, isStreaming: false });
+  }, [state.phase, state.score.correct, state.score.total, dispatch]);
 
   useEffect(() => {
     const lastMsg = state.chatMessages[state.chatMessages.length - 1];
@@ -205,7 +230,16 @@ function App() {
             </div>
           )}
           <div style={{ flex: 1, minHeight: 0 }}>
-            {state.phase === 'assess' ? (
+            {state.phase === 'complete' ? (
+              <CompletionScreen
+                score={state.score}
+                conceptsDiscovered={state.conceptsDiscovered}
+                onRetryMissed={() => dispatch({ type: 'RETRY_MISSED' })}
+                onLoopToPractice={() => dispatch({ type: 'LOOP_TO_PRACTICE' })}
+                onRestartLesson={() => dispatch({ type: 'RESTART_LESSON' })}
+                onFinish={() => {}}
+              />
+            ) : state.phase === 'assess' ? (
               <AssessmentPhase
                 pool={state.assessmentPool}
                 step={state.assessmentStep}
