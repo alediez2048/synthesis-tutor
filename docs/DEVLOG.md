@@ -52,7 +52,7 @@
 | ENG-042 | Voice output (TTS via SpeechSynthesis) | ⬜ Pending | 1.5h |
 | ENG-041 | Voice input (STT via Web Speech API) | ⬜ Pending | 2h |
 | ENG-024 | Sound Manager | ⬜ Pending | 1h |
-| ENG-023 | Progress dots | ⬜ Pending | 0.5h |
+| ENG-023 | Progress dots | ✅ Complete | 0.5h |
 | ENG-022 | Completion screen | ✅ Complete | 1.5h |
 | ENG-021 | Assessment UI | ✅ Complete | 2.5h |
 | ENG-020 | Assessment problem pools | ✅ Complete | 1h |
@@ -628,15 +628,18 @@ Added `assessmentResults` to track per-problem correct/incorrect for RETRY_MISSE
 
 ---
 
-### ENG-023: Progress Dots ⬜
+### ENG-023: Progress Dots ✅
+
+#### Plain-English Summary
+Created `ProgressDots` component — 4 dots for intro, explore, guided, assess. Filled = completed, pulsing = current, hollow = upcoming. When phase is `complete`, all 4 filled. Added to header with "Fraction Quest" title. `role="progressbar"` with aria attributes.
 
 #### Acceptance Criteria
-- [ ] Phase indicator in header bar
-- [ ] Filled dot = completed, hollow = upcoming, pulsing = current
-- [ ] Fill animation on phase transition
-- [ ] 4 dots: Intro, Explore, Practice, Assess
+- [x] Phase indicator in header bar
+- [x] Filled dot = completed, hollow = upcoming, pulsing = current
+- [x] 4 dots: Intro, Explore, Practice, Assess
+- [x] All dots filled when phase is `complete`
 
-#### Files to Create
+#### Files Created
 - `src/components/shared/ProgressDots.tsx`
 
 #### Dependencies

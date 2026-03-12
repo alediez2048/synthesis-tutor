@@ -8,6 +8,7 @@ import { ChatPanel } from './components/ChatPanel/ChatPanel';
 import { ActionBar } from './components/Workspace/ActionBar';
 import { AssessmentPhase } from './components/Assessment/AssessmentPhase';
 import { CompletionScreen } from './components/Assessment/CompletionScreen';
+import { ProgressDots } from './components/shared/ProgressDots';
 import { selectAssessmentProblems } from './content/assessment-pools';
 import { useTutorChat } from './brain/useTutorChat';
 import { parseFractionReferences } from './brain/parseFractionReferences';
@@ -187,11 +188,17 @@ function App() {
         boxSizing: 'border-box',
       }}
     >
-      <header style={{ flexShrink: 0, marginBottom: '0.5rem' }}>
-        <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Synthesis Tutor</h1>
-        <p style={{ margin: 0, fontSize: 14, color: 'rgba(0,0,0,0.6)' }}>
-          Fraction equivalence lesson — scaffold ready.
-        </p>
+      <header
+        style={{
+          flexShrink: 0,
+          marginBottom: '0.5rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '1rem',
+        }}
+      >
+        <ProgressDots currentPhase={state.phase} />
+        <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Fraction Quest</h1>
       </header>
       <div
         style={{
