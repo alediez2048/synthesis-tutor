@@ -1,4 +1,4 @@
-import { useReducer, useState, useEffect } from 'react';
+import { useReducer, useState, useEffect, useRef } from 'react';
 import {
   getInitialLessonState,
   lessonReducer,
@@ -6,6 +6,8 @@ import {
 import { Workspace } from './components/Workspace/Workspace';
 import { ChatPanel } from './components/ChatPanel/ChatPanel';
 import { ActionBar } from './components/Workspace/ActionBar';
+import { AssessmentPhase } from './components/Assessment/AssessmentPhase';
+import { selectAssessmentProblems } from './content/assessment-pools';
 import { useTutorChat } from './brain/useTutorChat';
 import { parseFractionReferences } from './brain/parseFractionReferences';
 import { useExplorationObserver } from './observers/useExplorationObserver';
@@ -31,6 +33,15 @@ function App() {
     sendMessage,
     isLoading,
   });
+
+  const prevPhaseRef = useRef(state.phase);
+  useEffect(() => {
+    if (prevPhaseRef.current !== 'assess' && state.phase === 'assess') {
+      const pool = selectAssessmentProblems();
+      dispatch({ type: 'INIT_ASSESSMENT', pool });
+    }
+    prevPhaseRef.current = state.phase;
+  }, [state.phase, dispatch]);
 
   useEffect(() => {
     const lastMsg = state.chatMessages[state.chatMessages.length - 1];
@@ -176,7 +187,7 @@ function App() {
           />
         </div>
         <div style={{ flex: '0 0 60%', minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-          {combineRejectionMessage && (
+          {combineRejectionMessage && state.phase !== 'assess' && (
             <div
               role="alert"
               aria-live="polite"
@@ -194,27 +205,46 @@ function App() {
             </div>
           )}
           <div style={{ flex: 1, minHeight: 0 }}>
-            <Workspace
-              blocks={state.blocks}
-              referenceWidth={300}
-              selectedBlockId={selectedBlockId}
-              onSelectBlock={handleSelectBlock}
-              onDragStart={handleDragStart}
-              onCombineAttempt={handleCombineAttempt}
-              onDropOnComparisonZone={handleDropOnComparisonZone}
-              onWorkspaceBackgroundClick={handleWorkspaceBackgroundClick}
-              isDragging={state.isDragging}
-              draggingBlockId={draggingBlockId}
-              combinedBlockId={combinedBlockId}
-              splitBlockIds={splitBlockIds}
-              highlightedBlockIds={highlightedBlockIds}
-            />
-            <ActionBar
-              selectedBlockId={selectedBlockId}
-              onSplitRequest={handleSplitRequest}
-              rejectionMessage={splitRejectionMessage}
-              disabled={state.isDragging}
-            />
+            {state.phase === 'assess' ? (
+              <AssessmentPhase
+                pool={state.assessmentPool}
+                step={state.assessmentStep}
+                attempts={state.assessmentAttempts}
+                score={state.score}
+                blocks={state.blocks}
+                selectedBlockId={selectedBlockId}
+                nextBlockId={state.nextBlockId}
+                isDragging={state.isDragging}
+                draggingBlockId={draggingBlockId}
+                dispatch={dispatch}
+                onAnswer={(correct) => dispatch({ type: 'ASSESSMENT_ANSWER', correct })}
+                onAdvance={() => dispatch({ type: 'ADVANCE_ASSESSMENT' })}
+              />
+            ) : (
+              <>
+                <Workspace
+                  blocks={state.blocks}
+                  referenceWidth={300}
+                  selectedBlockId={selectedBlockId}
+                  onSelectBlock={handleSelectBlock}
+                  onDragStart={handleDragStart}
+                  onCombineAttempt={handleCombineAttempt}
+                  onDropOnComparisonZone={handleDropOnComparisonZone}
+                  onWorkspaceBackgroundClick={handleWorkspaceBackgroundClick}
+                  isDragging={state.isDragging}
+                  draggingBlockId={draggingBlockId}
+                  combinedBlockId={combinedBlockId}
+                  splitBlockIds={splitBlockIds}
+                  highlightedBlockIds={highlightedBlockIds}
+                />
+                <ActionBar
+                  selectedBlockId={selectedBlockId}
+                  onSplitRequest={handleSplitRequest}
+                  rejectionMessage={splitRejectionMessage}
+                  disabled={state.isDragging}
+                />
+              </>
+            )}
           </div>
         </div>
       </div>

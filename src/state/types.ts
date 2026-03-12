@@ -57,6 +57,8 @@ export interface LessonState {
   hintCount: number;
   chatMessages: ChatMessage[];
   assessmentPool: AssessmentProblem[];
+  assessmentStep: number;
+  assessmentAttempts: number;
   conceptsDiscovered: string[];
   isDragging: boolean;
   nextBlockId: number;
@@ -79,4 +81,8 @@ export type LessonAction =
   | { type: 'DRAG_END' }
   | { type: 'TUTOR_RESPONSE'; content: string; isStreaming: boolean }
   | { type: 'SET_LOADING'; loading: boolean }
-  | { type: 'DISCOVER_CONCEPT'; concept: string };
+  | { type: 'DISCOVER_CONCEPT'; concept: string }
+  | { type: 'INIT_ASSESSMENT'; pool: AssessmentProblem[] }
+  | { type: 'ASSESSMENT_ANSWER'; correct: boolean }
+  | { type: 'ADVANCE_ASSESSMENT' }
+  | { type: 'RESET_ASSESSMENT_WORKSPACE' };

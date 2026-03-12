@@ -54,7 +54,7 @@
 | ENG-024 | Sound Manager | ⬜ Pending | 1h |
 | ENG-023 | Progress dots | ⬜ Pending | 0.5h |
 | ENG-022 | Completion screen | ⬜ Pending | 1.5h |
-| ENG-021 | Assessment UI | ⬜ Pending | 2.5h |
+| ENG-021 | Assessment UI | ✅ Complete | 2.5h |
 | ENG-020 | Assessment problem pools | ✅ Complete | 1h |
 
 ### Phase 4: Integration + Voice + Observability (Day 4 — Thursday)
@@ -584,18 +584,23 @@ Vitest truth-table tests in `src/engine/MisconceptionDetector.test.ts` for all s
 
 ---
 
-### ENG-021: Assessment UI ⬜
+### ENG-021: Assessment UI ✅
+
+#### Plain-English Summary
+Added `assessmentStep`, `assessmentAttempts` to `LessonState`; new actions `INIT_ASSESSMENT`, `ASSESSMENT_ANSWER`, `ADVANCE_ASSESSMENT`, `RESET_ASSESSMENT_WORKSPACE`. Created `AssessmentPhase` orchestrator plus `MultipleChoice` (A-1), `ConstructionTask` (A-2), `GeneralizationTask` (A-3). App.tsx phase-conditional: assess phase shows `AssessmentPhase`; `useEffect` on transition to assess calls `selectAssessmentProblems()` and dispatches `INIT_ASSESSMENT`. All validation uses FractionEngine. ChatPanel stays visible during assessment.
 
 #### Acceptance Criteria
-- [ ] A-1: Multiple-choice visual block cards, tappable, max 2 attempts
-- [ ] A-2: Construction workspace with submit button, max 3 attempts
-- [ ] A-3: "Submit first" / "Submit second" flow, both must be equivalent with different denominators
-- [ ] On final incorrect: reveal correct answer with animation
-- [ ] Score tracked in `LessonState.score`
+- [x] A-1: Multiple-choice visual block cards, tappable, max 2 attempts
+- [x] A-2: Construction workspace with submit button, max 3 attempts
+- [x] A-3: "Submit first" / "Submit second" flow, both must be equivalent with different denominators
+- [x] On final incorrect: reveal correct answer with animation (A-1)
+- [x] Score tracked in `LessonState.score`
 
-#### Files to Create
+#### Files Created
+- `src/components/Assessment/AssessmentPhase.tsx`
 - `src/components/Assessment/MultipleChoice.tsx`
 - `src/components/Assessment/ConstructionTask.tsx`
+- `src/components/Assessment/GeneralizationTask.tsx`
 
 #### Dependencies
 - ENG-020 (assessment pools exist)
