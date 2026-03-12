@@ -51,7 +51,7 @@
 | ENG-025 | Checkpoint + recovery system | ⬜ Pending | 1.5h |
 | ENG-042 | Voice output (TTS via SpeechSynthesis) | ⬜ Pending | 1.5h |
 | ENG-041 | Voice input (STT via Web Speech API) | ⬜ Pending | 2h |
-| ENG-024 | Sound Manager | ⬜ Pending | 1h |
+| ENG-024 | Sound Manager | ✅ Complete | 1h |
 | ENG-023 | Progress dots | ✅ Complete | 0.5h |
 | ENG-022 | Completion screen | ✅ Complete | 1.5h |
 | ENG-021 | Assessment UI | ✅ Complete | 2.5h |
@@ -647,21 +647,20 @@ Created `ProgressDots` component — 4 dots for intro, explore, guided, assess. 
 
 ---
 
-### ENG-024: Sound Manager ⬜
+### ENG-024: Sound Manager ✅
+
+#### Plain-English Summary
+Created SoundManager singleton (Web Audio API) with 5 synthesized sounds: pop-pop (split), snap (combine, pitch varies by fraction), correct (rising major third), incorrect (220Hz gentle), celebration (arpeggio). useSoundManager hook with mute state, toggle, prefers-reduced-motion. Mute toggle in header. AudioContext unlock on first user interaction (select block, split, send message). Wired sounds to split, combine, assessment answer, 3/3 completion.
 
 #### Acceptance Criteria
-- [ ] 5 synthesized sounds via Web Audio API (zero audio files):
-  - Pop-pop (split): 600Hz → 500Hz triangle, 50ms each
-  - Snap (combine): 440Hz × (1/fractionValue), triangle, 80ms
-  - Correct: C5 → E5 rising major third, sine, 120ms each
-  - Gentle low (incorrect): 220Hz triangle, 200ms — NOT a buzzer
-  - Celebration: C5-E5-G5-C6 ascending arpeggio, sine, 80ms intervals
-- [ ] `AudioContext.resume()` called on "Start Lesson" button tap
-- [ ] Mute toggle in header, always visible
-- [ ] Respects `prefers-reduced-motion` media query
+- [x] 5 synthesized sounds via Web Audio API (zero audio files)
+- [x] AudioContext unlock on first user interaction (no Start Lesson screen)
+- [x] Mute toggle in header, always visible
+- [x] Respects `prefers-reduced-motion` media query
 
-#### Files to Create
+#### Files Created
 - `src/audio/SoundManager.ts`
+- `src/audio/useSoundManager.ts`
 
 #### Dependencies
 - ENG-001 (app scaffold exists)

@@ -1,4 +1,4 @@
-import { useReducer, useState, useEffect, useRef } from 'react';
+import { useReducer, useState, useEffect, useRef, useCallback } from 'react';
 import {
   getInitialLessonState,
   lessonReducer,
@@ -9,6 +9,7 @@ import { ActionBar } from './components/Workspace/ActionBar';
 import { AssessmentPhase } from './components/Assessment/AssessmentPhase';
 import { CompletionScreen } from './components/Assessment/CompletionScreen';
 import { ProgressDots } from './components/shared/ProgressDots';
+import { useSoundManager } from './audio/useSoundManager';
 import { selectAssessmentProblems } from './content/assessment-pools';
 import { useTutorChat } from './brain/useTutorChat';
 import { parseFractionReferences } from './brain/parseFractionReferences';
@@ -38,6 +39,23 @@ function App() {
   const [highlightedBlockIds, setHighlightedBlockIds] = useState<string[]>([]);
 
   const { sendMessage, notifySam, isLoading } = useTutorChat(state, dispatch);
+  const {
+    muted,
+    toggleMute,
+    unlock,
+    playPop,
+    playSnap,
+    playCorrect,
+    playIncorrect,
+    playCelebration,
+  } = useSoundManager();
+  const [audioUnlocked, setAudioUnlocked] = useState(false);
+  const ensureAudioUnlocked = useCallback(() => {
+    if (!audioUnlocked) {
+      unlock();
+      setAudioUnlocked(true);
+    }
+  }, [audioUnlocked, unlock]);
   const selectedBlockId = state.blocks.find((b) => b.isSelected)?.id ?? null;
 
   useExplorationObserver({
@@ -67,7 +85,10 @@ function App() {
     completionDispatchedRef.current = key;
     const msg = COMPLETION_MESSAGES[key] ?? COMPLETION_MESSAGES['0/3'];
     dispatch({ type: 'TUTOR_RESPONSE', content: msg, isStreaming: false });
-  }, [state.phase, state.score.correct, state.score.total, dispatch]);
+    if (state.score.correct === 3 && state.score.total === 3) {
+      playCelebration();
+    }
+  }, [state.phase, state.score.correct, state.score.total, dispatch, playCelebration]);
 
   useEffect(() => {
     const lastMsg = state.chatMessages[state.chatMessages.length - 1];
@@ -106,12 +127,14 @@ function App() {
   }, [splitBlockIds]);
 
   const handleSelectBlock = (blockId: string) => {
+    ensureAudioUnlocked();
     setCombineRejectionMessage(null);
     setSplitRejectionMessage(null);
     dispatch({ type: 'SELECT_BLOCK', blockId });
   };
 
   const handleSplitRequest = (parts: number) => {
+    ensureAudioUnlocked();
     if (!selectedBlockId) return;
     const selectedBlock = state.blocks.find((b) => b.id === selectedBlockId);
     if (!selectedBlock) return;
@@ -124,6 +147,7 @@ function App() {
     const newIds = Array.from({ length: parts }, (_, i) => `block-${startId + i}`);
     setSplitBlockIds(newIds);
     dispatch({ type: 'SPLIT_BLOCK', blockId: selectedBlockId, parts });
+    playPop();
     const { numerator, denominator } = selectedBlock.fraction;
     notifySam(
       `I split the ${numerator}/${denominator} crystal into ${parts} pieces`
@@ -150,6 +174,8 @@ function App() {
       setCombinedBlockId(`block-${state.nextBlockId}`);
       dispatch({ type: 'COMBINE_BLOCKS', blockIds: [draggedId, targetId] });
       const d = dragged.fraction.denominator;
+      const combinedNum = dragged.fraction.numerator + target.fraction.numerator;
+      playSnap(combinedNum / d);
       notifySam(
         `I combined ${dragged.fraction.numerator}/${d} and ${target.fraction.numerator}/${d}`
       );
@@ -175,7 +201,13 @@ function App() {
     dispatch({ type: 'DESELECT_ALL' });
   };
 
-  const handleSendMessage = sendMessage;
+  const handleSendMessage = useCallback(
+    (text: string) => {
+      ensureAudioUnlocked();
+      sendMessage(text);
+    },
+    [ensureAudioUnlocked, sendMessage]
+  );
 
   return (
     <div
@@ -198,7 +230,23 @@ function App() {
         }}
       >
         <ProgressDots currentPhase={state.phase} />
-        <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Fraction Quest</h1>
+        <h1 style={{ margin: 0, fontSize: '1.5rem', flex: 1 }}>Fraction Quest</h1>
+        <button
+          type="button"
+          onClick={toggleMute}
+          aria-label={muted ? 'Unmute sounds' : 'Mute sounds'}
+          style={{
+            background: 'none',
+            border: 'none',
+            fontSize: '1.25rem',
+            cursor: 'pointer',
+            padding: 8,
+            minWidth: 44,
+            minHeight: 44,
+          }}
+        >
+          {muted ? '🔇' : '🔊'}
+        </button>
       </header>
       <div
         style={{
@@ -258,7 +306,12 @@ function App() {
                 isDragging={state.isDragging}
                 draggingBlockId={draggingBlockId}
                 dispatch={dispatch}
-                onAnswer={(correct) => dispatch({ type: 'ASSESSMENT_ANSWER', correct })}
+                onAnswer={(correct) => {
+                  ensureAudioUnlocked();
+                  if (correct) playCorrect();
+                  else playIncorrect();
+                  dispatch({ type: 'ASSESSMENT_ANSWER', correct });
+                }}
                 onAdvance={() => dispatch({ type: 'ADVANCE_ASSESSMENT' })}
               />
             ) : (
