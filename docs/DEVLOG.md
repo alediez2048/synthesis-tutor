@@ -53,7 +53,7 @@
 | ENG-041 | Voice input (STT via Web Speech API) | ⬜ Pending | 2h |
 | ENG-024 | Sound Manager | ⬜ Pending | 1h |
 | ENG-023 | Progress dots | ⬜ Pending | 0.5h |
-| ENG-022 | Completion screen | ⬜ Pending | 1.5h |
+| ENG-022 | Completion screen | ✅ Complete | 1.5h |
 | ENG-021 | Assessment UI | ✅ Complete | 2.5h |
 | ENG-020 | Assessment problem pools | ✅ Complete | 1h |
 
@@ -607,17 +607,20 @@ Added `assessmentStep`, `assessmentAttempts` to `LessonState`; new actions `INIT
 
 ---
 
-### ENG-022: Completion Screen ⬜
+### ENG-022: Completion Screen ✅
+
+#### Plain-English Summary
+Added `assessmentResults` to track per-problem correct/incorrect for RETRY_MISSED. New actions: RETRY_MISSED (filter pool to missed, re-enter assess), LOOP_TO_PRACTICE (jump to guided stepIndex 2 / GP-3), RESTART_LESSON (reset to explore, clear score, preserve conceptsDiscovered). Created CompletionScreen with score display, Sam's message per bracket (PRD 7.5), concepts discovered list, action buttons. Sam's message dispatched to chat via TUTOR_RESPONSE on transition to complete.
 
 #### Acceptance Criteria
-- [ ] Score display (X/3)
-- [ ] Sam's response varies by score bracket (3/3, 2/3, 1/3, 0/3) per PRD Section 7.5
-- [ ] 3/3: confetti + celebration
-- [ ] 2/3: retry missed option
-- [ ] 1/3: loop back to GP-3 + GP-4, re-assess
-- [ ] 0/3: restart from Exploration
+- [x] Score display (X/3)
+- [x] Sam's response varies by score bracket (3/3, 2/3, 1/3, 0/3) per PRD Section 7.5
+- [x] 3/3: Finish button (confetti is ENG-028)
+- [x] 2/3: retry missed option + I'm Done
+- [x] 1/3: loop back to GP-3 + GP-4 via Practice More
+- [x] 0/3: restart from Exploration via Let's Explore Again
 
-#### Files to Create
+#### Files Created
 - `src/components/Assessment/CompletionScreen.tsx`
 
 #### Dependencies

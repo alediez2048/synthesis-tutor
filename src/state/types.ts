@@ -59,6 +59,7 @@ export interface LessonState {
   assessmentPool: AssessmentProblem[];
   assessmentStep: number;
   assessmentAttempts: number;
+  assessmentResults: boolean[];
   conceptsDiscovered: string[];
   isDragging: boolean;
   nextBlockId: number;
@@ -85,4 +86,7 @@ export type LessonAction =
   | { type: 'INIT_ASSESSMENT'; pool: AssessmentProblem[] }
   | { type: 'ASSESSMENT_ANSWER'; correct: boolean }
   | { type: 'ADVANCE_ASSESSMENT' }
-  | { type: 'RESET_ASSESSMENT_WORKSPACE' };
+  | { type: 'RESET_ASSESSMENT_WORKSPACE' }
+  | { type: 'RETRY_MISSED' }
+  | { type: 'LOOP_TO_PRACTICE' }
+  | { type: 'RESTART_LESSON' };
