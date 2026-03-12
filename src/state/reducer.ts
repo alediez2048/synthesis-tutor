@@ -377,6 +377,15 @@ export const lessonReducer: LessonReducer = (state, action) => {
       };
     }
 
+    case 'RETURN_TO_WORKSPACE': {
+      const block = state.blocks.find((b) => b.id === action.blockId);
+      if (!block || block.position !== 'comparison') return state;
+      const blocks = state.blocks.map((b) =>
+        b.id === action.blockId ? { ...b, position: 'workspace' as const, isSelected: false } : b
+      );
+      return { ...state, blocks };
+    }
+
     case 'FULL_RESET':
       return getInitialLessonState();
 

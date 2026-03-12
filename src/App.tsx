@@ -10,12 +10,15 @@ import { ActionBar } from './components/Workspace/ActionBar';
 import { AssessmentPhase } from './components/Assessment/AssessmentPhase';
 import { CompletionScreen } from './components/Assessment/CompletionScreen';
 import { ProgressDots } from './components/shared/ProgressDots';
+import { Confetti } from './components/shared/Confetti';
 import { useSoundManager } from './audio/useSoundManager';
 import { selectAssessmentProblems } from './content/assessment-pools';
 import { useTutorChat } from './brain/useTutorChat';
 import { useVoiceOutput } from './brain/useVoiceOutput';
 import { parseFractionReferences } from './brain/parseFractionReferences';
 import { useExplorationObserver } from './observers/useExplorationObserver';
+import { useInactivityPrompt } from './hooks/useInactivityPrompt';
+import { ErrorBoundary } from './components/shared/ErrorBoundary';
 
 const SPLIT_REJECTION_MESSAGE = 'Those pieces are as small as they can get!';
 const SPLIT_ANIMATION_MS = 400;
@@ -46,11 +49,10 @@ function App() {
   const [splitRejectionMessage, setSplitRejectionMessage] = useState<string | null>(null);
   const [splitBlockIds, setSplitBlockIds] = useState<string[] | null>(null);
   const [highlightedBlockIds, setHighlightedBlockIds] = useState<string[]>([]);
+  const [showConfetti, setShowConfetti] = useState(false);
 
   const { sendMessage, notifySam, isLoading } = useTutorChat(state, dispatch);
   const {
-    muted,
-    toggleMute,
     unlock,
     playPop,
     playSnap,
@@ -67,6 +69,7 @@ function App() {
       setAudioUnlocked(true);
     }
   }, [audioUnlocked, unlock]);
+  const handleConfettiComplete = useCallback(() => setShowConfetti(false), []);
   const selectedBlockId = state.blocks.find((b) => b.isSelected)?.id ?? null;
 
   useExplorationObserver({
@@ -75,6 +78,28 @@ function App() {
     sendMessage,
     isLoading,
   });
+
+  const {
+    showDimOverlay,
+    showWelcomeBack,
+    onTapToContinue,
+    onDismissWelcomeBack,
+  } = useInactivityPrompt({ state, dispatch });
+
+  // Send Sam's intro greeting on first load
+  const introSentRef = useRef(false);
+  useEffect(() => {
+    if (
+      !showRecovery &&
+      state.phase === 'intro' &&
+      state.chatMessages.length === 0 &&
+      !isLoading &&
+      !introSentRef.current
+    ) {
+      introSentRef.current = true;
+      sendMessage('[Student just arrived — greet them and introduce Fraction Quest!]');
+    }
+  }, [showRecovery, state.phase, state.chatMessages.length, isLoading, sendMessage]);
 
   const prevPhaseRef = useRef(state.phase);
   useEffect(() => {
@@ -177,6 +202,7 @@ function App() {
     dispatch({ type: 'TUTOR_RESPONSE', content: msg, isStreaming: false });
     if (state.score.correct === 3 && state.score.total === 3) {
       playCelebration();
+      queueMicrotask(() => setShowConfetti(true));
     }
   }, [state.phase, state.score.correct, state.score.total, dispatch, playCelebration]);
 
@@ -244,6 +270,8 @@ function App() {
     );
   };
 
+  const combineCooldownRef = useRef(false);
+
   const handleDragStart = (blockId: string) => {
     setCombineRejectionMessage(null);
     setDraggingBlockId(blockId);
@@ -255,12 +283,15 @@ function App() {
     setDraggingBlockId(null);
 
     if (targetId === null) return;
+    if (combineCooldownRef.current) return;
 
     const dragged = state.blocks.find((b) => b.id === draggedId);
     const target = state.blocks.find((b) => b.id === targetId);
     if (!dragged || !target) return;
 
     if (dragged.fraction.denominator === target.fraction.denominator) {
+      combineCooldownRef.current = true;
+      setTimeout(() => { combineCooldownRef.current = false; }, SPLIT_ANIMATION_MS);
       setCombinedBlockId(`block-${state.nextBlockId}`);
       dispatch({ type: 'COMBINE_BLOCKS', blockIds: [draggedId, targetId] });
       const d = dragged.fraction.denominator;
@@ -387,100 +418,149 @@ function App() {
   }
 
   return (
-    <div
-      style={{
-        padding: '1rem',
-        fontFamily: 'system-ui, sans-serif',
-        height: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        boxSizing: 'border-box',
-      }}
-    >
+    <>
+      {showConfetti && (
+        <Confetti onComplete={handleConfettiComplete} />
+      )}
+      {showDimOverlay && (
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={onTapToContinue}
+          onKeyDown={(e) => e.key === 'Enter' && onTapToContinue()}
+          aria-label="Tap to continue"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9998,
+            cursor: 'pointer',
+          }}
+        >
+          <p style={{ margin: 0, fontSize: 18, color: '#333', backgroundColor: '#fff', padding: '16px 24px', borderRadius: 8 }}>
+            Tap to continue
+          </p>
+        </div>
+      )}
+      {showWelcomeBack && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="welcome-back-title"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'rgba(0,0,0,0.4)',
+            zIndex: 1000,
+            padding: 16,
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: '#fff',
+              borderRadius: 12,
+              padding: 24,
+              maxWidth: 360,
+              textAlign: 'center',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+            }}
+          >
+            <h2 id="welcome-back-title" style={{ margin: '0 0 12px', fontSize: 20 }}>Welcome back!</h2>
+            <p style={{ margin: '0 0 20px', fontSize: 15, color: '#555' }}>
+              Tap below to continue your lesson.
+            </p>
+            <button
+              type="button"
+              onClick={onDismissWelcomeBack}
+              style={{
+                padding: '10px 24px',
+                fontSize: 16,
+                fontWeight: 600,
+                backgroundColor: '#4A90D9',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 8,
+                cursor: 'pointer',
+              }}
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+      )}
+      <div
+        style={{
+          fontFamily: "'Nunito', sans-serif",
+          height: '100dvh',
+          display: 'flex',
+          flexDirection: 'column',
+          boxSizing: 'border-box',
+          overflow: 'hidden',
+          backgroundImage: 'url(/assets/background.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundColor: '#1a1040',
+        }}
+      >
+      {/* Header */}
       <header
         style={{
           flexShrink: 0,
-          marginBottom: '0.5rem',
+          padding: '0px 20px 4px',
           display: 'flex',
           alignItems: 'center',
-          gap: '1rem',
+          gap: 16,
         }}
       >
-        <ProgressDots currentPhase={state.phase} />
-        <h1 style={{ margin: 0, fontSize: '1.5rem', flex: 1 }}>Fraction Quest</h1>
-        <button
-          type="button"
-          onClick={toggleMute}
-          aria-label={muted ? 'Unmute sounds' : 'Mute sounds'}
-          style={{
-            background: 'none',
-            border: 'none',
-            fontSize: '1.25rem',
-            cursor: 'pointer',
-            padding: 8,
-            minWidth: 44,
-            minHeight: 44,
-          }}
-        >
-          {muted ? '🔇' : '🔊'}
-        </button>
-        {voice.supported && (
-          <button
-            type="button"
-            onClick={voice.toggleEnabled}
-            aria-label={voice.enabled ? 'Turn off voice' : 'Turn on voice'}
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '1.25rem',
-              cursor: 'pointer',
-              padding: 8,
-              minWidth: 44,
-              minHeight: 44,
-            }}
-          >
-            {voice.enabled ? '🗣️' : '🤫'}
-          </button>
-        )}
+        <h1 style={{ margin: 0, flex: 1, textAlign: 'center' }}>
+          <img
+            src="/assets/title-logo.png"
+            alt="Fraction Quest"
+            style={{ height: 340, objectFit: 'contain', marginBottom: -180 }}
+          />
+        </h1>
       </header>
+
+      {/* Main content */}
       <div
         style={{
           flex: 1,
           minHeight: 0,
           display: 'flex',
-          gap: 16,
+          justifyContent: 'center',
+          padding: '0 16px',
           maxWidth: 1200,
           width: '100%',
           alignSelf: 'center',
+          boxSizing: 'border-box',
         }}
       >
-        <div style={{ flex: '0 0 40%', minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-          <ChatPanel
-            messages={state.chatMessages}
-            onSendMessage={handleSendMessage}
-            isLoading={isLoading}
-            onVoiceInputStateChange={setVoiceInputListening}
-          />
-        </div>
-        <div style={{ flex: '0 0 60%', minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+        {/* Game panel (centered) */}
+        <div style={{ width: '100%', maxWidth: 600, display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
           {combineRejectionMessage && state.phase !== 'assess' && (
             <div
               role="alert"
               aria-live="polite"
               style={{
                 flexShrink: 0,
-                marginBottom: '0.5rem',
-                padding: '0.5rem 0.75rem',
+                padding: '6px 10px',
                 backgroundColor: '#fff3cd',
                 border: '1px solid #ffc107',
                 borderRadius: 4,
-                fontSize: 14,
+                fontSize: 13,
               }}
             >
               {combineRejectionMessage}
             </div>
           )}
-          <div style={{ flex: 1, minHeight: 0 }}>
+
+          <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
             {state.phase === 'complete' ? (
               <CompletionScreen
                 score={state.score}
@@ -514,13 +594,14 @@ function App() {
               <>
                 <Workspace
                   blocks={state.blocks}
-                  referenceWidth={300}
+                  referenceWidth={400}
                   selectedBlockId={selectedBlockId}
                   onSelectBlock={handleSelectBlock}
                   onDragStart={handleDragStart}
                   onCombineAttempt={handleCombineAttempt}
                   onDropOnComparisonZone={handleDropOnComparisonZone}
                   onWorkspaceBackgroundClick={handleWorkspaceBackgroundClick}
+                  onReturnToWorkspace={(blockId) => dispatch({ type: 'RETURN_TO_WORKSPACE', blockId })}
                   isDragging={state.isDragging}
                   draggingBlockId={draggingBlockId}
                   combinedBlockId={combinedBlockId}
@@ -538,8 +619,28 @@ function App() {
           </div>
         </div>
       </div>
+
+      {/* Bottom chat bar */}
+      <div style={{ flexShrink: 0, borderTop: '1px solid rgba(0,0,0,0.1)' }}>
+        <ChatPanel
+          messages={state.chatMessages}
+          onSendMessage={handleSendMessage}
+          isLoading={isLoading}
+          onVoiceInputStateChange={setVoiceInputListening}
+          layout="bottomBar"
+        />
+      </div>
     </div>
+    </>
   );
 }
 
-export default App;
+function AppWithErrorBoundary() {
+  return (
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
+  );
+}
+
+export default AppWithErrorBoundary;
