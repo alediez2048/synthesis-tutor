@@ -9,7 +9,6 @@ import { ChatPanel } from './components/ChatPanel/ChatPanel';
 import { ActionBar } from './components/Workspace/ActionBar';
 import { AssessmentPhase } from './components/Assessment/AssessmentPhase';
 import { CompletionScreen } from './components/Assessment/CompletionScreen';
-import { ProgressDots } from './components/shared/ProgressDots';
 import { Confetti } from './components/shared/Confetti';
 import { useSoundManager } from './audio/useSoundManager';
 import { selectAssessmentProblems } from './content/assessment-pools';
@@ -19,6 +18,7 @@ import { parseFractionReferences } from './brain/parseFractionReferences';
 import { useExplorationObserver } from './observers/useExplorationObserver';
 import { useInactivityPrompt } from './hooks/useInactivityPrompt';
 import { ErrorBoundary } from './components/shared/ErrorBoundary';
+import { StartScreen } from './components/shared/StartScreen';
 
 const SPLIT_REJECTION_MESSAGE = 'Those pieces are as small as they can get!';
 const SPLIT_ANIMATION_MS = 400;
@@ -43,6 +43,7 @@ function App() {
     recoveryState ?? getInitialLessonState()
   );
   const [showRecovery, setShowRecovery] = useState(recoveryState !== null);
+  const [showStart, setShowStart] = useState(recoveryState === null);
   const [draggingBlockId, setDraggingBlockId] = useState<string | null>(null);
   const [combineRejectionMessage, setCombineRejectionMessage] = useState<string | null>(null);
   const [combinedBlockId, setCombinedBlockId] = useState<string | null>(null);
@@ -70,6 +71,12 @@ function App() {
     }
   }, [audioUnlocked, unlock]);
   const handleConfettiComplete = useCallback(() => setShowConfetti(false), []);
+  const handleStartLesson = useCallback(() => {
+    unlock();
+    setAudioUnlocked(true);
+    setShowStart(false);
+    sendMessage('[Student just started the lesson. Welcome them warmly and guide them to tap the crystal block and try splitting it.]');
+  }, [unlock, sendMessage]);
   const selectedBlockId = state.blocks.find((b) => b.isSelected)?.id ?? null;
 
   useExplorationObserver({
@@ -86,20 +93,7 @@ function App() {
     onDismissWelcomeBack,
   } = useInactivityPrompt({ state, dispatch });
 
-  // Send Sam's intro greeting on first load
-  const introSentRef = useRef(false);
-  useEffect(() => {
-    if (
-      !showRecovery &&
-      state.phase === 'intro' &&
-      state.chatMessages.length === 0 &&
-      !isLoading &&
-      !introSentRef.current
-    ) {
-      introSentRef.current = true;
-      sendMessage('[Student just arrived — greet them and introduce Fraction Quest!]');
-    }
-  }, [showRecovery, state.phase, state.chatMessages.length, isLoading, sendMessage]);
+  // Intro greeting is now sent by handleStartLesson when start screen is dismissed
 
   const prevPhaseRef = useRef(state.phase);
   useEffect(() => {
@@ -270,6 +264,22 @@ function App() {
     );
   };
 
+  const handleAltarSplit = (blockId: string, parts: number) => {
+    ensureAudioUnlocked();
+    const block = state.blocks.find((b) => b.id === blockId);
+    if (!block) return;
+    if (block.fraction.denominator * parts > 12) return;
+    const startId = state.nextBlockId;
+    const newIds = Array.from({ length: parts }, (_, i) => `block-${startId + i}`);
+    setSplitBlockIds(newIds);
+    dispatch({ type: 'SPLIT_BLOCK', blockId, parts });
+    playPop();
+    const { numerator, denominator } = block.fraction;
+    notifySam(
+      `I split the ${numerator}/${denominator} crystal into ${parts} pieces on the spell altar`
+    );
+  };
+
   const combineCooldownRef = useRef(false);
 
   const handleDragStart = (blockId: string) => {
@@ -330,6 +340,10 @@ function App() {
     [ensureAudioUnlocked, sendMessage]
   );
 
+  if (showStart) {
+    return <StartScreen onStart={handleStartLesson} />;
+  }
+
   if (showRecovery) {
     return (
       <div
@@ -342,55 +356,67 @@ function App() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: 'rgba(0,0,0,0.4)',
+          backgroundImage: 'url(/assets/background.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundColor: '#1a1040',
           zIndex: 1000,
           padding: 16,
         }}
       >
         <div
           style={{
-            backgroundColor: '#fff',
-            borderRadius: 12,
-            padding: 24,
-            maxWidth: 400,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+            background: 'linear-gradient(180deg, rgba(30,15,60,0.95) 0%, rgba(50,25,80,0.95) 100%)',
+            borderRadius: 16,
+            padding: 32,
+            maxWidth: 420,
+            border: '2px solid #D4A843',
+            boxShadow: '0 8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: 16,
+            gap: 20,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div
-              aria-hidden
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: '50%',
-                backgroundColor: '#4A90D9',
-                flexShrink: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            />
-            <p id="recovery-title" style={{ margin: 0, fontSize: 16, lineHeight: 1.4 }}>
-              Hey, welcome back! Want to keep going where we left off?
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: 12, width: '100%', justifyContent: 'center' }}>
+          <img
+            src="/assets/sam-avatar.png"
+            alt="Sam the Math Wizard"
+            style={{
+              width: 80,
+              height: 80,
+              borderRadius: '50%',
+              border: '3px solid #D4A843',
+              objectFit: 'cover',
+            }}
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+          <p id="recovery-title" style={{
+            margin: 0,
+            fontSize: 18,
+            lineHeight: 1.5,
+            fontFamily: "'Fredoka One', 'Nunito', sans-serif",
+            color: '#fff',
+            textAlign: 'center',
+            textShadow: '0 2px 4px rgba(0,0,0,0.5)',
+          }}>
+            Hey, welcome back! Want to keep going where we left off?
+          </p>
+          <div style={{ display: 'flex', gap: 14, width: '100%', justifyContent: 'center' }}>
             <button
               type="button"
               onClick={handleKeepGoing}
               style={{
-                padding: '10px 20px',
-                fontSize: 15,
-                fontWeight: 600,
-                backgroundColor: '#4A90D9',
+                padding: '12px 24px',
+                fontSize: 17,
+                fontWeight: 700,
+                fontFamily: "'Fredoka One', 'Nunito', sans-serif",
+                background: 'linear-gradient(180deg, #7B2FBE 0%, #5B1F9E 100%)',
                 color: '#fff',
-                border: 'none',
-                borderRadius: 8,
+                border: '2px solid #D4A843',
+                borderRadius: 12,
                 cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(123,47,190,0.5), inset 0 1px 0 rgba(255,255,255,0.2)',
+                textShadow: '0 2px 4px rgba(0,0,0,0.5)',
               }}
             >
               Keep Going
@@ -399,14 +425,17 @@ function App() {
               type="button"
               onClick={handleStartOver}
               style={{
-                padding: '10px 20px',
-                fontSize: 15,
-                fontWeight: 600,
-                backgroundColor: '#f0f0f0',
-                color: '#333',
-                border: '1px solid #ccc',
-                borderRadius: 8,
+                padding: '12px 24px',
+                fontSize: 17,
+                fontWeight: 700,
+                fontFamily: "'Fredoka One', 'Nunito', sans-serif",
+                background: 'linear-gradient(180deg, #D4A843 0%, #B8892E 100%)',
+                color: '#fff',
+                border: '2px solid #E8C65A',
+                borderRadius: 12,
                 cursor: 'pointer',
+                boxShadow: '0 3px 8px rgba(180,137,46,0.4), inset 0 1px 0 rgba(255,255,255,0.3)',
+                textShadow: '0 1px 3px rgba(0,0,0,0.4)',
               }}
             >
               Start Over
@@ -602,6 +631,7 @@ function App() {
                   onDropOnComparisonZone={handleDropOnComparisonZone}
                   onWorkspaceBackgroundClick={handleWorkspaceBackgroundClick}
                   onReturnToWorkspace={(blockId) => dispatch({ type: 'RETURN_TO_WORKSPACE', blockId })}
+                  onAltarSplit={handleAltarSplit}
                   isDragging={state.isDragging}
                   draggingBlockId={draggingBlockId}
                   combinedBlockId={combinedBlockId}

@@ -89,7 +89,7 @@ export const lessonReducer: LessonReducer = (state, action) => {
     case 'SPLIT_BLOCK': {
       const { blockId, parts } = action;
       const block = state.blocks.find((b) => b.id === blockId);
-      if (!block || block.position !== 'workspace') return state;
+      if (!block) return state;
       let pieces: Fraction[];
       try {
         pieces = split(block.fraction, parts);
@@ -98,8 +98,9 @@ export const lessonReducer: LessonReducer = (state, action) => {
       }
       if (pieces.some((p) => p.denominator > 12)) return state;
       const startId = state.nextBlockId;
+      // New pieces inherit the parent block's position (workspace or comparison)
       const newBlocks: FractionBlock[] = pieces.map((fraction, i) =>
-        createBlock(`block-${startId + i}`, fraction, 'workspace', false)
+        createBlock(`block-${startId + i}`, fraction, block.position, false)
       );
       const rest = state.blocks.filter((b) => b.id !== blockId);
       return {

@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
 
-const MIN_TOUCH_PX = 44;
 const DEBOUNCE_MS = 500;
 
 export interface ActionBarProps {
