@@ -13,6 +13,7 @@ import { ProgressDots } from './components/shared/ProgressDots';
 import { useSoundManager } from './audio/useSoundManager';
 import { selectAssessmentProblems } from './content/assessment-pools';
 import { useTutorChat } from './brain/useTutorChat';
+import { useVoiceOutput } from './brain/useVoiceOutput';
 import { parseFractionReferences } from './brain/parseFractionReferences';
 import { useExplorationObserver } from './observers/useExplorationObserver';
 
@@ -57,6 +58,8 @@ function App() {
     playIncorrect,
     playCelebration,
   } = useSoundManager();
+  const voice = useVoiceOutput();
+  const [voiceInputListening, setVoiceInputListening] = useState(false);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
   const ensureAudioUnlocked = useCallback(() => {
     if (!audioUnlocked) {
@@ -135,6 +138,31 @@ function App() {
     window.addEventListener('popstate', handler);
     return () => window.removeEventListener('popstate', handler);
   }, [state.phase]);
+
+  const prevStreamingRef = useRef(state.isStreaming);
+  useEffect(() => {
+    const wasStreaming = prevStreamingRef.current;
+    prevStreamingRef.current = state.isStreaming;
+
+    if (
+      wasStreaming &&
+      !state.isStreaming &&
+      voice.enabled &&
+      !voiceInputListening
+    ) {
+      const lastMsg = state.chatMessages[state.chatMessages.length - 1];
+      if (lastMsg?.sender === 'tutor') {
+        voice.speak(lastMsg.content);
+      }
+    }
+  }, [
+    state.isStreaming,
+    state.chatMessages,
+    voice.enabled,
+    voiceInputListening,
+    voice.speak,
+    voice,
+  ]);
 
   const completionDispatchedRef = useRef<string | null>(null);
   useEffect(() => {
@@ -396,6 +424,24 @@ function App() {
         >
           {muted ? '🔇' : '🔊'}
         </button>
+        {voice.supported && (
+          <button
+            type="button"
+            onClick={voice.toggleEnabled}
+            aria-label={voice.enabled ? 'Turn off voice' : 'Turn on voice'}
+            style={{
+              background: 'none',
+              border: 'none',
+              fontSize: '1.25rem',
+              cursor: 'pointer',
+              padding: 8,
+              minWidth: 44,
+              minHeight: 44,
+            }}
+          >
+            {voice.enabled ? '🗣️' : '🤫'}
+          </button>
+        )}
       </header>
       <div
         style={{
@@ -413,6 +459,7 @@ function App() {
             messages={state.chatMessages}
             onSendMessage={handleSendMessage}
             isLoading={isLoading}
+            onVoiceInputStateChange={setVoiceInputListening}
           />
         </div>
         <div style={{ flex: '0 0 60%', minWidth: 0, display: 'flex', flexDirection: 'column' }}>
