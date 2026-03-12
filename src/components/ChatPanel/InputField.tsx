@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 
 export interface InputFieldProps {
   onSend: (text: string) => void;
@@ -26,12 +26,21 @@ export function InputField({
   onStopListening,
 }: InputFieldProps) {
   const [internalValue, setInternalValue] = useState('');
+  const [shaking, setShaking] = useState(false);
+  const shakeTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const value = controlledValue !== undefined ? controlledValue : internalValue;
   const setValue = controlledOnChange ?? setInternalValue;
 
   const send = useCallback(() => {
     const trimmed = value.trim();
-    if (!trimmed || disabled) return;
+    if (!trimmed || disabled) {
+      if (!disabled && !value.trim()) {
+        setShaking(true);
+        clearTimeout(shakeTimeoutRef.current);
+        shakeTimeoutRef.current = setTimeout(() => setShaking(false), 300);
+      }
+      return;
+    }
     onSend(trimmed);
     setValue('');
   }, [value, disabled, onSend, setValue]);
@@ -55,6 +64,11 @@ export function InputField({
         @keyframes pulse-recording {
           0%, 100% { opacity: 1; transform: scale(1); }
           50% { opacity: 0.5; transform: scale(1.2); }
+        }
+        @keyframes shake-input {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-6px); }
+          75% { transform: translateX(6px); }
         }
       `}</style>
       <div
@@ -84,6 +98,7 @@ export function InputField({
           outline: 'none',
           fontStyle: isInterim ? 'italic' : 'normal',
           color: isInterim ? 'rgba(0,0,0,0.6)' : undefined,
+          animation: shaking ? 'shake-input 300ms ease' : 'none',
         }}
       />
       {voiceSupported && (

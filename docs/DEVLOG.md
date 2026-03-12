@@ -38,8 +38,8 @@
 | ENG-032 | PWA configuration | ⬜ Pending | 0.5h |
 | ENG-031 | Accessibility: ARIA + keyboard | ⬜ Pending | 1.5h |
 | ENG-030 | Responsive layout: portrait mode | ⬜ Pending | 1h |
-| ENG-029 | Edge case handlers | ⬜ Pending | 2h |
-| ENG-028 | Celebration confetti | ⬜ Pending | 2h |
+| ENG-029 | Edge case handlers | ✅ Complete | 2h |
+| ENG-028 | Celebration confetti | ✅ Complete | 2h |
 | ENG-027 | Incorrect placement animation | ⬜ Pending | 0.5h |
 | ENG-026 | Equivalence reveal animation | ⬜ Pending | 1h |
 | ENG-045 | Fraction Quest theme pass | ⬜ Pending | 5-9h |
@@ -807,26 +807,54 @@ Script that runs eval dataset against /api/chat and checks math correctness, too
 
 ---
 
-### ENG-028: Celebration Confetti ⬜
+### ENG-028: Celebration Confetti ✅
+
+#### Plain-English Summary
+Created `src/components/shared/Confetti.tsx` — 60 crystal-colored particles (Sapphire, Emerald, Amethyst, Citrine, Topaz, Aquamarine, Rose Quartz, Gold) falling from top with randomized position, drift, rotation, size (8–14px), and staggered delay (0–400ms). CSS keyframes use only `transform` and `opacity` for 60fps composited animation. Respects `prefers-reduced-motion`. App.tsx triggers confetti on 3/3 perfect score alongside `playCelebration()`; component auto-cleans via `onComplete` after 2.4s.
 
 #### Acceptance Criteria
-- [ ] Confetti particle animation on 3/3 completion
-- [ ] CSS-only or lightweight (< 2KB added)
-- [ ] Time-boxed: 2 hours max — ship without if behind schedule
-- [ ] Celebration sound plays simultaneously
+- [x] Confetti particle animation on 3/3 completion
+- [x] CSS-only (transform + opacity only)
+- [x] Time-boxed: 2 hours max
+- [x] Celebration sound plays simultaneously
+- [x] `prefers-reduced-motion` respected
+- [x] `aria-hidden`, `pointer-events: none`, z-index 9999
+
+#### Files Created
+- `src/components/shared/Confetti.tsx`
+
+#### Files Modified
+- `src/App.tsx` — `showConfetti` state, trigger on 3/3, render `<Confetti>`
+
+#### Dependencies
+- ENG-022 (CompletionScreen), ENG-024 (SoundManager)
 
 ---
 
-### ENG-029: Edge Case Handlers ⬜
+### ENG-029: Edge Case Handlers ✅
+
+#### Plain-English Summary
+Added `useInactivityPrompt` hook for cross-phase inactivity (intro, guided, assess): 60s → Sam nudge "Take your time — I'm here whenever you're ready!", 180s → dim overlay (20%) + "Tap to continue", 600s → save checkpoint + "Welcome back!" dialog. System prompt updated with NON_FRACTION_INPUT: Sam redirects warmly on "idk", "hello", etc. — never "invalid input". Rapid split debounce (500ms), den>12, picker [2][3][4], multi-touch (isDragging), combine rejection already existed.
 
 #### Acceptance Criteria
-- [ ] Rapid split tapping: 500ms debounce + max_denominator (12) enforcement
-- [ ] Split into 0 or 1: UI only presents picker [2][3][4], no free-text
-- [ ] Non-fraction text input ("idk", "hello"): classify → help_request or unrecognized → Sam redirects warmly
-- [ ] Multi-touch: process first touch only, isDragging boolean guard
-- [ ] Denominator > 12: reducer rejects, Sam says "Those pieces are as small as they can get!"
-- [ ] Inactivity: 60s → "Take your time", 180s → dim screen + "Tap to continue", 600s → auto-checkpoint
-- [ ] Locked UI elements during assessment: dimmed but visible, tap shows redirect message
+- [x] Rapid split tapping: 500ms debounce + max_denominator (12) enforcement (ActionBar, App)
+- [x] Split into 0 or 1: UI only presents picker [2][3][4], no free-text
+- [x] Non-fraction text input: system prompt instructs Sam to redirect warmly
+- [x] Multi-touch: isDragging boolean guard (existing)
+- [x] Denominator > 12: reducer + App reject with Sam message (existing)
+- [x] Inactivity: 60s nudge, 180s dim + tap to continue, 600s checkpoint + Welcome back
+- [ ] Locked UI during A-1: N/A — workspace not shown during recognition; A-2/A-3 have full tools
+
+#### Files Created
+- `src/hooks/useInactivityPrompt.ts`
+
+#### Files Modified
+- `src/App.tsx` — useInactivityPrompt, dim overlay, Welcome back dialog
+- `api/system-prompt.ts` — NON_FRACTION_INPUT section
+- `docs/tickets/P6-ENG-029-primer.md` — fixed typo
+
+#### Dependencies
+- ENG-025 (checkpoint), ENG-013 (system prompt)
 
 ---
 

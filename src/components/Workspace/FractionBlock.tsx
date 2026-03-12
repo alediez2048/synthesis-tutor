@@ -112,29 +112,12 @@ export function FractionBlock({
     { enabled: !dragDisabled, pointer: { touch: true }, preventDefault: true }
   );
 
-  const { fraction, color, isSelected } = block;
+  const { fraction, isSelected } = block;
   const value = fraction.numerator / fraction.denominator;
-  const widthPx = Math.max(MIN_SIZE_PX, Math.round(value * referenceWidth));
-  const heightPx = MIN_SIZE_PX;
+  const sizePx = Math.max(MIN_SIZE_PX * 2, Math.round(value * referenceWidth * 1.2));
 
   const label = `${fraction.numerator}/${fraction.denominator}`;
   const ariaLabel = getSpokenFraction(fraction.numerator, fraction.denominator);
-
-  const gridLines = fraction.denominator > 1
-    ? Array.from({ length: fraction.denominator - 1 }, (_, i) => (
-        <div
-          key={i}
-          style={{
-            position: 'absolute',
-            left: `${((i + 1) / fraction.denominator) * 100}%`,
-            top: 0,
-            bottom: 0,
-            width: 1,
-            backgroundColor: 'rgba(0,0,0,0.2)',
-          }}
-        />
-      ))
-    : null;
 
   return (
     <div
@@ -159,39 +142,50 @@ export function FractionBlock({
       }}
       style={{
         position: 'relative',
-        width: widthPx,
-        minWidth: MIN_SIZE_PX,
-        height: heightPx,
-        minHeight: MIN_SIZE_PX,
-        backgroundColor: color,
-        borderRadius: 4,
-        boxShadow: isDraggingThis
-          ? '0 4px 12px rgba(0,0,0,0.3)'
-          : isSelected
-            ? '0 0 0 3px #4A90D9'
-            : '0 1px 3px rgba(0,0,0,0.2)',
+        width: sizePx,
+        height: sizePx,
         outline: 'none',
         cursor: onSelect ? 'pointer' : 'default',
         touchAction: 'none',
+        pointerEvents: 'auto',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        flexShrink: 0,
+        flexShrink: 1,
+        filter: isSelected
+          ? 'drop-shadow(0 0 8px rgba(74,144,217,0.8)) drop-shadow(0 0 16px rgba(74,144,217,0.4))'
+          : isDraggingThis
+            ? 'drop-shadow(0 8px 16px rgba(0,0,0,0.4))'
+            : 'drop-shadow(0 2px 6px rgba(0,0,0,0.3))',
         transform: isDraggingThis
-          ? `translate(${dragOffset.x}px, ${dragOffset.y}px) scale(1.05)`
+          ? `translate(${dragOffset.x}px, ${dragOffset.y}px) scale(1.1)`
           : `translate(${dragOffset.x}px, ${dragOffset.y}px)`,
         ...(isDraggingThis ? { willChange: 'transform' as const } : {}),
       }}
     >
-      {gridLines}
+      <img
+        src="/assets/crystal.png"
+        alt=""
+        aria-hidden="true"
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'contain',
+          pointerEvents: 'none',
+        }}
+      />
       <span
         style={{
-          position: 'relative',
+          position: 'absolute',
           zIndex: 1,
-          fontSize: 14,
-          fontWeight: 600,
+          fontSize: Math.max(16, Math.round(sizePx * 0.22)),
+          fontWeight: 700,
+          fontFamily: "'Fredoka One', 'Nunito', sans-serif",
           color: '#fff',
-          textShadow: '0 1px 1px rgba(0,0,0,0.3)',
+          textShadow: '0 2px 4px rgba(0,0,0,0.7), 0 0 8px rgba(0,0,0,0.3)',
+          top: '55%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
         }}
       >
         {label}

@@ -35,6 +35,7 @@ export interface WorkspaceProps {
   onCombineAttempt?: (draggedId: string, targetId: string | null) => void;
   onDropOnComparisonZone?: (draggedId: string) => void;
   onWorkspaceBackgroundClick?: () => void;
+  onReturnToWorkspace?: (blockId: string) => void;
   isDragging?: boolean;
   draggingBlockId?: string | null;
   combinedBlockId?: string | null;
@@ -51,6 +52,7 @@ export function Workspace({
   onCombineAttempt,
   onDropOnComparisonZone,
   onWorkspaceBackgroundClick,
+  onReturnToWorkspace,
   isDragging = false,
   draggingBlockId = null,
   combinedBlockId = null,
@@ -98,36 +100,9 @@ export function Workspace({
         touchAction: 'none',
         display: 'flex',
         flexDirection: 'column',
-        gap: 16,
+        gap: 0,
       }}
     >
-      {/* Reference bar: 1 whole */}
-      <section
-        aria-label="Reference bar"
-        style={{
-          width: referenceWidth,
-          height: 28,
-          backgroundColor: REFERENCE_BAR_COLOR,
-          borderRadius: 4,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}
-      >
-        <span style={{ fontSize: 14, fontWeight: 600, color: '#fff', textShadow: '0 1px 1px rgba(0,0,0,0.3)' }}>
-          1/1
-        </span>
-      </section>
-
-      {/* Comparison zone */}
-      <ComparisonZone
-        ref={comparisonZoneRef}
-        blocks={comparisonBlocks}
-        referenceWidth={referenceWidth}
-        onSelectBlock={onSelectBlock}
-      />
-
       {/* Active blocks area */}
       <section
         aria-label="Workspace"
@@ -137,12 +112,17 @@ export function Workspace({
         style={{
           minHeight: 80,
           padding: 12,
-          backgroundColor: 'rgba(0,0,0,0.02)',
+          marginBottom: 0,
+          zIndex: 2,
+          position: 'relative',
+          backgroundColor: 'transparent',
           borderRadius: 8,
           display: 'flex',
-          flexWrap: 'wrap',
+          flexWrap: 'nowrap',
           gap: 8,
           alignItems: 'flex-end',
+          justifyContent: 'center',
+          pointerEvents: 'none',
         }}
       >
         {workspaceBlocks.map((block) => (
@@ -164,6 +144,15 @@ export function Workspace({
           />
         ))}
       </section>
+
+      {/* Comparison zone */}
+      <ComparisonZone
+        ref={comparisonZoneRef}
+        blocks={comparisonBlocks}
+        referenceWidth={referenceWidth}
+        onSelectBlock={onSelectBlock}
+        onReturnToWorkspace={onReturnToWorkspace}
+      />
     </div>
   );
 }

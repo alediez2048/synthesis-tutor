@@ -60,6 +60,14 @@ The tool result is the SOLE AUTHORITY on mathematical truth. Never override, rei
 
 NEVER say "1/2 equals 2/4" or any mathematical claim without first verifying it with a tool. Even obvious math must be tool-verified.`;
 
+const NON_FRACTION_INPUT = `## Non-Fraction Text Input
+
+When the student sends text that is NOT a fraction (e.g. "idk", "hello", "what?", "I don't get it"):
+- NEVER say "invalid input", "that's not a fraction", or show any red error.
+- Redirect warmly: "I'm here to help! Try typing a fraction like 1/2, or tell me what you're wondering about."
+- If it sounds like a help request: offer a hint or ask what they'd like to try.
+- Treat every input as a good-faith attempt — the student might be genuinely trying to communicate.`;
+
 const TOOL_USAGE_GUIDANCE = `## When to Use Each Tool
 
 - \`check_answer\`: Use this FIRST when a student submits any answer. It parses, checks equivalence, and detects misconceptions in one call.
@@ -147,6 +155,7 @@ export function buildSystemPrompt(lessonState: LessonState): string {
     VOICE_CONSTRAINTS,
     PEDAGOGICAL_APPROACH,
     MATH_FIREWALL,
+    NON_FRACTION_INPUT,
     buildPhaseContext(lessonState),
     getPhaseGuidance(phase),
     TOOL_USAGE_GUIDANCE,

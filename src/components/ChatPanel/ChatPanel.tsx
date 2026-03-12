@@ -10,6 +10,8 @@ export interface ChatPanelProps {
   isLoading?: boolean;
   /** Called when voice input listening state changes (for TTS to avoid mic interference) */
   onVoiceInputStateChange?: (isListening: boolean) => void;
+  /** 'sidebar' = tall left panel (default), 'bottomBar' = compact full-width bottom bar */
+  layout?: 'sidebar' | 'bottomBar';
 }
 
 export function ChatPanel({
@@ -17,6 +19,7 @@ export function ChatPanel({
   onSendMessage,
   isLoading = false,
   onVoiceInputStateChange,
+  layout = 'sidebar',
 }: ChatPanelProps) {
   const scrollEndRef = useRef<HTMLDivElement>(null);
   const [inputValue, setInputValue] = useState('');
@@ -32,6 +35,85 @@ export function ChatPanel({
   useEffect(() => {
     onVoiceInputStateChange?.(voice.isListening);
   }, [voice.isListening, onVoiceInputStateChange]);
+
+  const lastTutorMsg = [...messages].reverse().find((m) => m.sender === 'tutor');
+
+  if (layout === 'bottomBar') {
+    return (
+      <section
+        aria-label="Chat with Sam"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 6,
+          padding: '10px 16px',
+          width: '100%',
+          boxSizing: 'border-box',
+          backgroundColor: 'rgba(255,255,255,0.95)',
+        }}
+      >
+        {/* Top row: Sam avatar + latest message */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+          <div style={{ flexShrink: 0, textAlign: 'center' }}>
+            <div
+              style={{
+                width: 72,
+                height: 72,
+                borderRadius: '50%',
+                backgroundColor: '#4A90D9',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+              }}
+            >
+              <img
+                src="/assets/sam-avatar.png"
+                alt=""
+                aria-hidden="true"
+                style={{ width: 72, height: 72, objectFit: 'cover' }}
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+            </div>
+            <span style={{ fontSize: 10, fontWeight: 700 }}>Sam</span>
+          </div>
+          <p
+            style={{
+              margin: 0,
+              fontSize: 14,
+              lineHeight: 1.4,
+              flex: 1,
+              minWidth: 0,
+            }}
+          >
+            {isLoading
+              ? 'Sam is typing...'
+              : lastTutorMsg?.content ?? 'Say hi to get started!'}
+          </p>
+        </div>
+        {/* Bottom row: input field */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <InputField
+              onSend={(text) => {
+                onSendMessage(text);
+                setInputValue('');
+              }}
+              disabled={isLoading}
+              value={inputValue}
+              onChange={setInputValue}
+              voiceSupported={voice.supported}
+              isListening={voice.isListening}
+              transcript={voice.transcript}
+              onStartListening={voice.startListening}
+              onStopListening={voice.stopListening}
+            />
+          </div>
+        </div>
+        <div ref={scrollEndRef} />
+      </section>
+    );
+  }
 
   return (
     <section

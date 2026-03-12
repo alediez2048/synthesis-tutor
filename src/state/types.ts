@@ -90,4 +90,5 @@ export type LessonAction =
   | { type: 'RETRY_MISSED' }
   | { type: 'LOOP_TO_PRACTICE' }
   | { type: 'RESTART_LESSON' }
-  | { type: 'FULL_RESET' };
+  | { type: 'FULL_RESET' }
+  | { type: 'RETURN_TO_WORKSPACE'; blockId: string };
