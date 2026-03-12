@@ -64,6 +64,8 @@ export function getInitialLessonState(): LessonState {
     hintCount: 0,
     chatMessages: [],
     assessmentPool: [],
+    assessmentStep: 0,
+    assessmentAttempts: 0,
     conceptsDiscovered: [],
     isDragging: false,
     nextBlockId: 1,
@@ -175,6 +177,20 @@ export const lessonReducer: LessonReducer = (state, action) => {
       };
     }
 
+    case 'RESET_ASSESSMENT_WORKSPACE': {
+      const whole = createBlock(
+        `block-${state.nextBlockId}`,
+        { numerator: 1, denominator: 1 },
+        'workspace',
+        false
+      );
+      return {
+        ...state,
+        blocks: [whole],
+        nextBlockId: state.nextBlockId + 1,
+      };
+    }
+
     case 'SELECT_BLOCK': {
       const blocks = state.blocks.map((b) => ({
         ...b,
@@ -229,6 +245,71 @@ export const lessonReducer: LessonReducer = (state, action) => {
       return {
         ...state,
         conceptsDiscovered: [...state.conceptsDiscovered, action.concept],
+      };
+    }
+
+    case 'INIT_ASSESSMENT': {
+      const pool = action.pool;
+      const first = pool[0];
+      const blocks =
+        first && 'startingBlock' in first
+          ? [createBlock(`block-${state.nextBlockId}`, first.startingBlock, 'workspace', false)]
+          : first && 'requiredCount' in first
+            ? [createBlock(`block-${state.nextBlockId}`, { numerator: 1, denominator: 1 }, 'workspace', false)]
+            : state.blocks;
+      return {
+        ...state,
+        assessmentPool: pool,
+        assessmentStep: 0,
+        assessmentAttempts: 0,
+        blocks: blocks as FractionBlock[],
+        nextBlockId: state.nextBlockId + (blocks !== state.blocks ? 1 : 0),
+      };
+    }
+
+    case 'ASSESSMENT_ANSWER': {
+      const { correct } = action;
+      const newAttempts = state.assessmentAttempts + 1;
+      const problem = state.assessmentPool[state.assessmentStep] as
+        | { maxAttempts?: number }
+        | undefined;
+      const maxAttempts = problem?.maxAttempts ?? 2;
+      const atMax = newAttempts >= maxAttempts;
+      const doneWithProblem = correct || atMax;
+      const newScore = {
+        correct: state.score.correct + (correct ? 1 : 0),
+        total: state.score.total + (doneWithProblem ? 1 : 0),
+      };
+      return {
+        ...state,
+        assessmentAttempts: newAttempts,
+        score: newScore,
+      };
+    }
+
+    case 'ADVANCE_ASSESSMENT': {
+      const newStep = state.assessmentStep + 1;
+      const nextProblem = state.assessmentPool[newStep];
+      const blocks =
+        nextProblem && 'startingBlock' in nextProblem
+          ? [createBlock(`block-${state.nextBlockId}`, nextProblem.startingBlock, 'workspace', false)]
+          : nextProblem && 'requiredCount' in nextProblem
+            ? [createBlock(`block-${state.nextBlockId}`, { numerator: 1, denominator: 1 }, 'workspace', false)]
+            : state.blocks;
+      if (newStep >= state.assessmentPool.length) {
+        return {
+          ...state,
+          assessmentStep: newStep,
+          assessmentAttempts: 0,
+          phase: 'complete',
+        };
+      }
+      return {
+        ...state,
+        assessmentStep: newStep,
+        assessmentAttempts: 0,
+        blocks: blocks as FractionBlock[],
+        nextBlockId: state.nextBlockId + (blocks !== state.blocks ? 1 : 0),
       };
     }
 

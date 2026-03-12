@@ -2,12 +2,18 @@
  * Vercel Edge Function: Claude API proxy with SSE and tool use.
  * ENG-011: POST { messages, lessonState }, streams text_delta and done.
  * ENG-012: Passes toolDefinitions to Claude; executes tools and sends results back.
+ * ENG-040: LangSmith tracing for Claude calls and tool executions.
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import { RunTree } from 'langsmith';
+import { waitUntil } from '@vercel/functions';
 import { toolDefinitions, executeToolCall } from './tools';
 import { buildSystemPrompt } from './system-prompt';
 import type { LessonState } from '../src/state/types';
+
+const TRACING_ENABLED =
+  process.env.LANGSMITH_TRACING === 'true' || !!process.env.LANGSMITH_API_KEY;
 
 export const config = {
   runtime: 'edge',
@@ -38,6 +44,8 @@ function defaultLessonState(): LessonState {
     hintCount: 0,
     chatMessages: [],
     assessmentPool: [],
+    assessmentStep: 0,
+    assessmentAttempts: 0,
     conceptsDiscovered: [],
     isDragging: false,
     nextBlockId: 1,
@@ -101,7 +109,28 @@ export default async function handler(req: Request): Promise<Response> {
         controller.close();
       };
 
+      let parentRun: RunTree | null = null;
       try {
+        if (TRACING_ENABLED) {
+          try {
+            parentRun = new RunTree({
+              name: 'chat-request',
+              run_type: 'chain',
+              inputs: { messages, phase: lessonState.phase },
+              serialized: {},
+              extra: {
+                phase: lessonState.phase,
+                stepIndex: lessonState.stepIndex,
+                blockCount: lessonState.blocks.length,
+                conceptsDiscovered: lessonState.conceptsDiscovered,
+              },
+            });
+            await parentRun.postRun();
+          } catch {
+            /* tracing init failed, continue without */
+          }
+        }
+
         type UserMessage = { role: 'user'; content: string | Array<{ type: 'tool_result'; tool_use_id: string; content: string }> };
         type AssistantMessage = { role: 'assistant'; content: Array<{ type: string; text?: string; id?: string; name?: string; input?: unknown }> };
         let currentMessages: Array<UserMessage | AssistantMessage> = messages.map((m) => ({
@@ -110,6 +139,21 @@ export default async function handler(req: Request): Promise<Response> {
         })) as Array<UserMessage | AssistantMessage>;
 
         for (;;) {
+          let llmRun: RunTree | null = null;
+          if (parentRun) {
+            try {
+              llmRun = await parentRun.createChild({
+                name: 'claude-messages-create',
+                run_type: 'llm',
+                inputs: { model, messages: currentMessages },
+              });
+              await llmRun.postRun();
+            } catch {
+              /* llm span init failed */
+            }
+          }
+
+          const startTime = Date.now();
           const response = await anthropic.messages.create({
             model,
             max_tokens: 1024,
@@ -117,6 +161,21 @@ export default async function handler(req: Request): Promise<Response> {
             messages: currentMessages as Parameters<Anthropic['messages']['create']>[0]['messages'],
             tools: toolDefinitions,
           });
+          const latencyMs = Date.now() - startTime;
+
+          if (llmRun) {
+            try {
+              llmRun.end({
+                stop_reason: response.stop_reason,
+                input_tokens: response.usage?.input_tokens ?? 0,
+                output_tokens: response.usage?.output_tokens ?? 0,
+                latencyMs,
+              });
+              await llmRun.patchRun();
+            } catch {
+              /* llm span flush failed */
+            }
+          }
 
           for (const block of response.content) {
             if (block.type === 'text') {
@@ -134,15 +193,36 @@ export default async function handler(req: Request): Promise<Response> {
           }
 
           if (response.stop_reason === 'tool_use') {
-            const toolResults = response.content
-              .filter((b): b is { type: 'tool_use'; id: string; name: string; input: unknown } => b.type === 'tool_use')
-              .map((b) => ({
-                type: 'tool_result' as const,
+            const toolBlocks = response.content.filter(
+              (b): b is { type: 'tool_use'; id: string; name: string; input: unknown } => b.type === 'tool_use'
+            );
+            const toolResults: Array<{ type: 'tool_result'; tool_use_id: string; content: string }> = [];
+            for (const b of toolBlocks) {
+              let toolResult: Record<string, unknown>;
+              if (llmRun) {
+                try {
+                  const toolRun = llmRun.createChild({
+                    name: `tool:${b.name}`,
+                    run_type: 'tool',
+                    inputs: b.input as Record<string, unknown>,
+                  });
+                  await toolRun.postRun();
+                  const toolStart = Date.now();
+                  toolResult = executeToolCall(b.name, b.input as Record<string, unknown>, lessonState) as Record<string, unknown>;
+                  await toolRun.end({ result: toolResult, latencyMs: Date.now() - toolStart });
+                  await toolRun.patchRun();
+                } catch {
+                  toolResult = executeToolCall(b.name, b.input as Record<string, unknown>, lessonState) as Record<string, unknown>;
+                }
+              } else {
+                toolResult = executeToolCall(b.name, b.input as Record<string, unknown>, lessonState) as Record<string, unknown>;
+              }
+              toolResults.push({
+                type: 'tool_result',
                 tool_use_id: b.id,
-                content: JSON.stringify(
-                  executeToolCall(b.name, b.input as Record<string, unknown>, lessonState)
-                ),
-              }));
+                content: JSON.stringify(toolResult),
+              });
+            }
             currentMessages = [
               ...currentMessages,
               { role: 'assistant' as const, content: response.content },
@@ -161,6 +241,19 @@ export default async function handler(req: Request): Promise<Response> {
         });
       } finally {
         close();
+        if (parentRun) {
+          try {
+            parentRun.end({ status: 'complete' });
+            const flushPromise = parentRun.patchRun().catch(() => {});
+            try {
+              waitUntil(flushPromise);
+            } catch {
+              void flushPromise;
+            }
+          } catch {
+            /* parent run flush failed */
+          }
+        }
       }
     },
   });
