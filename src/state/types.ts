@@ -24,10 +24,30 @@ export interface ChatMessage {
   timestamp?: number;
 }
 
-export interface AssessmentProblem {
-  id: string;
+export interface A1Recognition {
+  id: 'a1';
+  type: 'recognition';
   target: Fraction;
+  options: { fraction: Fraction; correct: boolean }[];
+  maxAttempts: number;
 }
+
+export interface A2Construction {
+  id: 'a2';
+  type: 'construction';
+  target: Fraction;
+  startingBlock: Fraction;
+  maxAttempts: number;
+}
+
+export interface A3Generalization {
+  id: 'a3';
+  type: 'generalization';
+  target: Fraction;
+  requiredCount: number;
+}
+
+export type AssessmentProblem = A1Recognition | A2Construction | A3Generalization;
 
 export interface LessonState {
   phase: Phase;

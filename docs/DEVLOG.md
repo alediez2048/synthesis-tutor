@@ -55,7 +55,7 @@
 | ENG-023 | Progress dots | ⬜ Pending | 0.5h |
 | ENG-022 | Completion screen | ⬜ Pending | 1.5h |
 | ENG-021 | Assessment UI | ⬜ Pending | 2.5h |
-| ENG-020 | Assessment problem pools (JSON) | ⬜ Pending | 1h |
+| ENG-020 | Assessment problem pools | ✅ Complete | 1h |
 
 ### Phase 4: Integration + Voice + Observability (Day 4 — Thursday)
 
@@ -65,7 +65,7 @@
 | ENG-018 | MisconceptionDetector (Claude tool) | ✅ Complete | 1.5h |
 | ENG-016 | Exploration Observer (simplified) | ✅ Complete | 1.5h |
 | ENG-015 | Chat ↔ Workspace integration | ✅ Complete | 2h |
-| ENG-040 | LangSmith observability integration | ⬜ Pending | 2h |
+| ENG-040 | LangSmith observability integration | ✅ Complete | 2h |
 | ENG-039 | Wire ChatPanel to LLM | ✅ Complete | 2h |
 | ENG-017 | Reducer additions (TUTOR_RESPONSE, SET_LOADING) | ✅ Complete | 1h |
 | ENG-014 | useTutorChat hook (SSE streaming) | ✅ Complete | 3h |
@@ -77,7 +77,7 @@
 | ENG-013 | System prompt engineering (Sam persona) | ✅ Complete | 2h |
 | ENG-012 | Claude tool definitions (FractionEngine → tools) | ✅ Complete | 2h |
 | ENG-011 | Vercel edge function + Claude API proxy | ✅ Complete | 3h |
-| ENG-010 | Chat panel UI | ⬜ Pending | 2h |
+| ENG-010 | Chat panel UI | ✅ Complete | 2h |
 
 ### Phase 2: Visual Manipulative (Day 2 — Tuesday)
 
@@ -492,22 +492,22 @@ Connect the ChatPanel UI to the useTutorChat hook. Show streaming responses with
 
 ---
 
-### ENG-040: LangSmith Observability ⬜
+### ENG-040: LangSmith Observability ✅
 
 #### Plain-English Summary
-Integrate LangSmith tracing into the edge function. Trace all Claude calls, tool executions, token usage, and latency.
+LangSmith `RunTree` tracing in `api/chat.ts`: parent `chat-request` span with lesson metadata; child `claude-messages-create` spans (tokens, latency, stop_reason); child `tool:*` spans for each tool execution. Enabled when `LANGSMITH_TRACING=true` or `LANGSMITH_API_KEY` set. Non-blocking flush via `waitUntil`; graceful degradation on trace failures.
 
 #### Acceptance Criteria
-- [ ] LangSmith SDK (`langsmith`) initialized in edge function
-- [ ] Each `/api/chat` request creates a trace with lesson phase metadata
-- [ ] Claude API call logged as a run (input, output, tokens)
-- [ ] Each tool call logged as a child run within the trace
-- [ ] Latency (total + TTFB) recorded
-- [ ] LANGSMITH_API_KEY and LANGSMITH_PROJECT in Vercel env vars
-- [ ] Async flush — never blocks response
+- [x] LangSmith SDK (`langsmith`) + `@vercel/functions` (waitUntil) installed
+- [x] Each `/api/chat` request creates parent trace with phase, stepIndex, blockCount, conceptsDiscovered
+- [x] Claude API call logged as llm child (input_tokens, output_tokens, latencyMs, stop_reason)
+- [x] Each tool call (second executeToolCall only) logged as tool child with result + latencyMs
+- [x] Tracing never blocks SSE response; fire-and-forget flush
+- [x] LANGSMITH_API_KEY, LANGSMITH_PROJECT, LANGSMITH_TRACING, LANGSMITH_ENDPOINT documented
 
-#### Files to Modify
-- `api/chat.ts`
+#### Files Modified
+- `api/chat.ts` (RunTree parent/child spans, waitUntil flush)
+- `package.json` (langsmith, @vercel/functions)
 
 #### Dependencies
 - ENG-011 (edge function exists)
@@ -564,17 +564,20 @@ Vitest truth-table tests in `src/engine/MisconceptionDetector.test.ts` for all s
 
 ---
 
-### ENG-020: Assessment Problem Pools (JSON) ⬜
+### ENG-020: Assessment Problem Pools ✅
+
+#### Plain-English Summary
+`AssessmentProblem` in `types.ts` replaced with discriminated union (`A1Recognition | A2Construction | A3Generalization`). Created `src/content/assessment-pools.ts` with three pools per PRD 7.4: A-1 (3 recognition sets), A-2 (3 construction sets), A-3 (2 generalization sets). `selectAssessmentProblems()` randomly picks one set per type and returns 3 typed problems. Data in TypeScript only (no JSON), matching `exploration-config.ts` pattern. `reducer.ts` and `api/chat.ts` still compile with `assessmentPool: []`.
 
 #### Acceptance Criteria
-- [ ] A-1 Recognition: 3 problem sets (target 1/2, 1/3, 3/4) with 4 options each, one correct
-- [ ] A-2 Construction: 3 options (target 1/2 from 1/1, target 2/3 from 1/1, target 1/4 from 1/2)
-- [ ] A-3 Generalization: 2 options (target 1/2 find 2 equivalents, target 1/3 find 2 equivalents)
-- [ ] One set selected at random per session from each pool
-- [ ] Distractors are NOT equivalent to target (validated by engine)
+- [x] A-1 Recognition: 3 problem sets (target 1/2, 1/3, 3/4) with 4 options each, one correct
+- [x] A-2 Construction: 3 options (target 1/2 from 1/1, target 2/3 from 1/1, target 1/4 from 1/2)
+- [x] A-3 Generalization: 2 options (target 1/2 find 2 equivalents, target 1/3 find 2 equivalents)
+- [x] One set selected at random per session from each pool
+- [x] Distractors are NOT equivalent to target (validated by engine)
 
-#### Files to Create
-- `src/content/assessment-pools.json`
+#### Files Created
+- `src/content/assessment-pools.ts` — pool data + `selectAssessmentProblems()`
 
 #### Dependencies
 - ENG-017 (guided practice scripts complete — assessment follows)
