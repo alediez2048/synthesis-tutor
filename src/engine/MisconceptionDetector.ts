@@ -3,8 +3,8 @@
  * Used by check_answer tool so Claude can scaffold by misconception type.
  */
 
-import { simplify } from './FractionEngine';
-import type { Fraction } from './FractionEngine';
+import { simplify } from './FractionEngine.js';
+import type { Fraction } from './FractionEngine.js';
 
 export type MisconceptionType =
   | 'flipped_fraction'

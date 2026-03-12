@@ -110,8 +110,8 @@ export function Workspace({
           if (e.target === e.currentTarget) onWorkspaceBackgroundClick?.();
         }}
         style={{
-          minHeight: 80,
-          padding: 12,
+          height: 200,
+          padding: '0 12px',
           marginBottom: 0,
           zIndex: 2,
           position: 'relative',
@@ -120,9 +120,10 @@ export function Workspace({
           display: 'flex',
           flexWrap: 'nowrap',
           gap: 8,
-          alignItems: 'flex-end',
+          alignItems: 'center',
           justifyContent: 'center',
           pointerEvents: 'none',
+          overflow: 'visible',
         }}
       >
         {workspaceBlocks.map((block) => (

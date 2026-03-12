@@ -11,10 +11,10 @@ import {
   toCommonDenominator,
   isValidFraction,
   parseStudentInput,
-} from '../src/engine/FractionEngine';
-import type { Fraction } from '../src/engine/FractionEngine';
-import { detectMisconception } from '../src/engine/MisconceptionDetector';
-import type { LessonState } from '../src/state/types';
+} from '../src/engine/FractionEngine.js';
+import type { Fraction } from '../src/engine/FractionEngine.js';
+import { detectMisconception } from '../src/engine/MisconceptionDetector.js';
+import type { LessonState } from '../src/state/types.js';
 
 const fractionSchema = {
   type: 'object' as const,

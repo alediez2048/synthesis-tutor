@@ -551,7 +551,7 @@ function App() {
           <img
             src="/assets/title-logo.png"
             alt="Fraction Quest"
-            style={{ height: 340, objectFit: 'contain', marginBottom: -180 }}
+            style={{ height: 340, objectFit: 'contain', marginBottom: -120 }}
           />
         </h1>
       </header>

@@ -44,7 +44,7 @@ export function ActionBar({
     <div
       style={{
         display: 'flex',
-        flexDirection: 'column',
+        flexDirection: 'column-reverse',
         alignItems: 'center',
         gap: 8,
         marginTop: 8,
