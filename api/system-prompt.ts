@@ -3,7 +3,7 @@
  * Single source of truth for identity, voice, pedagogy, math firewall, and phase guidance.
  */
 
-import type { LessonState } from '../src/state/types';
+import type { LessonState } from '../src/state/types.js';
 
 const IDENTITY = `## Identity
 
