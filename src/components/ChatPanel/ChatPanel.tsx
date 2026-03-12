@@ -8,12 +8,15 @@ export interface ChatPanelProps {
   messages: ChatMessage[];
   onSendMessage: (text: string) => void;
   isLoading?: boolean;
+  /** Called when voice input listening state changes (for TTS to avoid mic interference) */
+  onVoiceInputStateChange?: (isListening: boolean) => void;
 }
 
 export function ChatPanel({
   messages,
   onSendMessage,
   isLoading = false,
+  onVoiceInputStateChange,
 }: ChatPanelProps) {
   const scrollEndRef = useRef<HTMLDivElement>(null);
   const [inputValue, setInputValue] = useState('');
@@ -25,6 +28,10 @@ export function ChatPanel({
   useEffect(() => {
     scrollEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length]);
+
+  useEffect(() => {
+    onVoiceInputStateChange?.(voice.isListening);
+  }, [voice.isListening, onVoiceInputStateChange]);
 
   return (
     <section
