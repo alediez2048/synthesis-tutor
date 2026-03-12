@@ -3,8 +3,6 @@ import type { FractionBlock } from '../../state/types';
 import { FractionBlock as FractionBlockComponent } from './FractionBlock';
 import { ComparisonZone } from './ComparisonZone';
 
-const REFERENCE_BAR_COLOR = '#9E9E9E';
-
 function rectsOverlap(a: DOMRect, b: DOMRect): boolean {
   const overlapX =
     Math.min(a.right, b.right) - Math.max(a.left, b.left);
@@ -36,6 +34,7 @@ export interface WorkspaceProps {
   onDropOnComparisonZone?: (draggedId: string) => void;
   onWorkspaceBackgroundClick?: () => void;
   onReturnToWorkspace?: (blockId: string) => void;
+  onAltarSplit?: (blockId: string, parts: number) => void;
   isDragging?: boolean;
   draggingBlockId?: string | null;
   combinedBlockId?: string | null;
@@ -53,6 +52,7 @@ export function Workspace({
   onDropOnComparisonZone,
   onWorkspaceBackgroundClick,
   onReturnToWorkspace,
+  onAltarSplit,
   isDragging = false,
   draggingBlockId = null,
   combinedBlockId = null,
@@ -152,6 +152,7 @@ export function Workspace({
         referenceWidth={referenceWidth}
         onSelectBlock={onSelectBlock}
         onReturnToWorkspace={onReturnToWorkspace}
+        onAltarSplit={onAltarSplit}
       />
     </div>
   );
