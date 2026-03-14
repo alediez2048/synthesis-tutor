@@ -109,6 +109,58 @@ export function isValidFraction(f: Fraction): boolean {
   );
 }
 
+/**
+ * Add two fractions. Uses toCommonDenominator first — does NOT delegate to combine().
+ * Throws if result denominator > 12.
+ */
+export function addFractions(a: Fraction, b: Fraction): Fraction {
+  const [a2, b2] = toCommonDenominator(a, b);
+  const sum = combine([a2, b2]);
+  const simplified = simplify(sum);
+  if (simplified.denominator > 12) {
+    throw new Error('addFractions: result denominator exceeds 12');
+  }
+  return simplified;
+}
+
+/**
+ * Subtract b from a. Returns null if result would be negative.
+ */
+export function subtractFractions(a: Fraction, b: Fraction): Fraction | null {
+  const [a2, b2] = toCommonDenominator(a, b);
+  if (a2.numerator < b2.numerator) return null;
+  const diff = { numerator: a2.numerator - b2.numerator, denominator: a2.denominator };
+  const simplified = simplify(diff);
+  if (simplified.denominator > 12) {
+    throw new Error('subtractFractions: result denominator exceeds 12');
+  }
+  return simplified;
+}
+
+/**
+ * Multiply two fractions. Throws if result denominator > 12.
+ */
+export function multiplyFractions(a: Fraction, b: Fraction): Fraction {
+  if (b.numerator === 0) throw new Error('multiplyFractions: cannot multiply by zero');
+  const product = {
+    numerator: a.numerator * b.numerator,
+    denominator: a.denominator * b.denominator,
+  };
+  const simplified = simplify(product);
+  if (simplified.denominator > 12) {
+    throw new Error('multiplyFractions: result denominator exceeds 12');
+  }
+  return simplified;
+}
+
+/**
+ * Divide a by b (multiply by reciprocal). Throws on division by zero.
+ */
+export function divideFractions(a: Fraction, b: Fraction): Fraction {
+  if (b.numerator === 0) throw new Error('divideFractions: division by zero');
+  return multiplyFractions(a, { numerator: b.denominator, denominator: b.numerator });
+}
+
 const FRACTION_INPUT_REGEX = /^(\d+)\s*\/\s*(\d+)$/;
 
 /**

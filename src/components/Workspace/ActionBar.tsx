@@ -1,12 +1,16 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { COLORS } from '../../theme';
 import { MagicButton } from '../shared/MagicButton';
+import { getLessonWorkspaceActions } from '../../content/curriculum';
 
 const DEBOUNCE_MS = 500;
 
 export interface ActionBarProps {
   selectedBlockId: string | null;
+  selectedBlockIds?: string[];
+  lessonId?: string;
   onSplitRequest: (parts: number) => void;
+  onAddRequest?: (blockIds: [string, string]) => void;
   rejectionMessage?: string | null;
   disabled?: boolean;
   tutorialStep?: number;
@@ -14,7 +18,10 @@ export interface ActionBarProps {
 
 export function ActionBar({
   selectedBlockId,
+  selectedBlockIds = [],
+  lessonId = 'fractions-101',
   onSplitRequest,
+  onAddRequest,
   rejectionMessage = null,
   disabled = false,
   tutorialStep,
@@ -65,7 +72,9 @@ export function ActionBar({
     [onSplitRequest]
   );
 
+  const actions = getLessonWorkspaceActions(lessonId);
   const canSplit = Boolean(selectedBlockId) && !disabled && !debounceActive;
+  const canAdd = actions.includes('add') && selectedBlockIds.length === 2 && onAddRequest && !disabled;
 
   return (
     <div
@@ -98,6 +107,16 @@ export function ActionBar({
       )}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+        {canAdd && (
+          <MagicButton
+            variant="gold"
+            onClick={() => onAddRequest!([selectedBlockIds[0]!, selectedBlockIds[1]!])}
+            disabled={disabled}
+            aria-label="Add selected blocks"
+          >
+            Add
+          </MagicButton>
+        )}
         <span data-tutorial-target="split-button" style={{ display: 'inline-flex' }}>
           <MagicButton
             variant="primary"
@@ -153,14 +172,16 @@ export function ActionBar({
         )}
       </div>
 
-      {!selectedBlockId && !disabled && (
+      {!selectedBlockId && selectedBlockIds.length === 0 && !disabled && (
         <span style={{
           fontSize: 12,
           fontStyle: 'italic',
           color: COLORS.textMuted,
           fontFamily: 'Georgia, serif',
         }}>
-          Tap a crystal to select it, then split or compare
+          {actions.includes('add')
+            ? 'Tap two crystals to select them, then tap Add'
+            : 'Tap a crystal to select it, then split or compare'}
         </span>
       )}
     </div>

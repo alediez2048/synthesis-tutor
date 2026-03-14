@@ -49,7 +49,14 @@ export interface A3Generalization {
 
 export type AssessmentProblem = A1Recognition | A2Construction | A3Generalization;
 
+export interface PlayerProgress {
+  completedLessons: string[];
+  currentLesson: string | null;
+  scores: Record<string, { correct: number; total: number }>;
+}
+
 export interface LessonState {
+  lessonId: string;
   phase: Phase;
   stepIndex: number;
   blocks: FractionBlock[];
@@ -116,4 +123,7 @@ export type LessonAction =
   | { type: 'SET_CFU_QUESTION'; question: string; expectedAnswer: number }
   | { type: 'CLEAR_CFU' }
   | { type: 'RESET_GUIDED_WORKSPACE'; blocks: FractionBlock[] }
-  | { type: 'INIT_GUIDED_PROBLEM'; problemIndex: number };
+  | { type: 'INIT_GUIDED_PROBLEM'; problemIndex: number }
+  | { type: 'SKIP_TO_GUIDED' }
+  | { type: 'START_LESSON'; lessonId: string }
+  | { type: 'ADD_BLOCKS'; blockIds: [string, string] };

@@ -62,7 +62,7 @@ export function AssessmentPhase({
           fontFamily: 'Georgia, serif',
         }}
       >
-        Problem {step + 1} of 3
+        Problem {step + 1} of {pool.length}
       </p>
       {problem.type === 'recognition' && (
         <MultipleChoice

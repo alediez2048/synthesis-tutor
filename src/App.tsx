@@ -11,8 +11,8 @@ import { AssessmentPhase } from './components/Assessment/AssessmentPhase';
 import { CompletionScreen } from './components/Assessment/CompletionScreen';
 import { Confetti } from './components/shared/Confetti';
 import { useSoundManager } from './audio/useSoundManager';
-import { selectAssessmentProblems } from './content/assessment-pools';
-import { areEquivalent } from './engine/FractionEngine';
+import { selectAssessmentProblems, getLesson } from './content/curriculum';
+import { areEquivalent, addFractions } from './engine/FractionEngine';
 import { useTutorChat } from './brain/useTutorChat';
 import { useVoiceOutput } from './brain/useVoiceOutput';
 import { parseFractionReferences } from './brain/parseFractionReferences';
@@ -24,26 +24,25 @@ import { useGuidedPracticeObserver } from './observers/useGuidedPracticeObserver
 import { useInactivityPrompt } from './hooks/useInactivityPrompt';
 import { ErrorBoundary } from './components/shared/ErrorBoundary';
 import { StartScreen } from './components/shared/StartScreen';
+import { LessonMap } from './components/LessonSelect/LessonMap';
+import { markLessonComplete } from './state/progressStore';
 import { ProgressDots } from './components/shared/ProgressDots';
 import { MagicButton } from './components/shared/MagicButton';
 import { RoundBanner } from './components/shared/RoundBanner';
 import { TutorialOverlay } from './components/Onboarding/TutorialOverlay';
-import { EXPLORATION_ROUNDS, ROUND_5_TIMER_MS } from './content/exploration-rounds';
 import { COLORS } from './theme';
 
 const SPLIT_REJECTION_MESSAGE = 'Those pieces are as small as they can get!';
 const SPLIT_ANIMATION_MS = 400;
 
-const COMPLETION_MESSAGES: Record<string, string> = {
-  '3/3':
-    "You're a fraction master! You proved that the same amount can be written in lots of different ways.",
-  '2/3':
-    "Great job! You really understand equivalent fractions. Want to try the one you missed again?",
-  '1/3':
-    "You're getting there! Want to practice a little more?",
-  '0/3':
-    "Fractions take practice, and you did great exploring today! Let's try again.",
-};
+function getCompletionMessage(correct: number, total: number): string {
+  if (total === 0) return "Great exploring today! Let's try again.";
+  const ratio = correct / total;
+  if (ratio === 1) return "You're a fraction master! You proved that the same amount can be written in lots of different ways.";
+  if (ratio >= 0.67) return "Great job! You really understand equivalent fractions. Want to try the one you missed again?";
+  if (ratio >= 0.34) return "You're getting there! Want to practice a little more?";
+  return "Fractions take practice, and you did great exploring today! Let's try again.";
+}
 
 function App() {
   const [recoveryState, setRecoveryState] = useState<ReturnType<typeof loadCheckpoint>>(
@@ -54,7 +53,9 @@ function App() {
     recoveryState ?? getInitialLessonState()
   );
   const [showRecovery, setShowRecovery] = useState(recoveryState !== null);
-  const [showStart, setShowStart] = useState(recoveryState === null);
+  const [showLessonMap, setShowLessonMap] = useState(recoveryState === null);
+  const [showStart, setShowStart] = useState(false);
+  const [pendingLessonId, setPendingLessonId] = useState<string | null>(null);
   const [draggingBlockId, setDraggingBlockId] = useState<string | null>(null);
   const [combineRejectionMessage, setCombineRejectionMessage] = useState<string | null>(null);
   const [combinedBlockId, setCombinedBlockId] = useState<string | null>(null);
@@ -88,19 +89,38 @@ function App() {
       setAudioUnlocked(true);
     }
   }, [audioUnlocked, unlock]);
+  const lesson = getLesson(state.lessonId);
+  const explorationRounds = lesson?.explorationRounds ?? [];
+  const lastRoundTimerMs = lesson?.lastRoundTimerMs ?? null;
+
   const handleConfettiComplete = useCallback(() => setShowConfetti(false), []);
+  const handleSelectLesson = useCallback((lessonId: string) => {
+    setPendingLessonId(lessonId);
+    setShowLessonMap(false);
+    setShowStart(true);
+  }, []);
+  const handleFinish = useCallback(() => {
+    const passed = state.score.total > 0 && state.score.correct / state.score.total >= (lesson?.passThreshold ?? 0.67);
+    if (passed) {
+      markLessonComplete(state.lessonId, state.score);
+    }
+    clearCheckpoint(state.lessonId);
+    setShowLessonMap(true);
+  }, [state.lessonId, state.score, lesson]);
   const handleStartLesson = useCallback(() => {
     unlock();
     setAudioUnlocked(true);
     setShowStart(false);
-    if (state.tutorialComplete) {
-      dispatch({ type: 'PHASE_TRANSITION', to: 'intro' });
-      sendMessage('[Student just started the lesson. Welcome them warmly and guide them to tap the crystal block and try splitting it.]');
-    } else {
-      dispatch({ type: 'PHASE_TRANSITION', to: 'tutorial' });
+    if (pendingLessonId) {
+      dispatch({ type: 'START_LESSON', lessonId: pendingLessonId });
+      setPendingLessonId(null);
     }
-  }, [unlock, sendMessage, state.tutorialComplete, dispatch]);
+    // START_LESSON sets phase to 'intro' and tutorialComplete to false
+    // so we always go through the tutorial first
+    dispatch({ type: 'PHASE_TRANSITION', to: 'tutorial' });
+  }, [unlock, pendingLessonId, dispatch]);
   const selectedBlockId = state.blocks.find((b) => b.isSelected)?.id ?? null;
+  const selectedBlockIds = state.blocks.filter((b) => b.isSelected).map((b) => b.id);
 
   useExplorationObserver({
     state,
@@ -143,7 +163,7 @@ function App() {
 
   useEffect(() => {
     if (prevPhaseRef.current !== 'assess' && state.phase === 'assess') {
-      const pool = selectAssessmentProblems();
+      const pool = selectAssessmentProblems(state.lessonId);
       dispatch({ type: 'INIT_ASSESSMENT', pool });
     }
     prevPhaseRef.current = state.phase;
@@ -161,7 +181,7 @@ function App() {
     prevExplorationRoundRef.current = round;
 
     if (round > prev && round > 1) {
-      const config = EXPLORATION_ROUNDS[round - 1];
+      const config = explorationRounds[round - 1];
       if (config) {
         const name = `Round ${round}: ${config.name}`;
         queueMicrotask(() => {
@@ -171,33 +191,37 @@ function App() {
       }
     }
 
-    if (round === 5) {
+    const currentRoundConfig = explorationRounds[round - 1];
+    if (currentRoundConfig?.goalType === 'timer') {
       if (round5StartRef.current === null) {
         round5StartRef.current = Date.now();
         queueMicrotask(() =>
-          setRound5SecondsRemaining(Math.ceil(ROUND_5_TIMER_MS / 1000))
+          setRound5SecondsRemaining(Math.ceil((lastRoundTimerMs ?? 60000) / 1000))
         );
       }
     } else {
       round5StartRef.current = null;
       setRound5SecondsRemaining(null);
     }
-  }, [state.phase, state.explorationRound]);
+  }, [state.phase, state.explorationRound, explorationRounds, lastRoundTimerMs]);
 
   useEffect(() => {
-    if (state.phase !== 'explore' || state.explorationRound !== 5 || round5StartRef.current === null) {
+    const currentRoundConfig = explorationRounds[state.explorationRound - 1];
+    const isTimerRound = currentRoundConfig?.goalType === 'timer';
+    if (state.phase !== 'explore' || !isTimerRound || round5StartRef.current === null) {
       return;
     }
+    const timerDuration = lastRoundTimerMs ?? 60000;
     const interval = setInterval(() => {
       const elapsed = Date.now() - (round5StartRef.current ?? 0);
-      const remaining = Math.max(0, Math.ceil((ROUND_5_TIMER_MS - elapsed) / 1000));
+      const remaining = Math.max(0, Math.ceil((timerDuration - elapsed) / 1000));
       setRound5SecondsRemaining(remaining);
       if (remaining <= 0) {
         setRound5SecondsRemaining(null);
       }
     }, 500);
     return () => clearInterval(interval);
-  }, [state.phase, state.explorationRound]);
+  }, [state.phase, state.explorationRound, explorationRounds, lastRoundTimerMs]);
 
   const handleKeepGoing = useCallback(() => {
     clearCheckpoint();
@@ -287,9 +311,9 @@ function App() {
     const key = `${state.score.correct}/${state.score.total}`;
     if (completionDispatchedRef.current === key) return;
     completionDispatchedRef.current = key;
-    const msg = COMPLETION_MESSAGES[key] ?? COMPLETION_MESSAGES['0/3'];
+    const msg = getCompletionMessage(state.score.correct, state.score.total);
     dispatch({ type: 'TUTOR_RESPONSE', content: msg, isStreaming: false });
-    if (state.score.correct === 3 && state.score.total === 3) {
+    if (state.score.total > 0 && state.score.correct === state.score.total) {
       playCelebration();
       queueMicrotask(() => setShowConfetti(true));
     }
@@ -462,9 +486,43 @@ function App() {
     }
   };
 
+  const handleAltarSplit = (blockId: string, parts: number) => {
+    ensureAudioUnlocked();
+    const block = state.blocks.find((b) => b.id === blockId);
+    if (!block) return;
+    if (block.fraction.denominator * parts > 12) {
+      setSplitRejectionMessage(SPLIT_REJECTION_MESSAGE);
+      return;
+    }
+    setSplitRejectionMessage(null);
+    const startId = state.nextBlockId;
+    const newIds = Array.from({ length: parts }, (_, i) => `block-${startId + i}`);
+    setSplitBlockIds(newIds);
+    dispatch({ type: 'SPLIT_BLOCK', blockId, parts });
+    playPop();
+  };
+
   const handleWorkspaceBackgroundClick = () => {
     dispatch({ type: 'DESELECT_ALL' });
   };
+
+  const handleAddBlocks = useCallback(
+    (blockIds: [string, string]) => {
+      const blockA = state.blocks.find((b) => b.id === blockIds[0]);
+      const blockB = state.blocks.find((b) => b.id === blockIds[1]);
+      if (!blockA || !blockB) return;
+      ensureAudioUnlocked();
+      try {
+        const sum = addFractions(blockA.fraction, blockB.fraction);
+        dispatch({ type: 'ADD_BLOCKS', blockIds });
+        playSnap(sum.numerator / sum.denominator);
+        notifySam(`I added ${blockA.fraction.numerator}/${blockA.fraction.denominator} and ${blockB.fraction.numerator}/${blockB.fraction.denominator}`);
+      } catch {
+        // addFractions throws if result denom > 12
+      }
+    },
+    [state.blocks, dispatch, ensureAudioUnlocked, playSnap, notifySam]
+  );
 
   const handleSendMessage = useCallback(
     (text: string) => {
@@ -478,6 +536,9 @@ function App() {
     sendMessage('[Student completed the tutorial. Welcome them to explore!]');
   }, [sendMessage]);
 
+  if (showLessonMap) {
+    return <LessonMap onSelectLesson={handleSelectLesson} />;
+  }
   if (showStart) {
     return <StartScreen onStart={handleStartLesson} />;
   }
@@ -721,6 +782,7 @@ function App() {
             <ProgressDots
               currentPhase={state.phase}
               explorationRound={state.phase === 'explore' ? state.explorationRound : undefined}
+              lessonId={state.lessonId}
             />
           )}
         </div>
@@ -767,7 +829,27 @@ function App() {
               onComplete={handleRoundBannerComplete}
             />
           )}
-          {state.phase === 'explore' && state.explorationRound === 5 && (
+          {state.phase === 'explore' && state.explorationRound >= explorationRounds.length - 1 && explorationRounds[state.explorationRound - 1]?.goalType !== 'timer' && (
+            <div
+              style={{
+                flexShrink: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 8,
+                padding: '8px 0',
+              }}
+            >
+              <MagicButton
+                variant="gold"
+                onClick={() => dispatch({ type: 'SKIP_TO_GUIDED' })}
+                aria-label="Continue to practice"
+              >
+                Continue to practice
+              </MagicButton>
+            </div>
+          )}
+          {state.phase === 'explore' && explorationRounds[state.explorationRound - 1]?.goalType === 'timer' && (
             <div
               style={{
                 flexShrink: 0,
@@ -794,7 +876,7 @@ function App() {
                 onClick={() => {
                   dispatch({
                     type: 'TUTOR_RESPONSE',
-                    content: EXPLORATION_ROUNDS[4]!.celebration,
+                    content: explorationRounds[state.explorationRound - 1]?.celebration ?? '',
                     isStreaming: false,
                   });
                   dispatch({ type: 'ADVANCE_ROUND' });
@@ -828,11 +910,12 @@ function App() {
             {state.phase === 'complete' ? (
               <CompletionScreen
                 score={state.score}
+                passed={state.score.total > 0 && state.score.correct / state.score.total >= (lesson?.passThreshold ?? 0.67)}
                 conceptsDiscovered={state.conceptsDiscovered}
                 onRetryMissed={() => dispatch({ type: 'RETRY_MISSED' })}
                 onLoopToPractice={() => dispatch({ type: 'LOOP_TO_PRACTICE' })}
                 onRestartLesson={() => dispatch({ type: 'RESTART_LESSON' })}
-                onFinish={() => {}}
+                onFinish={handleFinish}
               />
             ) : state.phase === 'assess' ? (
               <AssessmentPhase
@@ -866,6 +949,7 @@ function App() {
                   onDropOnComparisonZone={handleDropOnComparisonZone}
                   onWorkspaceBackgroundClick={handleWorkspaceBackgroundClick}
                   onReturnToWorkspace={(blockId) => dispatch({ type: 'RETURN_TO_WORKSPACE', blockId })}
+                  onAltarSplit={handleAltarSplit}
                   comparisonResult={comparisonResult}
                   isDragging={state.isDragging}
                   draggingBlockId={draggingBlockId}
@@ -876,7 +960,10 @@ function App() {
                 />
                 <ActionBar
                   selectedBlockId={selectedBlockId}
+                  selectedBlockIds={selectedBlockIds}
+                  lessonId={state.lessonId}
                   onSplitRequest={handleSplitRequest}
+                  onAddRequest={lesson?.workspaceActions.includes('add') ? handleAddBlocks : undefined}
                   rejectionMessage={splitRejectionMessage}
                   disabled={state.isDragging || state.isDemoActive}
                   tutorialStep={state.phase === 'tutorial' ? state.tutorialStep : undefined}

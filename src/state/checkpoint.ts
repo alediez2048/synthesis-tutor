@@ -5,8 +5,12 @@
 
 import type { LessonState } from './types';
 
-const STORAGE_KEY = 'fraction-quest-checkpoint';
-const SCHEMA_VERSION = 1;
+const LEGACY_KEY = 'fraction-quest-checkpoint';
+
+function getStorageKey(lessonId?: string): string {
+  return lessonId ? `fraction-quest-checkpoint-${lessonId}` : LEGACY_KEY;
+}
+const SCHEMA_VERSION = 2; // bumped to invalidate stale checkpoints from pre-multi-lesson
 const MAX_AGE_MS = 30 * 60 * 1000; // 30 minutes
 
 interface Checkpoint {
@@ -26,7 +30,7 @@ export function saveCheckpoint(state: LessonState): void {
       timestamp: Date.now(),
       state,
     };
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(checkpoint));
+    sessionStorage.setItem(getStorageKey(state.lessonId), JSON.stringify(checkpoint));
   } catch {
     // sessionStorage full or unavailable — silently fail
   }
@@ -37,9 +41,9 @@ export function saveCheckpoint(state: LessonState): void {
  * Returns null if no valid checkpoint exists.
  * Resets transient fields (isDragging, isLoading, isStreaming) on restore.
  */
-export function loadCheckpoint(): LessonState | null {
+export function loadCheckpoint(lessonId?: string): LessonState | null {
   try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
+    const raw = sessionStorage.getItem(getStorageKey(lessonId));
     if (!raw) return null;
     const checkpoint: Checkpoint = JSON.parse(raw);
     if (checkpoint.version !== SCHEMA_VERSION) {
@@ -52,11 +56,12 @@ export function loadCheckpoint(): LessonState | null {
     }
     return {
       ...checkpoint.state,
+      lessonId: checkpoint.state.lessonId ?? 'fractions-101',
       isDragging: false,
       isLoading: false,
       isStreaming: false,
       isDemoActive: false,
-      tutorialComplete: checkpoint.state.tutorialComplete ?? true,
+      tutorialComplete: checkpoint.state.tutorialComplete ?? false,
       tutorialStep: checkpoint.state.tutorialStep ?? 0,
       explorationRound: checkpoint.state.explorationRound ?? 1,
       guidedProblemIndex: checkpoint.state.guidedProblemIndex ?? 0,
@@ -74,9 +79,9 @@ export function loadCheckpoint(): LessonState | null {
 /**
  * Remove checkpoint from sessionStorage.
  */
-export function clearCheckpoint(): void {
+export function clearCheckpoint(lessonId?: string): void {
   try {
-    sessionStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(getStorageKey(lessonId));
   } catch {
     // silently fail
   }

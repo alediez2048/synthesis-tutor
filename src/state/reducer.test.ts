@@ -85,7 +85,7 @@ describe('lesson reducer', () => {
   });
 
   describe('COMPLETE_TUTORIAL', () => {
-    it('sets tutorialComplete, phase explore, tutorialStep 0, explorationRound 1, blocks to 1/2', () => {
+    it('sets tutorialComplete, phase explore, tutorialStep 0, explorationRound 1, resets to initial blocks', () => {
       let state = getInitialLessonState();
       state = lessonReducer(state, { type: 'PHASE_TRANSITION', to: 'tutorial' });
       state = lessonReducer(state, {
@@ -99,7 +99,7 @@ describe('lesson reducer', () => {
       expect(next.tutorialStep).toBe(0);
       expect(next.explorationRound).toBe(1);
       expect(next.blocks).toHaveLength(1);
-      expect(next.blocks[0]!.fraction).toEqual({ numerator: 1, denominator: 2 });
+      expect(next.blocks[0]!.fraction).toEqual({ numerator: 1, denominator: 1 });
     });
   });
 
@@ -132,12 +132,16 @@ describe('lesson reducer', () => {
   describe('COMBINE_BLOCKS', () => {
     it('combines two same-denominator blocks into one', () => {
       let state = getInitialLessonState();
-      state = lessonReducer(state, { type: 'RESET_WORKSPACE' });
+      // Split the 1/1 whole into 2 halves, then split a half into 2 quarters
       state = lessonReducer(state, { type: 'SPLIT_BLOCK', blockId: state.blocks[0]!.id, parts: 2 });
-      const [idA, idB] = [state.blocks[0]!.id, state.blocks[1]!.id];
+      state = lessonReducer(state, { type: 'SPLIT_BLOCK', blockId: state.blocks[0]!.id, parts: 2 });
+      // Now we have 1/4, 1/4, 1/2 — combine the two 1/4s
+      const quarters = state.blocks.filter((b) => b.fraction.denominator === 4);
+      const [idA, idB] = [quarters[0]!.id, quarters[1]!.id];
       const next = lessonReducer(state, { type: 'COMBINE_BLOCKS', blockIds: [idA, idB] });
-      expect(next.blocks).toHaveLength(1);
-      expect(next.blocks[0]!.fraction).toEqual({ numerator: 2, denominator: 4 });
+      expect(next.blocks).toHaveLength(2); // 2/4 + 1/2
+      const combined = next.blocks.find((b) => b.fraction.denominator === 4);
+      expect(combined!.fraction).toEqual({ numerator: 2, denominator: 4 });
     });
     it('returns state unchanged when block ids invalid', () => {
       const state = getInitialLessonState();
@@ -223,7 +227,7 @@ describe('lesson reducer', () => {
   });
 
   describe('RESET_WORKSPACE', () => {
-    it('replaces blocks with single 1/2 block', () => {
+    it('replaces blocks with lesson initial blocks', () => {
       let state = getInitialLessonState();
       state = lessonReducer(state, {
         type: 'SPLIT_BLOCK',
@@ -232,7 +236,7 @@ describe('lesson reducer', () => {
       });
       const next = lessonReducer(state, { type: 'RESET_WORKSPACE' });
       expect(next.blocks).toHaveLength(1);
-      expect(next.blocks[0]!.fraction).toEqual({ numerator: 1, denominator: 2 });
+      expect(next.blocks[0]!.fraction).toEqual({ numerator: 1, denominator: 1 });
     });
   });
 
@@ -361,6 +365,26 @@ describe('lesson reducer', () => {
     });
   });
 
+  describe('SKIP_TO_GUIDED', () => {
+    it('transitions from explore round 4 to guided phase', () => {
+      let state = getInitialLessonState();
+      state = lessonReducer(state, { type: 'COMPLETE_INTRO' });
+      state = lessonReducer(state, { type: 'ADVANCE_ROUND', round1SplitParts: 2 });
+      state = lessonReducer(state, { type: 'ADVANCE_ROUND' });
+      state = lessonReducer(state, { type: 'ADVANCE_ROUND' });
+      expect(state.phase).toBe('explore');
+      expect(state.explorationRound).toBe(4);
+      const next = lessonReducer(state, { type: 'SKIP_TO_GUIDED' });
+      expect(next.phase).toBe('guided');
+      expect(next.guidedProblemIndex).toBe(0);
+    });
+    it('returns state unchanged when phase is not explore', () => {
+      const state = getInitialLessonState();
+      const next = lessonReducer(state, { type: 'SKIP_TO_GUIDED' });
+      expect(next.phase).toBe('intro');
+    });
+  });
+
   describe('DEMO_SPLIT and COMPLETE_INTRO', () => {
     it('DEMO_SPLIT splits block and sets isDemoActive', () => {
       const state = getInitialLessonState();
@@ -368,12 +392,12 @@ describe('lesson reducer', () => {
       expect(next.blocks).toHaveLength(2);
       expect(next.isDemoActive).toBe(true);
     });
-    it('COMPLETE_INTRO transitions to explore with one 1/2 block', () => {
+    it('COMPLETE_INTRO transitions to explore with lesson initial blocks', () => {
       const state = getInitialLessonState();
       const next = lessonReducer(state, { type: 'COMPLETE_INTRO' });
       expect(next.phase).toBe('explore');
       expect(next.blocks).toHaveLength(1);
-      expect(next.blocks[0]!.fraction).toEqual({ numerator: 1, denominator: 2 });
+      expect(next.blocks[0]!.fraction).toEqual({ numerator: 1, denominator: 1 });
     });
   });
 

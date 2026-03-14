@@ -5,7 +5,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
-import { toolDefinitions, executeToolCall } from './tools.js';
+import { getToolsForLesson, executeToolCall } from './tools.js';
 import { buildSystemPrompt } from './system-prompt.js';
 import type { LessonState } from '../src/state/types.js';
 
@@ -31,6 +31,7 @@ interface ChatRequest {
 /** Minimal default so get_workspace_state never crashes if client omits lessonState. */
 function defaultLessonState(): LessonState {
   return {
+    lessonId: 'fractions-101',
     phase: 'intro',
     stepIndex: 0,
     blocks: [],
@@ -100,6 +101,7 @@ export default async function handler(req: Request): Promise<Response> {
   const anthropic = new Anthropic({ apiKey });
   const model = 'claude-sonnet-4-20250514';
   const systemPrompt = buildSystemPrompt(lessonState);
+  const tools = getToolsForLesson(lessonState.lessonId ?? 'fractions-101');
 
   const streamBody = new ReadableStream({
     async start(controller) {
@@ -129,7 +131,7 @@ export default async function handler(req: Request): Promise<Response> {
             max_tokens: 1024,
             system: systemPrompt,
             messages: currentMessages as Parameters<Anthropic['messages']['create']>[0]['messages'],
-            tools: toolDefinitions,
+            tools,
           });
 
           for (const block of response.content) {
