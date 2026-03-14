@@ -61,6 +61,8 @@ export interface LessonState {
   assessmentAttempts: number;
   assessmentResults: boolean[];
   conceptsDiscovered: string[];
+  explorationRound: number;
+  explorationRoundProgress?: { round1SplitParts?: number };
   isDragging: boolean;
   nextBlockId: number;
   isLoading: boolean;
@@ -95,4 +97,5 @@ export type LessonAction =
   | { type: 'FULL_RESET' }
   | { type: 'RETURN_TO_WORKSPACE'; blockId: string }
   | { type: 'TUTORIAL_STEP'; step: number }
-  | { type: 'COMPLETE_TUTORIAL' };
+  | { type: 'COMPLETE_TUTORIAL' }
+  | { type: 'ADVANCE_ROUND'; round1SplitParts?: number };

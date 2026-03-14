@@ -40,6 +40,10 @@ describe('lesson reducer', () => {
       expect(state.tutorialComplete).toBe(false);
       expect(state.tutorialStep).toBe(0);
     });
+    it('returns explorationRound 1', () => {
+      const state = getInitialLessonState();
+      expect(state.explorationRound).toBe(1);
+    });
   });
 
   describe('PHASE_TRANSITION', () => {
@@ -81,13 +85,21 @@ describe('lesson reducer', () => {
   });
 
   describe('COMPLETE_TUTORIAL', () => {
-    it('sets tutorialComplete, phase explore, tutorialStep 0', () => {
+    it('sets tutorialComplete, phase explore, tutorialStep 0, explorationRound 1, blocks to 1/2', () => {
       let state = getInitialLessonState();
       state = lessonReducer(state, { type: 'PHASE_TRANSITION', to: 'tutorial' });
+      state = lessonReducer(state, {
+        type: 'SPLIT_BLOCK',
+        blockId: state.blocks[0]!.id,
+        parts: 2,
+      });
       const next = lessonReducer(state, { type: 'COMPLETE_TUTORIAL' });
       expect(next.tutorialComplete).toBe(true);
       expect(next.phase).toBe('explore');
       expect(next.tutorialStep).toBe(0);
+      expect(next.explorationRound).toBe(1);
+      expect(next.blocks).toHaveLength(1);
+      expect(next.blocks[0]!.fraction).toEqual({ numerator: 1, denominator: 2 });
     });
   });
 
@@ -145,6 +157,7 @@ describe('lesson reducer', () => {
           { id: 'b2', fraction: { numerator: 1, denominator: 3 }, color: '#27AE60', position: 'workspace', isSelected: false },
         ],
         nextBlockId: 3,
+        explorationRound: 1,
       };
       const next = lessonReducer(state, { type: 'COMBINE_BLOCKS', blockIds: ['b1', 'b2'] });
       expect(next.blocks).toHaveLength(2);
@@ -266,6 +279,66 @@ describe('lesson reducer', () => {
       state = lessonReducer(state, { type: 'DISCOVER_CONCEPT', concept: 'splitting' });
       state = lessonReducer(state, { type: 'DISCOVER_CONCEPT', concept: 'combining' });
       expect(state.conceptsDiscovered).toEqual(['splitting', 'combining']);
+    });
+  });
+
+  describe('ADVANCE_ROUND', () => {
+    it('returns state unchanged when phase is not explore', () => {
+      const state = getInitialLessonState();
+      const next = lessonReducer(state, { type: 'ADVANCE_ROUND' });
+      expect(next.phase).toBe('intro');
+      expect(next.explorationRound).toBe(1);
+    });
+    it('round 1 -> 2: keeps blocks and stores round1SplitParts', () => {
+      let state = getInitialLessonState();
+      state = lessonReducer(state, { type: 'PHASE_TRANSITION', to: 'tutorial' });
+      state = lessonReducer(state, { type: 'COMPLETE_TUTORIAL' });
+      state = lessonReducer(state, {
+        type: 'SPLIT_BLOCK',
+        blockId: state.blocks[0]!.id,
+        parts: 4,
+      });
+      expect(state.explorationRound).toBe(1);
+      expect(state.blocks).toHaveLength(4);
+      const next = lessonReducer(state, { type: 'ADVANCE_ROUND', round1SplitParts: 4 });
+      expect(next.explorationRound).toBe(2);
+      expect(next.blocks).toHaveLength(4);
+      expect(next.explorationRoundProgress?.round1SplitParts).toBe(4);
+    });
+    it('round 2 -> 3: keeps blocks unchanged', () => {
+      let state = getInitialLessonState();
+      state = lessonReducer(state, { type: 'PHASE_TRANSITION', to: 'tutorial' });
+      state = lessonReducer(state, { type: 'COMPLETE_TUTORIAL' });
+      state = lessonReducer(state, { type: 'ADVANCE_ROUND', round1SplitParts: 2 });
+      const blockCount = state.blocks.length;
+      const next = lessonReducer(state, { type: 'ADVANCE_ROUND' });
+      expect(next.explorationRound).toBe(3);
+      expect(next.blocks).toHaveLength(blockCount);
+    });
+    it('round 3 -> 4: resets blocks to 1/2 and 2/4', () => {
+      let state = getInitialLessonState();
+      state = lessonReducer(state, { type: 'PHASE_TRANSITION', to: 'tutorial' });
+      state = lessonReducer(state, { type: 'COMPLETE_TUTORIAL' });
+      state = lessonReducer(state, { type: 'ADVANCE_ROUND', round1SplitParts: 2 });
+      state = lessonReducer(state, { type: 'ADVANCE_ROUND' });
+      const next = lessonReducer(state, { type: 'ADVANCE_ROUND' });
+      expect(next.explorationRound).toBe(4);
+      expect(next.blocks).toHaveLength(2);
+      expect(next.blocks[0]!.fraction).toEqual({ numerator: 1, denominator: 2 });
+      expect(next.blocks[1]!.fraction).toEqual({ numerator: 2, denominator: 4 });
+    });
+    it('round 5 -> guided: transitions to guided phase', () => {
+      let state = getInitialLessonState();
+      state = lessonReducer(state, { type: 'PHASE_TRANSITION', to: 'tutorial' });
+      state = lessonReducer(state, { type: 'COMPLETE_TUTORIAL' });
+      state = lessonReducer(state, { type: 'ADVANCE_ROUND', round1SplitParts: 2 });
+      state = lessonReducer(state, { type: 'ADVANCE_ROUND' });
+      state = lessonReducer(state, { type: 'ADVANCE_ROUND' });
+      state = lessonReducer(state, { type: 'ADVANCE_ROUND' });
+      expect(state.explorationRound).toBe(5);
+      const next = lessonReducer(state, { type: 'ADVANCE_ROUND' });
+      expect(next.phase).toBe('guided');
+      expect(next.explorationRound).toBe(1);
     });
   });
 

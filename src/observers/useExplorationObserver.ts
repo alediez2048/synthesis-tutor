@@ -1,181 +1,146 @@
 /**
- * ENG-016: Exploration phase observer. Tracks discovery goals and fires nudges via Sam.
+ * Exploration phase observer. Round-aware: detects when each round's goal
+ * is met and dispatches ADVANCE_ROUND. Manages round 5 timer.
  */
 
 import { useEffect, useRef } from 'react';
 import { areEquivalent } from '../engine/FractionEngine';
 import type { LessonState, LessonAction } from '../state/types';
-import { explorationConfig } from '../content/exploration-config';
-
-const NUDGES = explorationConfig.nudges;
-const TRANSITION_DELAY_MS = explorationConfig.transitionDelayMs;
-const CHECK_INTERVAL_MS = explorationConfig.checkIntervalMs;
+import {
+  EXPLORATION_ROUNDS,
+  ROUND_5_TIMER_MS,
+} from '../content/exploration-rounds';
 
 interface ExplorationObserverOptions {
   state: LessonState;
   dispatch: React.Dispatch<LessonAction>;
-  sendMessage: (text: string) => void;
-  isLoading: boolean;
-}
-
-function allGoalsDiscovered(concepts: string[]): boolean {
-  return (
-    concepts.includes('splitting') &&
-    concepts.includes('combining') &&
-    concepts.includes('equivalence')
-  );
+  sendMessage?: (text: string) => void;
+  isLoading?: boolean;
 }
 
 export function useExplorationObserver({
   state,
   dispatch,
-  sendMessage,
-  isLoading,
 }: ExplorationObserverOptions): void {
-  const statsRef = useRef({
-    actionCount: 0,
-    consecutiveSplits: 0,
-    lastActionTime: 0,
-    phaseStartTime: 0,
-  });
   const prevBlocksRef = useRef(state.blocks);
-  const previousPhaseRef = useRef(state.phase);
-  const hasTriggeredTimeoutRef = useRef(false);
-  const hasTriggeredCompleteRef = useRef(false);
+  const prevRoundRef = useRef(state.explorationRound);
+  const round5TimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Reset round 5 timer when leaving explore or round 5
   useEffect(() => {
-    if (state.phase === 'explore') {
-      if (previousPhaseRef.current !== 'explore') {
-        const now = Date.now();
-        statsRef.current.phaseStartTime = now;
-        statsRef.current.lastActionTime = now;
-        previousPhaseRef.current = 'explore';
+    if (state.phase !== 'explore' || state.explorationRound !== 5) {
+      if (round5TimerRef.current) {
+        clearTimeout(round5TimerRef.current);
+        round5TimerRef.current = null;
       }
-    } else {
-      previousPhaseRef.current = state.phase;
-      hasTriggeredTimeoutRef.current = false;
-      hasTriggeredCompleteRef.current = false;
     }
-  }, [state.phase]);
+  }, [state.phase, state.explorationRound]);
 
+  // Round 5: start 60s timer when entering
+  useEffect(() => {
+    if (state.phase !== 'explore' || state.explorationRound !== 5) return;
+    if (round5TimerRef.current) return;
+
+    round5TimerRef.current = setTimeout(() => {
+      round5TimerRef.current = null;
+      dispatch({
+        type: 'TUTOR_RESPONSE',
+        content: EXPLORATION_ROUNDS[4]!.celebration,
+        isStreaming: false,
+      });
+      dispatch({ type: 'ADVANCE_ROUND' });
+    }, ROUND_5_TIMER_MS);
+
+    return () => {
+      if (round5TimerRef.current) {
+        clearTimeout(round5TimerRef.current);
+        round5TimerRef.current = null;
+      }
+    };
+  }, [state.phase, state.explorationRound, dispatch]);
+
+  // Round 1–4 goal detection via block/state changes
   useEffect(() => {
     if (state.phase !== 'explore') return;
+    if (state.explorationRound === 5) return; // Round 5 uses timer or button
 
+    const round = state.explorationRound;
     const prev = prevBlocksRef.current;
     const curr = state.blocks;
     prevBlocksRef.current = curr;
 
+    // Skip processing when round just advanced (blocks changed from reducer, not user)
+    if (prevRoundRef.current !== round) {
+      prevRoundRef.current = round;
+      return;
+    }
+
     if (prev === curr) return;
 
-    const stats = statsRef.current;
-    stats.lastActionTime = Date.now();
-    stats.actionCount += 1;
-
-    if (curr.length > prev.length) {
-      stats.consecutiveSplits += 1;
-      if (!state.conceptsDiscovered.includes('splitting')) {
-        dispatch({ type: 'DISCOVER_CONCEPT', concept: 'splitting' });
-      }
-      if (
-        stats.consecutiveSplits >= NUDGES.consecutiveSplitsThreshold &&
-        !isLoading
-      ) {
-        sendMessage(
-          '[Student has done 5 consecutive splits without combining. Nudge them to try combining.]'
-        );
-        stats.consecutiveSplits = 0;
-      }
+    // Round 1: any SPLIT_BLOCK
+    if (round === 1 && curr.length > prev.length) {
+      const parts = curr.length - prev.length + 1;
+      dispatch({
+        type: 'TUTOR_RESPONSE',
+        content: EXPLORATION_ROUNDS[0]!.celebration,
+        isStreaming: false,
+      });
+      dispatch({ type: 'ADVANCE_ROUND', round1SplitParts: parts });
+      return;
     }
 
-    if (curr.length === prev.length - 1) {
-      stats.consecutiveSplits = 0;
-      if (!state.conceptsDiscovered.includes('combining')) {
-        dispatch({ type: 'DISCOVER_CONCEPT', concept: 'combining' });
+    // Round 2: SPLIT_BLOCK into different number than round 1
+    if (round === 2 && curr.length > prev.length) {
+      const parts = curr.length - prev.length + 1;
+      const round1Parts = state.explorationRoundProgress?.round1SplitParts;
+      if (round1Parts !== undefined && parts !== round1Parts) {
+        dispatch({
+          type: 'TUTOR_RESPONSE',
+          content: EXPLORATION_ROUNDS[1]!.celebration,
+          isStreaming: false,
+        });
+        dispatch({ type: 'ADVANCE_ROUND' });
       }
+      return;
     }
 
-    const workspaceBlocks = curr.filter((b) => b.position === 'workspace');
-    if (
-      workspaceBlocks.length > 0 &&
-      workspaceBlocks.every(
-        (b) => b.fraction.denominator > NUDGES.overwhelmMinDenominator
-      ) &&
-      !isLoading
-    ) {
-      sendMessage(
-        '[All blocks have very small pieces (denominator > 8). Student may be overwhelmed. Suggest starting fresh.]'
-      );
-      dispatch({ type: 'RESET_WORKSPACE' });
+    // Round 3: any COMBINE_BLOCKS
+    if (round === 3 && curr.length === prev.length - 1) {
+      dispatch({
+        type: 'TUTOR_RESPONSE',
+        content: EXPLORATION_ROUNDS[2]!.celebration,
+        isStreaming: false,
+      });
+      dispatch({ type: 'ADVANCE_ROUND' });
+      return;
     }
 
-    const comparisonBlocks = curr.filter((b) => b.position === 'comparison');
-    if (comparisonBlocks.length >= 2 && !state.conceptsDiscovered.includes('equivalence')) {
-      for (let i = 0; i < comparisonBlocks.length; i++) {
-        for (let j = i + 1; j < comparisonBlocks.length; j++) {
-          const a = comparisonBlocks[i]!.fraction;
-          const b = comparisonBlocks[j]!.fraction;
-          if (
-            a.denominator !== b.denominator &&
-            areEquivalent(a, b)
-          ) {
-            dispatch({ type: 'DISCOVER_CONCEPT', concept: 'equivalence' });
-            break;
+    // Round 4: 2 blocks in comparison zone, equivalent
+    if (round === 4) {
+      const comparisonBlocks = curr.filter((b) => b.position === 'comparison');
+      if (comparisonBlocks.length >= 2) {
+        for (let i = 0; i < comparisonBlocks.length; i++) {
+          for (let j = i + 1; j < comparisonBlocks.length; j++) {
+            const a = comparisonBlocks[i]!.fraction;
+            const b = comparisonBlocks[j]!.fraction;
+            if (a.denominator !== b.denominator && areEquivalent(a, b)) {
+              dispatch({
+                type: 'TUTOR_RESPONSE',
+                content: EXPLORATION_ROUNDS[3]!.celebration,
+                isStreaming: false,
+              });
+              dispatch({ type: 'ADVANCE_ROUND' });
+              return;
+            }
           }
         }
       }
     }
-  }, [state.blocks, state.phase, state.conceptsDiscovered, dispatch, sendMessage, isLoading]);
-
-  useEffect(() => {
-    if (state.phase !== 'explore') return;
-
-    const interval = setInterval(() => {
-      const now = Date.now();
-      const stats = statsRef.current;
-      const elapsed = now - stats.lastActionTime;
-      const phaseElapsed = now - stats.phaseStartTime;
-      const concepts = state.conceptsDiscovered;
-      const allDone = allGoalsDiscovered(concepts);
-
-      if (
-        elapsed > NUDGES.inactivityDelayMs &&
-        stats.actionCount < NUDGES.inactivityMinActions &&
-        !isLoading
-      ) {
-        sendMessage(
-          '[Student has been inactive for 15 seconds with few actions. Suggest tapping a crystal and pressing Split.]'
-        );
-        stats.lastActionTime = now;
-      }
-
-      if (
-        phaseElapsed > NUDGES.phaseTimeoutMs &&
-        !allDone &&
-        !hasTriggeredTimeoutRef.current
-      ) {
-        hasTriggeredTimeoutRef.current = true;
-        sendMessage(
-          '[3 minutes have passed in exploration. Please demonstrate any undiscovered concepts and transition to guided practice.]'
-        );
-        dispatch({ type: 'PHASE_TRANSITION', to: 'guided' });
-      }
-    }, CHECK_INTERVAL_MS);
-
-    return () => clearInterval(interval);
-  }, [state.phase, state.conceptsDiscovered, dispatch, sendMessage, isLoading]);
-
-  useEffect(() => {
-    if (state.phase !== 'explore') return;
-    if (!allGoalsDiscovered(state.conceptsDiscovered)) return;
-    if (hasTriggeredCompleteRef.current) return;
-
-    hasTriggeredCompleteRef.current = true;
-    sendMessage(
-      '[Student has discovered all 3 concepts (splitting, combining, equivalence)! Celebrate and transition to guided practice.]'
-    );
-    const t = setTimeout(() => {
-      dispatch({ type: 'PHASE_TRANSITION', to: 'guided' });
-    }, TRANSITION_DELAY_MS);
-    return () => clearTimeout(t);
-  }, [state.phase, state.conceptsDiscovered, dispatch, sendMessage]);
+  }, [
+    state.phase,
+    state.blocks,
+    state.explorationRound,
+    state.explorationRoundProgress,
+    dispatch,
+  ]);
 }

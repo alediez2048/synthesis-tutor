@@ -57,6 +57,7 @@ export function loadCheckpoint(): LessonState | null {
       isStreaming: false,
       tutorialComplete: checkpoint.state.tutorialComplete ?? true,
       tutorialStep: checkpoint.state.tutorialStep ?? 0,
+      explorationRound: checkpoint.state.explorationRound ?? 1,
     };
   } catch {
     clearCheckpoint();

@@ -23,7 +23,9 @@ import { ErrorBoundary } from './components/shared/ErrorBoundary';
 import { StartScreen } from './components/shared/StartScreen';
 import { ProgressDots } from './components/shared/ProgressDots';
 import { MagicButton } from './components/shared/MagicButton';
+import { RoundBanner } from './components/shared/RoundBanner';
 import { TutorialOverlay } from './components/Onboarding/TutorialOverlay';
+import { EXPLORATION_ROUNDS, ROUND_5_TIMER_MS } from './content/exploration-rounds';
 import { COLORS } from './theme';
 
 const SPLIT_REJECTION_MESSAGE = 'Those pieces are as small as they can get!';
@@ -58,6 +60,10 @@ function App() {
   const [highlightedBlockIds, setHighlightedBlockIds] = useState<string[]>([]);
   const [showConfetti, setShowConfetti] = useState(false);
   const [comparisonResult, setComparisonResult] = useState<ComparisonResult>(null);
+  const [showRoundBanner, setShowRoundBanner] = useState(false);
+  const [roundBannerName, setRoundBannerName] = useState('');
+  const [round5SecondsRemaining, setRound5SecondsRemaining] = useState<number | null>(null);
+  const round5StartRef = useRef<number | null>(null);
 
   const { sendMessage, notifySam, isLoading } = useTutorChat(state, dispatch);
   const {
@@ -110,6 +116,8 @@ function App() {
   // Intro greeting is now sent by handleStartLesson when start screen is dismissed
 
   const prevPhaseRef = useRef(state.phase);
+  const prevExplorationRoundRef = useRef(state.explorationRound);
+
   useEffect(() => {
     if (prevPhaseRef.current !== 'assess' && state.phase === 'assess') {
       const pool = selectAssessmentProblems();
@@ -117,6 +125,56 @@ function App() {
     }
     prevPhaseRef.current = state.phase;
   }, [state.phase, dispatch]);
+
+  const handleRoundBannerComplete = useCallback(() => setShowRoundBanner(false), []);
+
+  useEffect(() => {
+    if (state.phase !== 'explore') {
+      round5StartRef.current = null;
+      return;
+    }
+    const round = state.explorationRound;
+    const prev = prevExplorationRoundRef.current;
+    prevExplorationRoundRef.current = round;
+
+    if (round > prev && round > 1) {
+      const config = EXPLORATION_ROUNDS[round - 1];
+      if (config) {
+        const name = `Round ${round}: ${config.name}`;
+        queueMicrotask(() => {
+          setRoundBannerName(name);
+          setShowRoundBanner(true);
+        });
+      }
+    }
+
+    if (round === 5) {
+      if (round5StartRef.current === null) {
+        round5StartRef.current = Date.now();
+        queueMicrotask(() =>
+          setRound5SecondsRemaining(Math.ceil(ROUND_5_TIMER_MS / 1000))
+        );
+      }
+    } else {
+      round5StartRef.current = null;
+      setRound5SecondsRemaining(null);
+    }
+  }, [state.phase, state.explorationRound]);
+
+  useEffect(() => {
+    if (state.phase !== 'explore' || state.explorationRound !== 5 || round5StartRef.current === null) {
+      return;
+    }
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - (round5StartRef.current ?? 0);
+      const remaining = Math.max(0, Math.ceil((ROUND_5_TIMER_MS - elapsed) / 1000));
+      setRound5SecondsRemaining(remaining);
+      if (remaining <= 0) {
+        setRound5SecondsRemaining(null);
+      }
+    }, 500);
+    return () => clearInterval(interval);
+  }, [state.phase, state.explorationRound]);
 
   const handleKeepGoing = useCallback(() => {
     clearCheckpoint();
@@ -628,7 +686,10 @@ function App() {
               Tutorial
             </span>
           ) : (
-            <ProgressDots currentPhase={state.phase} />
+            <ProgressDots
+              currentPhase={state.phase}
+              explorationRound={state.phase === 'explore' ? state.explorationRound : undefined}
+            />
           )}
         </div>
         <button
@@ -666,7 +727,52 @@ function App() {
         }}
       >
         {/* Game panel (centered) */}
-        <div style={{ width: '100%', maxWidth: 600, display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ position: 'relative', width: '100%', maxWidth: 600, display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center', justifyContent: 'center' }}>
+          {showRoundBanner && (
+            <RoundBanner
+              roundName={roundBannerName}
+              visible={showRoundBanner}
+              onComplete={handleRoundBannerComplete}
+            />
+          )}
+          {state.phase === 'explore' && state.explorationRound === 5 && (
+            <div
+              style={{
+                flexShrink: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 10,
+                padding: '8px 0',
+              }}
+            >
+              {round5SecondsRemaining !== null && (
+                <span
+                  style={{
+                    fontSize: 14,
+                    fontFamily: 'Georgia, serif',
+                    color: COLORS.textMuted,
+                  }}
+                >
+                  {round5SecondsRemaining}s free exploration
+                </span>
+              )}
+              <MagicButton
+                variant="gold"
+                onClick={() => {
+                  dispatch({
+                    type: 'TUTOR_RESPONSE',
+                    content: EXPLORATION_ROUNDS[4]!.celebration,
+                    isStreaming: false,
+                  });
+                  dispatch({ type: 'ADVANCE_ROUND' });
+                }}
+                aria-label="Ready for a challenge"
+              >
+                Ready for a challenge?
+              </MagicButton>
+            </div>
+          )}
           {combineRejectionMessage && state.phase !== 'assess' && (
             <div
               role="alert"

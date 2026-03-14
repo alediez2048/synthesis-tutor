@@ -68,6 +68,7 @@ export function getInitialLessonState(): LessonState {
     assessmentAttempts: 0,
     assessmentResults: [],
     conceptsDiscovered: [],
+    explorationRound: 1,
     isDragging: false,
     nextBlockId: 1,
     isLoading: false,
@@ -93,11 +94,20 @@ export const lessonReducer: LessonReducer = (state, action) => {
     }
 
     case 'COMPLETE_TUTORIAL': {
+      const round1Block = createBlock(
+        `block-${state.nextBlockId}`,
+        { numerator: 1, denominator: 2 },
+        'workspace',
+        false
+      );
       return {
         ...state,
         tutorialComplete: true,
         phase: 'explore',
         tutorialStep: 0,
+        explorationRound: 1,
+        blocks: [round1Block],
+        nextBlockId: state.nextBlockId + 1,
       };
     }
 
@@ -389,6 +399,8 @@ export const lessonReducer: LessonReducer = (state, action) => {
         assessmentStep: 0,
         assessmentAttempts: 0,
         assessmentResults: [],
+        explorationRound: 1,
+        explorationRoundProgress: undefined,
         nextBlockId: state.nextBlockId + 1,
       };
     }
@@ -404,6 +416,39 @@ export const lessonReducer: LessonReducer = (state, action) => {
 
     case 'FULL_RESET':
       return getInitialLessonState();
+
+    case 'ADVANCE_ROUND': {
+      if (state.phase !== 'explore') return state;
+      const round = state.explorationRound;
+      if (round >= 5) {
+        return { ...state, phase: 'guided', explorationRound: 1 };
+      }
+      const nextRound = round + 1;
+      let blocks = state.blocks;
+      let nextBlockId = state.nextBlockId;
+      let explorationRoundProgress = state.explorationRoundProgress;
+
+      if (round === 1) {
+        if (action.round1SplitParts !== undefined) {
+          explorationRoundProgress = { round1SplitParts: action.round1SplitParts };
+        }
+        // Round 2: keep blocks only (no extra 1/3 block — student splits existing blocks differently)
+      } else if (round === 3) {
+        blocks = [
+          createBlock(`block-${nextBlockId}`, { numerator: 1, denominator: 2 }, 'workspace', false),
+          createBlock(`block-${nextBlockId + 1}`, { numerator: 2, denominator: 4 }, 'workspace', false),
+        ];
+        nextBlockId += 2;
+      }
+
+      return {
+        ...state,
+        explorationRound: nextRound,
+        explorationRoundProgress,
+        blocks,
+        nextBlockId,
+      };
+    }
 
     default: {
       const _exhaust: never = action;
