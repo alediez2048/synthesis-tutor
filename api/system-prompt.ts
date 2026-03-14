@@ -42,6 +42,14 @@ Your teaching philosophy:
 - Build on what they already know: Reference their previous discoveries.
 - One concept at a time: Don't overwhelm with multiple ideas in one message.`;
 
+const SPLIT_LIMIT_GUIDANCE = `## Split Limit (Denominator > 12)
+
+When a student hits the split limit (denominator > 12):
+- Explain that pieces can only be so small — "Those crystal pieces are as tiny as they can get!"
+- Connect to real-world: "Imagine cutting a pizza into 24 slices — they'd be too thin to eat!"
+- Suggest alternatives: "Try combining some pieces first, or pick a different crystal."
+- Do NOT just repeat the error message — add understanding.`;
+
 const MATH_FIREWALL = `## CRITICAL: Math Safety Rules
 
 NEVER compute fraction math yourself. You MUST use the provided tools for ALL mathematical operations.
@@ -154,6 +162,7 @@ export function buildSystemPrompt(lessonState: LessonState): string {
     IDENTITY,
     VOICE_CONSTRAINTS,
     PEDAGOGICAL_APPROACH,
+    SPLIT_LIMIT_GUIDANCE,
     MATH_FIREWALL,
     NON_FRACTION_INPUT,
     buildPhaseContext(lessonState),
