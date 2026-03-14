@@ -1,6 +1,6 @@
 /**
  * Full-viewport overlay with transparent cutout.
- * Dims everything except the target element; cutout allows clicks through.
+ * No dimming — page stays fully visible; cutout allows clicks through.
  * Uses four divs to form a frame so the center (cutout) passes pointer events.
  */
 
@@ -18,7 +18,6 @@ export function SpotlightMask({ targetRect, children }: SpotlightMaskProps) {
         style={{
           position: "fixed",
           inset: 0,
-          backgroundColor: "rgba(0, 0, 0, 0.7)",
           zIndex: 9990,
           pointerEvents: "none",
         }}
@@ -33,8 +32,7 @@ export function SpotlightMask({ targetRect, children }: SpotlightMaskProps) {
   const w = targetRect.width + PADDING * 2;
   const h = targetRect.height + PADDING * 2;
 
-  const dimStyle = {
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
+  const frameStyle = {
     pointerEvents: "auto" as const,
   };
 
@@ -47,10 +45,10 @@ export function SpotlightMask({ targetRect, children }: SpotlightMaskProps) {
         pointerEvents: "none",
       }}
     >
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: y, ...dimStyle }} />
-      <div style={{ position: "absolute", top: y + h, left: 0, right: 0, bottom: 0, ...dimStyle }} />
-      <div style={{ position: "absolute", top: y, left: 0, width: x, height: h, ...dimStyle }} />
-      <div style={{ position: "absolute", top: y, left: x + w, right: 0, height: h, ...dimStyle }} />
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: y, ...frameStyle }} />
+      <div style={{ position: "absolute", top: y + h, left: 0, right: 0, bottom: 0, ...frameStyle }} />
+      <div style={{ position: "absolute", top: y, left: 0, width: x, height: h, ...frameStyle }} />
+      <div style={{ position: "absolute", top: y, left: x + w, right: 0, height: h, ...frameStyle }} />
       <div
         style={{
           position: "absolute",
