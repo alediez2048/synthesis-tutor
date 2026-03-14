@@ -18,6 +18,9 @@ import { useVoiceOutput } from './brain/useVoiceOutput';
 import { parseFractionReferences } from './brain/parseFractionReferences';
 import type { ComparisonResult } from './components/Workspace/ComparisonZone';
 import { useExplorationObserver } from './observers/useExplorationObserver';
+import { useIntroObserver } from './observers/useIntroObserver';
+import { useTutorialDemoObserver } from './observers/useTutorialDemoObserver';
+import { useGuidedPracticeObserver } from './observers/useGuidedPracticeObserver';
 import { useInactivityPrompt } from './hooks/useInactivityPrompt';
 import { ErrorBoundary } from './components/shared/ErrorBoundary';
 import { StartScreen } from './components/shared/StartScreen';
@@ -102,8 +105,28 @@ function App() {
   useExplorationObserver({
     state,
     dispatch,
-    sendMessage,
+  });
+
+  useIntroObserver({
+    state,
+    dispatch,
+    playPop,
     isLoading,
+  });
+
+  useTutorialDemoObserver({
+    state,
+    dispatch,
+    playPop,
+  });
+
+  useGuidedPracticeObserver({
+    state,
+    dispatch,
+    playPop,
+    playSnap,
+    playCorrect,
+    playIncorrect,
   });
 
   const {
@@ -307,6 +330,15 @@ function App() {
     const t = setTimeout(() => setSplitBlockIds(null), SPLIT_ANIMATION_MS);
     return () => clearTimeout(t);
   }, [splitBlockIds]);
+
+  // Demo split animation: when isDemoActive and blocks increased (demo split), trigger split animation
+  const prevBlocksCountRef = useRef(state.blocks.length);
+  useEffect(() => {
+    if (state.isDemoActive && state.blocks.length > prevBlocksCountRef.current) {
+      setSplitBlockIds(state.blocks.map((b) => b.id));
+    }
+    prevBlocksCountRef.current = state.blocks.length;
+  }, [state.blocks, state.isDemoActive]);
 
   // ENG-026/027: Detect 2 blocks on altar, check equivalence, animate
   const comparisonBlocks = state.blocks.filter((b) => b.position === 'comparison');
@@ -840,14 +872,37 @@ function App() {
                   combinedBlockId={combinedBlockId}
                   splitBlockIds={splitBlockIds}
                   highlightedBlockIds={highlightedBlockIds}
+                  disabled={state.isDemoActive}
                 />
                 <ActionBar
                   selectedBlockId={selectedBlockId}
                   onSplitRequest={handleSplitRequest}
                   rejectionMessage={splitRejectionMessage}
-                  disabled={state.isDragging}
+                  disabled={state.isDragging || state.isDemoActive}
                   tutorialStep={state.phase === 'tutorial' ? state.tutorialStep : undefined}
                 />
+                {state.phase === 'explore' && (
+                  <div style={{ display: 'flex', gap: 8, marginTop: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+                    <MagicButton
+                      variant="ghost"
+                      small
+                      onClick={() => dispatch({ type: 'ADD_BLOCK', fraction: { numerator: 1, denominator: 2 } })}
+                      disabled={state.blocks.length >= 8 || state.isDragging}
+                      aria-label="Add new crystal"
+                    >
+                      New crystal
+                    </MagicButton>
+                    <MagicButton
+                      variant="ghost"
+                      small
+                      onClick={() => dispatch({ type: 'RESET_WORKSPACE' })}
+                      disabled={state.isDragging}
+                      aria-label="Start fresh with one crystal"
+                    >
+                      Start fresh
+                    </MagicButton>
+                  </div>
+                )}
               </>
             )}
           </div>

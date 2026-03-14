@@ -42,10 +42,19 @@ function defaultLessonState(): LessonState {
     assessmentAttempts: 0,
     assessmentResults: [],
     conceptsDiscovered: [],
+    explorationRound: 1,
     isDragging: false,
     nextBlockId: 1,
     isLoading: false,
     isStreaming: false,
+    tutorialComplete: false,
+    tutorialStep: 0,
+    isDemoActive: false,
+    guidedProblemIndex: 0,
+    guidedStep: 'problem',
+    guidedAttempts: 0,
+    cfuQuestion: null,
+    cfuExpectedAnswer: null,
   };
 }
 

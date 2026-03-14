@@ -55,9 +55,15 @@ export function loadCheckpoint(): LessonState | null {
       isDragging: false,
       isLoading: false,
       isStreaming: false,
+      isDemoActive: false,
       tutorialComplete: checkpoint.state.tutorialComplete ?? true,
       tutorialStep: checkpoint.state.tutorialStep ?? 0,
       explorationRound: checkpoint.state.explorationRound ?? 1,
+      guidedProblemIndex: checkpoint.state.guidedProblemIndex ?? 0,
+      guidedStep: checkpoint.state.guidedStep ?? 'problem',
+      guidedAttempts: checkpoint.state.guidedAttempts ?? 0,
+      cfuQuestion: checkpoint.state.cfuQuestion ?? null,
+      cfuExpectedAnswer: checkpoint.state.cfuExpectedAnswer ?? null,
     };
   } catch {
     clearCheckpoint();

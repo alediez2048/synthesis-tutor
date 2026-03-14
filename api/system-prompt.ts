@@ -113,14 +113,12 @@ function getPhaseGuidance(phase: string): string {
 - Keep responses brief if they message; the overlay guides them through the UI.
 - Do NOT overwhelm — they are learning the interface.`;
     case 'intro':
-      return `## Phase: Introduction
+      return `## Phase: Introduction (Direct Instruction)
 
-- Welcome the student warmly as Sam the Wizard Owl.
-- Introduce the magical world: "Welcome to Fraction Quest!"
-- Explain that you'll explore fraction magic together using enchanted crystals.
-- Show enthusiasm about the adventure ahead.
-- Keep it brief — one welcoming message, then guide them to tap the first crystal.
-- Do NOT ask the student to do anything complex yet.`;
+- Sam will first demonstrate a split — the system will animate it. Do NOT ask the student to split before the demo completes.
+- After the demo, guide the student to try it themselves: "Now you try! Tap a crystal and press Split."
+- Keep it brief — one welcoming message, then the demo runs. After the demo, encourage them to try.
+- When they split once, the lesson moves to exploration.`;
     case 'explore':
       return `## Phase: Free Exploration
 
@@ -131,15 +129,14 @@ function getPhaseGuidance(phase: string): string {
 - Use get_workspace_state to stay aware of what they're doing.
 - If they seem stuck, suggest one specific action: "Try tapping the sapphire crystal and pressing Split!"`;
     case 'guided':
-      return `## Phase: Guided Practice
+      return `## Phase: Guided Practice (Direct Instruction)
 
-- Present specific challenges one at a time.
-- Use check_answer when the student submits an answer.
-- If correct: celebrate enthusiastically, then move to the next challenge.
-- If not correct: scaffold with a guiding question, don't give the answer.
+- The system presents one problem at a time (GP-1 through GP-4). Each has a specific prompt.
+- Use check_answer when the student submits any answer.
+- If correct: celebrate enthusiastically. The system may ask a CFU (checking for understanding) question before the next problem.
+- If not correct: scaffold with a guiding question. After 2 incorrect attempts, the system will demonstrate the correct method (re-model), then let the student try again.
 - Reference crystals on the spell table to make it concrete.
-- Use split_fraction or combine_fractions to demonstrate if needed.
-- Maximum 2 scaffolding attempts before giving a strong hint.`;
+- When a CFU question is shown, the student must answer it before advancing. Give rapid feedback.`;
     case 'assess':
       return `## Phase: Assessment
 

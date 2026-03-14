@@ -89,29 +89,29 @@ export function useExplorationObserver({
       return;
     }
 
-    // Round 2: SPLIT_BLOCK into different number than round 1
-    if (round === 2 && curr.length > prev.length) {
+    // Round 2: any COMBINE_BLOCKS (combine first so student has blocks they can split differently)
+    if (round === 2 && curr.length === prev.length - 1) {
+      dispatch({
+        type: 'TUTOR_RESPONSE',
+        content: EXPLORATION_ROUNDS[1]!.celebration,
+        isStreaming: false,
+      });
+      dispatch({ type: 'ADVANCE_ROUND' });
+      return;
+    }
+
+    // Round 3: SPLIT_BLOCK into different number than round 1
+    if (round === 3 && curr.length > prev.length) {
       const parts = curr.length - prev.length + 1;
       const round1Parts = state.explorationRoundProgress?.round1SplitParts;
       if (round1Parts !== undefined && parts !== round1Parts) {
         dispatch({
           type: 'TUTOR_RESPONSE',
-          content: EXPLORATION_ROUNDS[1]!.celebration,
+          content: EXPLORATION_ROUNDS[2]!.celebration,
           isStreaming: false,
         });
         dispatch({ type: 'ADVANCE_ROUND' });
       }
-      return;
-    }
-
-    // Round 3: any COMBINE_BLOCKS
-    if (round === 3 && curr.length === prev.length - 1) {
-      dispatch({
-        type: 'TUTOR_RESPONSE',
-        content: EXPLORATION_ROUNDS[2]!.celebration,
-        isStreaming: false,
-      });
-      dispatch({ type: 'ADVANCE_ROUND' });
       return;
     }
 

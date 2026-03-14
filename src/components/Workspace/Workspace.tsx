@@ -43,6 +43,7 @@ export interface WorkspaceProps {
   combinedBlockId?: string | null;
   splitBlockIds?: string[] | null;
   highlightedBlockIds?: string[];
+  disabled?: boolean;
 }
 
 export function Workspace({
@@ -62,6 +63,7 @@ export function Workspace({
   combinedBlockId = null,
   splitBlockIds = null,
   highlightedBlockIds = [],
+  disabled = false,
 }: WorkspaceProps) {
   void _selectedBlockId;
   const workspaceBlocks = blocks.filter((b) => b.position === 'workspace');
@@ -113,7 +115,7 @@ export function Workspace({
         data-tutorial-target="workspace-blocks"
         aria-label="Workspace"
         onClick={(e) => {
-          if (e.target === e.currentTarget) onWorkspaceBackgroundClick?.();
+          if (!disabled && e.target === e.currentTarget) onWorkspaceBackgroundClick?.();
         }}
         style={{
           flex: 1,
@@ -141,9 +143,9 @@ export function Workspace({
             key={block.id}
             block={block}
             referenceWidth={referenceWidth}
-            onSelect={onSelectBlock ? () => onSelectBlock(block.id) : undefined}
-            onDragStart={onDragStart ? () => onDragStart(block.id) : undefined}
-            onDragEnd={onCombineAttempt ? handleDragEnd : undefined}
+            onSelect={!disabled && onSelectBlock ? () => onSelectBlock(block.id) : undefined}
+            onDragStart={!disabled && onDragStart ? () => onDragStart(block.id) : undefined}
+            onDragEnd={!disabled && onCombineAttempt ? handleDragEnd : undefined}
             onBlockRef={setBlockRef}
             isDragging={isDragging}
             dragDisabled={isDragging && draggingBlockId !== block.id}
@@ -161,9 +163,9 @@ export function Workspace({
         ref={comparisonZoneRef}
         blocks={comparisonBlocks}
         referenceWidth={referenceWidth}
-        onSelectBlock={onSelectBlock}
-        onReturnToWorkspace={onReturnToWorkspace}
-        onAltarSplit={onAltarSplit}
+        onSelectBlock={!disabled ? onSelectBlock : undefined}
+        onReturnToWorkspace={!disabled ? onReturnToWorkspace : undefined}
+        onAltarSplit={!disabled ? onAltarSplit : undefined}
         comparisonResult={comparisonResult}
       />
     </div>

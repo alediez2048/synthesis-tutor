@@ -11,6 +11,7 @@ import type {
   FractionBlock,
   Phase,
 } from './types';
+import { GUIDED_PROBLEMS } from '../content/guided-practice-config';
 
 const PHASE_ORDER: Phase[] = ['intro', 'tutorial', 'explore', 'guided', 'assess', 'complete'];
 
@@ -25,6 +26,7 @@ function isValidPhaseTransition(from: Phase, to: Phase): boolean {
 }
 
 const DENOMINATOR_COLORS: Record<number, string> = {
+  1: '#B2BEC3', // whole (moonstone)
   2: '#4A90D9',
   3: '#27AE60',
   4: '#8E44AD',
@@ -55,7 +57,7 @@ function createBlock(
 }
 
 export function getInitialLessonState(): LessonState {
-  const initialBlock = createBlock('block-0', { numerator: 1, denominator: 2 }, 'workspace', false);
+  const initialBlock = createBlock('block-0', { numerator: 1, denominator: 1 }, 'workspace', false);
   return {
     phase: 'intro',
     stepIndex: 0,
@@ -75,6 +77,12 @@ export function getInitialLessonState(): LessonState {
     isStreaming: false,
     tutorialComplete: false,
     tutorialStep: 0,
+    isDemoActive: false,
+    guidedProblemIndex: 0,
+    guidedStep: 'problem',
+    guidedAttempts: 0,
+    cfuQuestion: null,
+    cfuExpectedAnswer: null,
   };
 }
 
@@ -108,6 +116,77 @@ export const lessonReducer: LessonReducer = (state, action) => {
         explorationRound: 1,
         blocks: [round1Block],
         nextBlockId: state.nextBlockId + 1,
+      };
+    }
+
+    case 'SET_DEMO_ACTIVE':
+      return { ...state, isDemoActive: action.active };
+
+    case 'DEMO_SPLIT': {
+      const { blockId, parts } = action;
+      const block = state.blocks.find((b) => b.id === blockId);
+      if (!block) return state;
+      let pieces: Fraction[];
+      try {
+        pieces = split(block.fraction, parts);
+      } catch {
+        return state;
+      }
+      if (pieces.some((p) => p.denominator > 12)) return state;
+      const startId = state.nextBlockId;
+      const newBlocks: FractionBlock[] = pieces.map((fraction, i) =>
+        createBlock(`block-${startId + i}`, fraction, block.position, false)
+      );
+      const rest = state.blocks.filter((b) => b.id !== blockId);
+      return {
+        ...state,
+        blocks: [...rest, ...newBlocks],
+        nextBlockId: state.nextBlockId + pieces.length,
+        isDemoActive: true,
+      };
+    }
+
+    case 'DEMO_COMBINE': {
+      const [idA, idB] = action.blockIds;
+      const blockA = state.blocks.find((b) => b.id === idA);
+      const blockB = state.blocks.find((b) => b.id === idB);
+      if (!blockA || !blockB || blockA.fraction.denominator !== blockB.fraction.denominator)
+        return state;
+      let combined: Fraction;
+      try {
+        combined = combine([blockA.fraction, blockB.fraction]);
+      } catch {
+        return state;
+      }
+      if (!isValidFraction(combined)) return state;
+      const newBlock = createBlock(
+        `block-${state.nextBlockId}`,
+        combined,
+        'workspace',
+        false
+      );
+      const rest = state.blocks.filter((b) => b.id !== idA && b.id !== idB);
+      return {
+        ...state,
+        blocks: [...rest, newBlock],
+        nextBlockId: state.nextBlockId + 1,
+        isDemoActive: true,
+      };
+    }
+
+    case 'COMPLETE_INTRO': {
+      const exploreBlock = createBlock(
+        `block-${state.nextBlockId}`,
+        { numerator: 1, denominator: 2 },
+        'workspace',
+        false
+      );
+      return {
+        ...state,
+        phase: 'explore',
+        blocks: [exploreBlock],
+        nextBlockId: state.nextBlockId + 1,
+        explorationRound: 1,
       };
     }
 
@@ -200,6 +279,22 @@ export const lessonReducer: LessonReducer = (state, action) => {
       return {
         ...state,
         blocks: [initialBlock],
+        nextBlockId: state.nextBlockId + 1,
+      };
+    }
+
+    case 'ADD_BLOCK': {
+      if (!isValidFraction(action.fraction)) return state;
+      if (state.blocks.length >= 8) return state;
+      const newBlock = createBlock(
+        `block-${state.nextBlockId}`,
+        action.fraction,
+        'workspace',
+        false
+      );
+      return {
+        ...state,
+        blocks: [...state.blocks, newBlock],
         nextBlockId: state.nextBlockId + 1,
       };
     }
@@ -375,6 +470,11 @@ export const lessonReducer: LessonReducer = (state, action) => {
         ...state,
         phase: 'guided',
         stepIndex: GP3_STEP,
+        guidedProblemIndex: GP3_STEP,
+        guidedStep: 'problem',
+        guidedAttempts: 0,
+        cfuQuestion: null,
+        cfuExpectedAnswer: null,
         assessmentStep: 0,
         assessmentAttempts: 0,
         assessmentResults: [],
@@ -417,11 +517,81 @@ export const lessonReducer: LessonReducer = (state, action) => {
     case 'FULL_RESET':
       return getInitialLessonState();
 
+    case 'SET_GUIDED_PROBLEM':
+      return {
+        ...state,
+        guidedProblemIndex: action.index,
+        guidedStep: action.step,
+        guidedAttempts: 0,
+      };
+
+    case 'GUIDED_ATTEMPT':
+      return { ...state, guidedAttempts: state.guidedAttempts + 1 };
+
+    case 'ADVANCE_GUIDED_PROBLEM':
+      return {
+        ...state,
+        guidedProblemIndex: state.guidedProblemIndex + 1,
+        guidedStep: 'problem',
+        guidedAttempts: 0,
+        cfuQuestion: null,
+        cfuExpectedAnswer: null,
+      };
+
+    case 'SET_CFU_QUESTION':
+      return {
+        ...state,
+        guidedStep: 'cfu',
+        cfuQuestion: action.question,
+        cfuExpectedAnswer: action.expectedAnswer,
+      };
+
+    case 'CLEAR_CFU':
+      return {
+        ...state,
+        cfuQuestion: null,
+        cfuExpectedAnswer: null,
+      };
+
+    case 'RESET_GUIDED_WORKSPACE':
+      return {
+        ...state,
+        blocks: action.blocks,
+      };
+
+    case 'INIT_GUIDED_PROBLEM': {
+      const config = GUIDED_PROBLEMS[action.problemIndex];
+      if (!config) return state;
+      const nextId = state.nextBlockId;
+      const blocks: FractionBlock[] = config.setup.map((fraction, i) =>
+        createBlock(`block-${nextId + i}`, fraction, 'workspace', false)
+      );
+      return {
+        ...state,
+        blocks,
+        nextBlockId: nextId + blocks.length,
+        guidedProblemIndex: action.problemIndex,
+        guidedStep: 'problem',
+        guidedAttempts: 0,
+        cfuQuestion: null,
+        cfuExpectedAnswer: null,
+      };
+    }
+
     case 'ADVANCE_ROUND': {
       if (state.phase !== 'explore') return state;
       const round = state.explorationRound;
       if (round >= 5) {
-        return { ...state, phase: 'guided', explorationRound: 1 };
+        return {
+          ...state,
+          phase: 'guided',
+          explorationRound: 1,
+          guidedProblemIndex: 0,
+          guidedStep: 'problem',
+          guidedAttempts: 0,
+          cfuQuestion: null,
+          cfuExpectedAnswer: null,
+        };
       }
       const nextRound = round + 1;
       let blocks = state.blocks;

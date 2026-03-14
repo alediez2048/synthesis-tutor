@@ -24,7 +24,7 @@ export const TUTORIAL_STEPS: TutorialStepConfig[] = [
     id: 1,
     spotlightTarget: "initial-crystal",
     samText:
-      "This is a crystal. The numbers show it's split into 2 equal pieces, and you have 1 of them. That's one-half!",
+      "This is a whole crystal. Watch me split it into two equal pieces — that's how we make halves!",
     ctaLabel: "Next",
     requiresInteraction: false,
   },
@@ -32,7 +32,7 @@ export const TUTORIAL_STEPS: TutorialStepConfig[] = [
     id: 2,
     spotlightTarget: "initial-crystal",
     samText:
-      "This magic spell breaks your crystal into smaller equal pieces. Try tapping your crystal first!",
+      "Watch me split this whole crystal into two equal pieces! Then you try — tap one of the pieces and press Split.",
     ctaLabel: "Next",
     requiresInteraction: true,
   },
