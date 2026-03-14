@@ -14,9 +14,10 @@ const PHASE_LABELS: { phase: Phase; label: string }[] = [
 
 export interface ProgressDotsProps {
   currentPhase: Phase;
+  explorationRound?: number;
 }
 
-export function ProgressDots({ currentPhase }: ProgressDotsProps) {
+export function ProgressDots({ currentPhase, explorationRound }: ProgressDotsProps) {
   const currentIndex = PHASE_LABELS.findIndex((p) => p.phase === currentPhase);
   const isComplete = currentPhase === 'complete';
   const completedCount = isComplete ? 4 : Math.max(0, currentIndex);
@@ -51,7 +52,7 @@ export function ProgressDots({ currentPhase }: ProgressDotsProps) {
                 }}
               />
             )}
-            {/* Dot + label */}
+            {/* Dot + label + optional explore sub-dots */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
               <div
                 aria-hidden="true"
@@ -69,6 +70,40 @@ export function ProgressDots({ currentPhase }: ProgressDotsProps) {
                   transition: 'all 0.3s',
                 }}
               />
+              {item.phase === 'explore' &&
+                currentPhase === 'explore' &&
+                explorationRound !== undefined && (
+                  <div
+                    aria-hidden="true"
+                    style={{
+                      display: 'flex',
+                      gap: 4,
+                      marginTop: 2,
+                    }}
+                  >
+                    {[1, 2, 3, 4, 5].map((r) => {
+                      const subCompleted = r < explorationRound;
+                      const subCurrent = r === explorationRound;
+                      return (
+                        <div
+                          key={r}
+                          style={{
+                            width: 6,
+                            height: 6,
+                            borderRadius: '50%',
+                            backgroundColor: subCompleted
+                              ? COLORS.gold
+                              : subCurrent
+                                ? COLORS.crystal
+                                : 'rgba(255,255,255,0.15)',
+                            boxShadow: subCurrent ? `0 0 4px ${COLORS.crystal}` : 'none',
+                            transition: 'all 0.3s',
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
               <span
                 style={{
                   fontSize: 10,
