@@ -1,3 +1,7 @@
+import { COLORS } from '../../theme';
+import { Sparkles } from './Sparkles';
+import { MagicButton } from './MagicButton';
+
 export interface StartScreenProps {
   onStart: () => void;
 }
@@ -11,14 +15,12 @@ export function StartScreen({ onStart }: StartScreenProps) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundImage: 'url(/assets/background.png)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundColor: '#1a1040',
+        background: COLORS.bgGradient,
         zIndex: 1000,
         padding: 16,
       }}
     >
+      <Sparkles />
       <div
         style={{
           display: 'flex',
@@ -26,6 +28,8 @@ export function StartScreen({ onStart }: StartScreenProps) {
           alignItems: 'center',
           maxWidth: 460,
           width: '100%',
+          position: 'relative',
+          zIndex: 1,
         }}
       >
         {/* Title logo */}
@@ -38,11 +42,11 @@ export function StartScreen({ onStart }: StartScreenProps) {
         {/* Instructions card */}
         <div
           style={{
-            background: 'linear-gradient(180deg, rgba(30,15,60,0.95) 0%, rgba(50,25,80,0.95) 100%)',
+            background: COLORS.panel,
             borderRadius: 16,
             padding: 28,
-            border: '2px solid #D4A843',
-            boxShadow: '0 8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)',
+            border: `2px solid ${COLORS.gold}`,
+            boxShadow: `0 8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)`,
             width: '100%',
             boxSizing: 'border-box',
           }}
@@ -56,7 +60,7 @@ export function StartScreen({ onStart }: StartScreenProps) {
                 width: 64,
                 height: 64,
                 borderRadius: '50%',
-                border: '3px solid #D4A843',
+                border: `3px solid ${COLORS.gold}`,
                 objectFit: 'cover',
                 flexShrink: 0,
               }}
@@ -66,15 +70,15 @@ export function StartScreen({ onStart }: StartScreenProps) {
               margin: 0,
               fontSize: 17,
               lineHeight: 1.5,
-              fontFamily: "'Nunito', sans-serif",
-              color: '#E8D5F5',
+              fontFamily: "Georgia, serif",
+              color: COLORS.text,
             }}>
-              Hi there! I'm <strong style={{ color: '#fff' }}>Sam the Math Wizard</strong>. Let me show you how to play!
+              Hi there! I'm <strong style={{ color: COLORS.goldLight }}>Sam the Math Wizard</strong>. Let me show you how to play!
             </p>
           </div>
 
           <div style={{
-            background: 'rgba(255,255,255,0.08)',
+            background: 'rgba(255,255,255,0.06)',
             borderRadius: 12,
             padding: 16,
             marginBottom: 16,
@@ -83,8 +87,8 @@ export function StartScreen({ onStart }: StartScreenProps) {
               margin: '0 0 10px',
               fontSize: 16,
               fontWeight: 700,
-              fontFamily: "'Fredoka One', 'Nunito', sans-serif",
-              color: '#D4A843',
+              fontFamily: "'Fredoka One', Georgia, serif",
+              color: COLORS.gold,
             }}>
               How to Play
             </p>
@@ -104,8 +108,8 @@ export function StartScreen({ onStart }: StartScreenProps) {
                 <li key={text} style={{
                   fontSize: 15,
                   lineHeight: 1.4,
-                  fontFamily: "'Nunito', sans-serif",
-                  color: '#E8D5F5',
+                  fontFamily: "Georgia, serif",
+                  color: COLORS.text,
                 }}>
                   {text}
                 </li>
@@ -115,37 +119,26 @@ export function StartScreen({ onStart }: StartScreenProps) {
 
           <p style={{
             margin: 0,
-            fontSize: 12,
-            color: 'rgba(232,213,245,0.5)',
+            fontSize: 11,
+            color: COLORS.textMuted,
             textAlign: 'center',
-            fontFamily: "'Nunito', sans-serif",
+            fontFamily: "Georgia, serif",
+            letterSpacing: 0.5,
           }}>
-            This tutor uses AI. No personal information is collected or stored.
+            Aligned to Common Core 3.NF.A.3 · Ages 8-12
           </p>
         </div>
 
         {/* Start button */}
-        <button
-          type="button"
-          onClick={onStart}
-          style={{
-            marginTop: 20,
-            padding: '14px 48px',
-            fontSize: 22,
-            fontWeight: 700,
-            fontFamily: "'Fredoka One', 'Nunito', sans-serif",
-            background: 'linear-gradient(180deg, #7B2FBE 0%, #5B1F9E 100%)',
-            color: '#fff',
-            border: '3px solid #D4A843',
-            borderRadius: 14,
-            cursor: 'pointer',
-            boxShadow: '0 4px 16px rgba(123,47,190,0.6), inset 0 1px 0 rgba(255,255,255,0.2)',
-            textShadow: '0 2px 4px rgba(0,0,0,0.5)',
-            letterSpacing: 1,
-          }}
-        >
-          Start Lesson
-        </button>
+        <div style={{ marginTop: 20 }}>
+          <MagicButton
+            variant="gold"
+            onClick={onStart}
+            style={{ padding: '14px 48px', fontSize: 20 }}
+          >
+            Begin Your Quest
+          </MagicButton>
+        </div>
       </div>
     </div>
   );

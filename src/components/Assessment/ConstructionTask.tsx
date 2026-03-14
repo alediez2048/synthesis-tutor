@@ -12,8 +12,8 @@ import { Workspace } from '../Workspace/Workspace';
 import { ActionBar } from '../Workspace/ActionBar';
 import type { FractionBlock } from '../../state/types';
 import type { LessonAction } from '../../state/types';
-
-const MIN_TAP_PX = 60;
+import { COLORS } from '../../theme';
+import { MagicButton } from '../shared/MagicButton';
 
 export interface ConstructionTaskProps {
   problem: A2Construction;
@@ -142,7 +142,7 @@ export function ConstructionTask({
         padding: 16,
       }}
     >
-      <p style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>
+      <p style={{ margin: 0, fontSize: 16, fontWeight: 600, color: COLORS.text, fontFamily: 'Georgia, serif' }}>
         Build a fraction equal to {problem.target.numerator}/{problem.target.denominator}
       </p>
       <Workspace
@@ -164,11 +164,13 @@ export function ConstructionTask({
         <div
           role="alert"
           style={{
-            padding: '6px 10px',
+            padding: '6px 14px',
             fontSize: 13,
-            color: '#856404',
-            backgroundColor: 'rgba(255,193,7,0.2)',
-            borderRadius: 6,
+            color: COLORS.goldLight,
+            background: 'rgba(212, 168, 67, 0.15)',
+            border: `1px solid ${COLORS.gold}40`,
+            borderRadius: 8,
+            fontFamily: 'Georgia, serif',
           }}
         >
           {rejectionMessage}
@@ -181,24 +183,9 @@ export function ConstructionTask({
           rejectionMessage={null}
           disabled={isDragging}
         />
-        <button
-          type="button"
-          onClick={handleSubmit}
-          style={{
-            minWidth: MIN_TAP_PX,
-            minHeight: MIN_TAP_PX,
-            padding: '0 20px',
-            fontSize: 16,
-            fontWeight: 600,
-            color: '#fff',
-            backgroundColor: '#4A90D9',
-            border: 'none',
-            borderRadius: 8,
-            cursor: 'pointer',
-          }}
-        >
+        <MagicButton variant="primary" onClick={handleSubmit}>
           Submit
-        </button>
+        </MagicButton>
       </div>
     </div>
   );

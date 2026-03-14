@@ -55,6 +55,8 @@ export function loadCheckpoint(): LessonState | null {
       isDragging: false,
       isLoading: false,
       isStreaming: false,
+      tutorialComplete: checkpoint.state.tutorialComplete ?? true,
+      tutorialStep: checkpoint.state.tutorialStep ?? 0,
     };
   } catch {
     clearCheckpoint();

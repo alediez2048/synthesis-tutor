@@ -12,7 +12,7 @@ import type {
   Phase,
 } from './types';
 
-const PHASE_ORDER: Phase[] = ['intro', 'explore', 'guided', 'assess', 'complete'];
+const PHASE_ORDER: Phase[] = ['intro', 'tutorial', 'explore', 'guided', 'assess', 'complete'];
 
 function getNextPhase(current: Phase): Phase | null {
   const i = PHASE_ORDER.indexOf(current);
@@ -72,6 +72,8 @@ export function getInitialLessonState(): LessonState {
     nextBlockId: 1,
     isLoading: false,
     isStreaming: false,
+    tutorialComplete: false,
+    tutorialStep: 0,
   };
 }
 
@@ -84,6 +86,19 @@ export const lessonReducer: LessonReducer = (state, action) => {
         return state;
       }
       return { ...state, phase: action.to };
+    }
+
+    case 'TUTORIAL_STEP': {
+      return { ...state, tutorialStep: action.step };
+    }
+
+    case 'COMPLETE_TUTORIAL': {
+      return {
+        ...state,
+        tutorialComplete: true,
+        phase: 'explore',
+        tutorialStep: 0,
+      };
     }
 
     case 'SPLIT_BLOCK': {

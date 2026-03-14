@@ -9,6 +9,7 @@ import type { Fraction } from '../../engine/FractionEngine';
 import { FractionBlock as FractionBlockComponent } from '../Workspace/FractionBlock';
 import { getColorForDenominator } from '../../state/reducer';
 import type { FractionBlock } from '../../state/types';
+import { COLORS } from '../../theme';
 
 const MIN_TAP_PX = 60;
 const CORRECT_DELAY_MS = 1500;
@@ -78,7 +79,7 @@ export function MultipleChoice({
         padding: 16,
       }}
     >
-      <p style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>
+      <p style={{ margin: 0, fontSize: 16, fontWeight: 600, color: COLORS.text, fontFamily: 'Georgia, serif' }}>
         Which fraction equals {problem.target.numerator}/{problem.target.denominator}?
       </p>
       <div
@@ -110,9 +111,9 @@ export function MultipleChoice({
           const showIncorrect = isSelected && feedback === 'incorrect';
           const bgColor =
             showCorrect
-              ? '#27AE60'
+              ? COLORS.correct
               : showIncorrect
-                ? '#E74C3C'
+                ? COLORS.incorrect
                 : block.color;
 
           return (
@@ -136,10 +137,10 @@ export function MultipleChoice({
                 borderRadius: 8,
                 boxShadow:
                   showCorrect
-                    ? '0 0 12px rgba(39, 174, 96, 0.8)'
+                    ? `0 0 12px ${COLORS.correct}cc`
                     : showIncorrect
-                      ? '0 0 8px rgba(231, 76, 60, 0.6)'
-                      : '0 2px 6px rgba(0,0,0,0.15)',
+                      ? `0 0 8px ${COLORS.incorrect}99`
+                      : '0 2px 6px rgba(0,0,0,0.3)',
                 cursor: revealed ? 'default' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',

@@ -107,7 +107,7 @@ export function useInactivityPrompt({
         return;
       }
 
-      if (phase === 'explore' || phase === 'complete') return;
+      if (phase === 'explore' || phase === 'complete' || phase === 'tutorial') return;
 
       const idle = Date.now() - lastActionRef.current;
 
