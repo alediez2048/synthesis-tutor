@@ -69,6 +69,12 @@ export interface LessonState {
   isStreaming: boolean;
   tutorialComplete: boolean;
   tutorialStep: number;
+  isDemoActive: boolean;
+  guidedProblemIndex: number;
+  guidedStep: 'problem' | 'cfu';
+  guidedAttempts: number;
+  cfuQuestion: string | null;
+  cfuExpectedAnswer: number | null;
 }
 
 export type LessonAction =
@@ -98,4 +104,16 @@ export type LessonAction =
   | { type: 'RETURN_TO_WORKSPACE'; blockId: string }
   | { type: 'TUTORIAL_STEP'; step: number }
   | { type: 'COMPLETE_TUTORIAL' }
-  | { type: 'ADVANCE_ROUND'; round1SplitParts?: number };
+  | { type: 'ADVANCE_ROUND'; round1SplitParts?: number }
+  | { type: 'ADD_BLOCK'; fraction: Fraction }
+  | { type: 'DEMO_SPLIT'; blockId: string; parts: number }
+  | { type: 'DEMO_COMBINE'; blockIds: [string, string] }
+  | { type: 'SET_DEMO_ACTIVE'; active: boolean }
+  | { type: 'COMPLETE_INTRO' }
+  | { type: 'SET_GUIDED_PROBLEM'; index: number; step: 'problem' | 'cfu' }
+  | { type: 'GUIDED_ATTEMPT' }
+  | { type: 'ADVANCE_GUIDED_PROBLEM' }
+  | { type: 'SET_CFU_QUESTION'; question: string; expectedAnswer: number }
+  | { type: 'CLEAR_CFU' }
+  | { type: 'RESET_GUIDED_WORKSPACE'; blocks: FractionBlock[] }
+  | { type: 'INIT_GUIDED_PROBLEM'; problemIndex: number };
