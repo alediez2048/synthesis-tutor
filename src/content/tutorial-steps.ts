@@ -53,17 +53,41 @@ export const TUTORIAL_STEPS: TutorialStepConfig[] = [
   },
   {
     id: 5,
-    spotlightTarget: "comparison-portal",
+    spotlightTarget: "workspace-blocks",
     samText:
-      "Drag crystals here to see if different fractions are the same size. That's the secret of equivalent fractions!",
+      "Now watch me fuse two same-sized pieces back together! When pieces are the same size, they can combine into one bigger piece.",
+    ctaLabel: "Next",
+    requiresInteraction: true,
+  },
+  {
+    id: 6,
+    spotlightTarget: "workspace-blocks",
+    samText:
+      "Your turn! Drag one crystal onto another same-sized crystal to fuse them together.",
+    ctaLabel: "Next",
+    requiresInteraction: true,
+  },
+  {
+    id: 7,
+    spotlightTarget: "workspace-blocks",
+    samText:
+      "You fused them! Splitting and combining are the two main powers you'll use on your quest.",
     ctaLabel: "Next",
     requiresInteraction: false,
   },
   {
-    id: 6,
+    id: 8,
+    spotlightTarget: "comparison-portal",
+    samText:
+      "This is the Spell Altar! Drag two crystals here to compare their sizes. It's how you discover that different fractions can be the same!",
+    ctaLabel: "Next",
+    requiresInteraction: false,
+  },
+  {
+    id: 9,
     spotlightTarget: "chat-input",
     samText:
-      "I'm Sam! You can ask me anything about fractions anytime. Ready to explore on your own?",
+      "I'm Sam, your guide! You can ask me anything about fractions anytime. Ready to explore on your own?",
     ctaLabel: "Start Exploring",
     requiresInteraction: false,
   },
