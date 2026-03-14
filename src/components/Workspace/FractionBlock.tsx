@@ -109,7 +109,7 @@ export function FractionBlock({
         setDragOffset({ x: mx, y: my });
       }
     },
-    { enabled: !dragDisabled, pointer: { touch: true }, preventDefault: true }
+    { enabled: !dragDisabled, pointer: { touch: true }, preventDefault: true, filterTaps: true }
   );
 
   const { fraction, isSelected } = block;

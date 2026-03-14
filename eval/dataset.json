@@ -1,0 +1,398 @@
+{
+  "version": "1.0.0",
+  "description": "ENG-043: Evaluation dataset for Fraction Quest tutor (Sam the Wizard Owl)",
+  "categories": {
+    "math_correctness": "Tool returns correct mathematical results",
+    "tool_selection": "Claude selects the right tool for the situation",
+    "persona_adherence": "Sam stays in character with voice constraints",
+    "misconception_handling": "Proper scaffolding for common student errors",
+    "phase_awareness": "Appropriate behavior for the current lesson phase"
+  },
+  "cases": [
+    {
+      "id": "MC-001",
+      "category": "math_correctness",
+      "description": "Equivalence: 1/2 == 2/4",
+      "input": { "message": "Is 1/2 the same as 2/4?", "phase": "explore" },
+      "expectedToolCall": "check_equivalence",
+      "expectedResult": { "equivalent": true }
+    },
+    {
+      "id": "MC-002",
+      "category": "math_correctness",
+      "description": "Non-equivalence: 1/3 != 1/4",
+      "input": { "message": "Is 1/3 the same as 1/4?", "phase": "explore" },
+      "expectedToolCall": "check_equivalence",
+      "expectedResult": { "equivalent": false }
+    },
+    {
+      "id": "MC-003",
+      "category": "math_correctness",
+      "description": "Simplify 4/8 to 1/2",
+      "input": { "message": "What is 4/8 simplified?", "phase": "guided" },
+      "expectedToolCall": "simplify_fraction",
+      "expectedResult": { "simplified": { "numerator": 1, "denominator": 2 } }
+    },
+    {
+      "id": "MC-004",
+      "category": "math_correctness",
+      "description": "Split 1/2 into 3 pieces",
+      "input": { "message": "What if I split 1/2 into 3?", "phase": "explore" },
+      "expectedToolCall": "split_fraction",
+      "expectedResult": { "pieces": [{ "numerator": 1, "denominator": 6 }, { "numerator": 1, "denominator": 6 }, { "numerator": 1, "denominator": 6 }] }
+    },
+    {
+      "id": "MC-005",
+      "category": "math_correctness",
+      "description": "Combine 1/4 + 1/4",
+      "input": { "message": "I combined two 1/4 pieces", "phase": "explore" },
+      "expectedToolCall": "combine_fractions",
+      "expectedResult": { "combined": { "numerator": 2, "denominator": 4 } }
+    },
+    {
+      "id": "MC-006",
+      "category": "math_correctness",
+      "description": "Equivalence: 2/4 == 3/6",
+      "input": { "message": "Are 2/4 and 3/6 the same?", "phase": "explore" },
+      "expectedToolCall": "check_equivalence",
+      "expectedResult": { "equivalent": true }
+    },
+    {
+      "id": "MC-007",
+      "category": "math_correctness",
+      "description": "Common denominator for 1/3 and 1/4",
+      "input": { "message": "How do I compare 1/3 and 1/4?", "phase": "guided" },
+      "expectedToolCall": "find_common_denominator"
+    },
+    {
+      "id": "MC-008",
+      "category": "math_correctness",
+      "description": "Validate fraction 5/12 is within scope",
+      "input": { "message": "Is 5/12 a valid fraction for our lesson?", "phase": "explore" },
+      "expectedToolCall": "validate_fraction",
+      "expectedResult": { "valid": true }
+    },
+    {
+      "id": "MC-009",
+      "category": "math_correctness",
+      "description": "Simplify 6/12 to 1/2",
+      "input": { "message": "Simplify 6/12", "phase": "guided" },
+      "expectedToolCall": "simplify_fraction",
+      "expectedResult": { "simplified": { "numerator": 1, "denominator": 2 } }
+    },
+    {
+      "id": "MC-010",
+      "category": "math_correctness",
+      "description": "Equivalence: 4/6 == 2/3",
+      "input": { "message": "Does 4/6 equal 2/3?", "phase": "guided" },
+      "expectedToolCall": "check_equivalence",
+      "expectedResult": { "equivalent": true }
+    },
+    {
+      "id": "TS-001",
+      "category": "tool_selection",
+      "description": "Student submits answer — should use check_answer",
+      "input": { "message": "2/4", "phase": "assess" },
+      "expectedToolCall": "check_answer"
+    },
+    {
+      "id": "TS-002",
+      "category": "tool_selection",
+      "description": "Student asks about workspace — should use get_workspace_state",
+      "input": { "message": "What's on my spell table?", "phase": "explore" },
+      "expectedToolCall": "get_workspace_state"
+    },
+    {
+      "id": "TS-003",
+      "category": "tool_selection",
+      "description": "Student asks to simplify — should use simplify_fraction",
+      "input": { "message": "Can you simplify 4/8?", "phase": "guided" },
+      "expectedToolCall": "simplify_fraction"
+    },
+    {
+      "id": "TS-004",
+      "category": "tool_selection",
+      "description": "Student compares two fractions — should use check_equivalence",
+      "input": { "message": "Is 3/6 the same as 1/2?", "phase": "explore" },
+      "expectedToolCall": "check_equivalence"
+    },
+    {
+      "id": "TS-005",
+      "category": "tool_selection",
+      "description": "Student performs split action — should use get_workspace_state to see result",
+      "input": { "message": "[I split the 1/2 crystal into 2 pieces]", "phase": "explore" },
+      "expectedToolCall": "get_workspace_state"
+    },
+    {
+      "id": "TS-006",
+      "category": "tool_selection",
+      "description": "Student sends raw fraction as answer during assessment",
+      "input": { "message": "3/6", "phase": "assess" },
+      "expectedToolCall": "check_answer"
+    },
+    {
+      "id": "TS-007",
+      "category": "tool_selection",
+      "description": "Student asks about common denominators",
+      "input": { "message": "How can I compare 1/3 and 1/2?", "phase": "guided" },
+      "expectedToolCall": "find_common_denominator"
+    },
+    {
+      "id": "TS-008",
+      "category": "tool_selection",
+      "description": "Student asks what to do — workspace check first",
+      "input": { "message": "What should I do next?", "phase": "explore" },
+      "expectedToolCall": "get_workspace_state"
+    },
+    {
+      "id": "TS-009",
+      "category": "tool_selection",
+      "description": "Student submits combined action notification",
+      "input": { "message": "[I combined 1/4 and 1/4]", "phase": "explore" },
+      "expectedToolCall": "get_workspace_state"
+    },
+    {
+      "id": "TS-010",
+      "category": "tool_selection",
+      "description": "Student submits text answer during guided practice",
+      "input": { "message": "I think it's 2/6", "phase": "guided" },
+      "expectedToolCall": "check_answer"
+    },
+    {
+      "id": "PA-001",
+      "category": "persona_adherence",
+      "description": "Response uses contractions",
+      "input": { "message": "Hello!", "phase": "intro" },
+      "assertions": ["response_uses_contractions"]
+    },
+    {
+      "id": "PA-002",
+      "category": "persona_adherence",
+      "description": "Response under 3 sentences",
+      "input": { "message": "What are fractions?", "phase": "explore" },
+      "assertions": ["max_3_sentences"]
+    },
+    {
+      "id": "PA-003",
+      "category": "persona_adherence",
+      "description": "No negative words (wrong, incorrect, mistake, error, fail)",
+      "input": { "message": "1/3", "phase": "assess" },
+      "assertions": ["no_negative_words"],
+      "context": { "target": { "numerator": 1, "denominator": 2 } }
+    },
+    {
+      "id": "PA-004",
+      "category": "persona_adherence",
+      "description": "Uses themed vocabulary (crystals, spell table)",
+      "input": { "message": "What do I do with these blocks?", "phase": "explore" },
+      "assertions": ["uses_themed_vocabulary"]
+    },
+    {
+      "id": "PA-005",
+      "category": "persona_adherence",
+      "description": "Max 15 words per sentence",
+      "input": { "message": "Tell me about equivalent fractions", "phase": "guided" },
+      "assertions": ["max_15_words_per_sentence"]
+    },
+    {
+      "id": "PA-006",
+      "category": "persona_adherence",
+      "description": "Celebrates correct answer",
+      "input": { "message": "2/4", "phase": "assess" },
+      "assertions": ["celebratory_tone"],
+      "context": { "target": { "numerator": 1, "denominator": 2 } }
+    },
+    {
+      "id": "PA-007",
+      "category": "persona_adherence",
+      "description": "Redirects warmly on wrong answer, no negative words",
+      "input": { "message": "3/5", "phase": "assess" },
+      "assertions": ["no_negative_words", "redirects_warmly"],
+      "context": { "target": { "numerator": 1, "denominator": 2 } }
+    },
+    {
+      "id": "PA-008",
+      "category": "persona_adherence",
+      "description": "Handles non-fraction input gracefully",
+      "input": { "message": "idk", "phase": "guided" },
+      "assertions": ["no_error_message", "redirects_warmly"]
+    },
+    {
+      "id": "PA-009",
+      "category": "persona_adherence",
+      "description": "Intro greeting is warm and brief",
+      "input": { "message": "[Student just started the lesson]", "phase": "intro" },
+      "assertions": ["max_3_sentences", "celebratory_tone"]
+    },
+    {
+      "id": "PA-010",
+      "category": "persona_adherence",
+      "description": "Completion phase is celebratory",
+      "input": { "message": "I finished!", "phase": "complete" },
+      "assertions": ["celebratory_tone", "uses_themed_vocabulary"]
+    },
+    {
+      "id": "MH-001",
+      "category": "misconception_handling",
+      "description": "Flipped fraction: student gives 2/1 instead of 1/2",
+      "input": { "message": "2/1", "phase": "assess" },
+      "expectedToolCall": "check_answer",
+      "assertions": ["scaffolds_hint", "no_negative_words"],
+      "context": { "target": { "numerator": 1, "denominator": 2 } }
+    },
+    {
+      "id": "MH-002",
+      "category": "misconception_handling",
+      "description": "Whole number answer: student gives 2 instead of 2/4",
+      "input": { "message": "2", "phase": "assess" },
+      "expectedToolCall": "check_answer",
+      "assertions": ["scaffolds_hint"],
+      "context": { "target": { "numerator": 2, "denominator": 4 } }
+    },
+    {
+      "id": "MH-003",
+      "category": "misconception_handling",
+      "description": "Same denominator wrong numerator: 3/4 instead of 2/4",
+      "input": { "message": "3/4", "phase": "assess" },
+      "expectedToolCall": "check_answer",
+      "assertions": ["scaffolds_hint"],
+      "context": { "target": { "numerator": 2, "denominator": 4 } }
+    },
+    {
+      "id": "MH-004",
+      "category": "misconception_handling",
+      "description": "Off by one: 2/3 instead of 1/3",
+      "input": { "message": "2/3", "phase": "assess" },
+      "expectedToolCall": "check_answer",
+      "assertions": ["scaffolds_hint", "no_negative_words"],
+      "context": { "target": { "numerator": 1, "denominator": 3 } }
+    },
+    {
+      "id": "MH-005",
+      "category": "misconception_handling",
+      "description": "Random guess: 5/7 instead of 1/2",
+      "input": { "message": "5/7", "phase": "assess" },
+      "expectedToolCall": "check_answer",
+      "assertions": ["scaffolds_hint"],
+      "context": { "target": { "numerator": 1, "denominator": 2 } }
+    },
+    {
+      "id": "PH-001",
+      "category": "phase_awareness",
+      "description": "Intro phase: welcomes student warmly",
+      "input": { "message": "Hi!", "phase": "intro" },
+      "assertions": ["celebratory_tone", "max_3_sentences"]
+    },
+    {
+      "id": "PH-002",
+      "category": "phase_awareness",
+      "description": "Explore phase: encourages experimentation",
+      "input": { "message": "[I split the 1/2 crystal into 2 pieces]", "phase": "explore" },
+      "assertions": ["celebratory_tone", "uses_themed_vocabulary"]
+    },
+    {
+      "id": "PH-003",
+      "category": "phase_awareness",
+      "description": "Guided phase: provides scaffolding",
+      "input": { "message": "I don't know what to do", "phase": "guided" },
+      "assertions": ["scaffolds_hint"]
+    },
+    {
+      "id": "PH-004",
+      "category": "phase_awareness",
+      "description": "Assess phase: doesn't over-scaffold",
+      "input": { "message": "1/3", "phase": "assess" },
+      "expectedToolCall": "check_answer",
+      "context": { "target": { "numerator": 1, "denominator": 2 } }
+    },
+    {
+      "id": "PH-005",
+      "category": "phase_awareness",
+      "description": "Complete phase: celebrates and summarizes",
+      "input": { "message": "How did I do?", "phase": "complete" },
+      "assertions": ["celebratory_tone"],
+      "context": { "score": { "correct": 2, "total": 3 } }
+    },
+    {
+      "id": "MC-011",
+      "category": "math_correctness",
+      "description": "Combine 1/3 + 1/3 + 1/3 = 3/3",
+      "input": { "message": "I combined three 1/3 pieces", "phase": "explore" },
+      "expectedToolCall": "combine_fractions"
+    },
+    {
+      "id": "MC-012",
+      "category": "math_correctness",
+      "description": "Split 1/4 into 2 gives 1/8s",
+      "input": { "message": "What if I split 1/4 into 2?", "phase": "explore" },
+      "expectedToolCall": "split_fraction",
+      "expectedResult": { "pieces": [{ "numerator": 1, "denominator": 8 }, { "numerator": 1, "denominator": 8 }] }
+    },
+    {
+      "id": "MC-013",
+      "category": "math_correctness",
+      "description": "Equivalence: 3/3 == 1/1 (whole)",
+      "input": { "message": "Is 3/3 the same as a whole?", "phase": "explore" },
+      "expectedToolCall": "check_equivalence",
+      "expectedResult": { "equivalent": true }
+    },
+    {
+      "id": "MC-014",
+      "category": "math_correctness",
+      "description": "Parse student input '2 / 4'",
+      "input": { "message": "2 / 4", "phase": "assess" },
+      "expectedToolCall": "check_answer"
+    },
+    {
+      "id": "MC-015",
+      "category": "math_correctness",
+      "description": "Non-equivalence: 2/3 != 3/4",
+      "input": { "message": "Are 2/3 and 3/4 the same?", "phase": "explore" },
+      "expectedToolCall": "check_equivalence",
+      "expectedResult": { "equivalent": false }
+    },
+    {
+      "id": "TS-011",
+      "category": "tool_selection",
+      "description": "Student places crystals on altar — workspace check",
+      "input": { "message": "[I placed 1/2 and 2/4 on the spell altar to compare them]", "phase": "explore" },
+      "expectedToolCall": "check_equivalence"
+    },
+    {
+      "id": "TS-012",
+      "category": "tool_selection",
+      "description": "Student asks to validate a large fraction",
+      "input": { "message": "Can I use 1/15?", "phase": "explore" },
+      "expectedToolCall": "validate_fraction"
+    },
+    {
+      "id": "PA-011",
+      "category": "persona_adherence",
+      "description": "Does not compute math without tools",
+      "input": { "message": "What's 1/3 + 1/3?", "phase": "guided" },
+      "assertions": ["uses_tool_for_math"]
+    },
+    {
+      "id": "PA-012",
+      "category": "persona_adherence",
+      "description": "Uses themed vocab: crystals not blocks",
+      "input": { "message": "[I split the 1/2 crystal into 4 pieces]", "phase": "explore" },
+      "assertions": ["uses_themed_vocabulary"]
+    },
+    {
+      "id": "MH-006",
+      "category": "misconception_handling",
+      "description": "Student writes fraction words: 'one half'",
+      "input": { "message": "one half", "phase": "assess" },
+      "expectedToolCall": "check_answer",
+      "context": { "target": { "numerator": 1, "denominator": 2 } }
+    },
+    {
+      "id": "PH-006",
+      "category": "phase_awareness",
+      "description": "Explore phase: does not correct, just celebrates",
+      "input": { "message": "[I combined 1/4 and 1/4 into 2/4]", "phase": "explore" },
+      "assertions": ["celebratory_tone", "no_correction"]
+    }
+  ]
+}

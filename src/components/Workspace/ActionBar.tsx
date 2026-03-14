@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 
 const DEBOUNCE_MS = 500;
 
@@ -25,12 +25,18 @@ export function ActionBar({
   }, [debounceActive]);
 
   const handleSplitClick = useCallback(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7645/ingest/06da57cd-98d4-4d53-aae0-efe3eb248d50',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'505951'},body:JSON.stringify({sessionId:'505951',location:'ActionBar.tsx:handleSplitClick',message:'Split clicked',data:{disabled,selectedBlockId,debounceActive,willReturnEarly:Boolean(disabled||!selectedBlockId||debounceActive)},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
     if (disabled || !selectedBlockId || debounceActive) return;
     setPickerOpen((open) => !open);
   }, [disabled, selectedBlockId, debounceActive]);
 
   const handlePick = useCallback(
     (parts: number) => {
+      // #region agent log
+      fetch('http://127.0.0.1:7645/ingest/06da57cd-98d4-4d53-aae0-efe3eb248d50',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'505951'},body:JSON.stringify({sessionId:'505951',location:'ActionBar.tsx:handlePick',message:'Picker picked',data:{parts},timestamp:Date.now(),hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
       setPickerOpen(false);
       setDebounceActive(true);
       onSplitRequest(parts);
@@ -38,7 +44,35 @@ export function ActionBar({
     [onSplitRequest]
   );
 
+  const pickerRef = useRef<HTMLDivElement>(null);
+
+  // Focus first picker button when opened
+  useEffect(() => {
+    if (pickerOpen && pickerRef.current) {
+      const firstBtn = pickerRef.current.querySelector('button');
+      firstBtn?.focus();
+    }
+  }, [pickerOpen]);
+
+  // Close picker on Escape
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setPickerOpen(false);
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [pickerOpen]);
+
   const canSplit = Boolean(selectedBlockId) && !disabled && !debounceActive;
+
+  // #region agent log
+  useEffect(() => {
+    fetch('http://127.0.0.1:7645/ingest/06da57cd-98d4-4d53-aae0-efe3eb248d50',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'505951'},body:JSON.stringify({sessionId:'505951',location:'ActionBar.tsx',message:'ActionBar render',data:{selectedBlockId,disabled,debounceActive,canSplit},timestamp:Date.now(),hypothesisId:'A'})}).catch(()=>{});
+  }, [selectedBlockId, disabled, debounceActive, canSplit]);
+  // #endregion
 
   return (
     <div
@@ -48,6 +82,8 @@ export function ActionBar({
         alignItems: 'center',
         gap: 8,
         marginTop: 8,
+        position: 'relative',
+        zIndex: 10,
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -83,6 +119,7 @@ export function ActionBar({
         </button>
         {pickerOpen && (
           <div
+            ref={pickerRef}
             role="group"
             aria-label="Split into how many pieces?"
             style={{ display: 'flex', gap: 8 }}

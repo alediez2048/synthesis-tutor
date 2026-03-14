@@ -24,7 +24,6 @@ export function StartScreen({ onStart }: StartScreenProps) {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: 24,
           maxWidth: 460,
           width: '100%',
         }}
@@ -33,7 +32,7 @@ export function StartScreen({ onStart }: StartScreenProps) {
         <img
           src="/assets/title-logo.png"
           alt="Fraction Quest with Sam the Math Wizard"
-          style={{ height: 280, objectFit: 'contain' }}
+          style={{ height: 200, objectFit: 'contain', marginBottom: 8 }}
         />
 
         {/* Instructions card */}
@@ -130,6 +129,7 @@ export function StartScreen({ onStart }: StartScreenProps) {
           type="button"
           onClick={onStart}
           style={{
+            marginTop: 20,
             padding: '14px 48px',
             fontSize: 22,
             fontWeight: 700,
