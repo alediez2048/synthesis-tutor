@@ -78,6 +78,8 @@ export function ChatPanel({
             <span style={{ fontSize: 10, fontWeight: 700 }}>Sam</span>
           </div>
           <p
+            aria-live="polite"
+            aria-atomic="true"
             style={{
               margin: 0,
               fontSize: 14,
@@ -157,6 +159,7 @@ export function ChatPanel({
         )}
         {isLoading && (
           <div
+            aria-live="polite"
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -167,6 +170,7 @@ export function ChatPanel({
             }}
           >
             <span
+              aria-hidden="true"
               style={{
                 width: 8,
                 height: 8,

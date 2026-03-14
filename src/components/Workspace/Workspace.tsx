@@ -2,6 +2,7 @@ import { useRef, useCallback } from 'react';
 import type { FractionBlock } from '../../state/types';
 import { FractionBlock as FractionBlockComponent } from './FractionBlock';
 import { ComparisonZone } from './ComparisonZone';
+import type { ComparisonResult } from './ComparisonZone';
 
 function rectsOverlap(a: DOMRect, b: DOMRect): boolean {
   const overlapX =
@@ -34,7 +35,7 @@ export interface WorkspaceProps {
   onDropOnComparisonZone?: (draggedId: string) => void;
   onWorkspaceBackgroundClick?: () => void;
   onReturnToWorkspace?: (blockId: string) => void;
-  onAltarSplit?: (blockId: string, parts: number) => void;
+  comparisonResult?: ComparisonResult;
   isDragging?: boolean;
   draggingBlockId?: string | null;
   combinedBlockId?: string | null;
@@ -52,7 +53,7 @@ export function Workspace({
   onDropOnComparisonZone,
   onWorkspaceBackgroundClick,
   onReturnToWorkspace,
-  onAltarSplit,
+  comparisonResult = null,
   isDragging = false,
   draggingBlockId = null,
   combinedBlockId = null,
@@ -110,7 +111,7 @@ export function Workspace({
           if (e.target === e.currentTarget) onWorkspaceBackgroundClick?.();
         }}
         style={{
-          height: 200,
+          height: 140,
           padding: '0 12px',
           marginBottom: 0,
           zIndex: 2,
@@ -122,7 +123,6 @@ export function Workspace({
           gap: 8,
           alignItems: 'center',
           justifyContent: 'center',
-          pointerEvents: 'none',
           overflow: 'visible',
         }}
       >
@@ -153,7 +153,7 @@ export function Workspace({
         referenceWidth={referenceWidth}
         onSelectBlock={onSelectBlock}
         onReturnToWorkspace={onReturnToWorkspace}
-        onAltarSplit={onAltarSplit}
+        comparisonResult={comparisonResult}
       />
     </div>
   );

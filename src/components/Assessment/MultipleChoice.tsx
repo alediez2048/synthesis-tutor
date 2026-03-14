@@ -120,7 +120,7 @@ export function MultipleChoice({
               key={optId}
               role="button"
               tabIndex={0}
-              aria-label={`Option ${opt.fraction.numerator}/${opt.fraction.denominator}${opt.correct ? ' (correct)' : ''}`}
+              aria-label={`Option ${opt.fraction.numerator}/${opt.fraction.denominator}${revealed && opt.correct ? ' (correct answer)' : ''}`}
               onClick={() => handleTap(opt, optId)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {

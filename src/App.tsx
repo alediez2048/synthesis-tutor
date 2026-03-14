@@ -12,9 +12,11 @@ import { CompletionScreen } from './components/Assessment/CompletionScreen';
 import { Confetti } from './components/shared/Confetti';
 import { useSoundManager } from './audio/useSoundManager';
 import { selectAssessmentProblems } from './content/assessment-pools';
+import { areEquivalent } from './engine/FractionEngine';
 import { useTutorChat } from './brain/useTutorChat';
 import { useVoiceOutput } from './brain/useVoiceOutput';
 import { parseFractionReferences } from './brain/parseFractionReferences';
+import type { ComparisonResult } from './components/Workspace/ComparisonZone';
 import { useExplorationObserver } from './observers/useExplorationObserver';
 import { useInactivityPrompt } from './hooks/useInactivityPrompt';
 import { ErrorBoundary } from './components/shared/ErrorBoundary';
@@ -51,6 +53,7 @@ function App() {
   const [splitBlockIds, setSplitBlockIds] = useState<string[] | null>(null);
   const [highlightedBlockIds, setHighlightedBlockIds] = useState<string[]>([]);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [comparisonResult, setComparisonResult] = useState<ComparisonResult>(null);
 
   const { sendMessage, notifySam, isLoading } = useTutorChat(state, dispatch);
   const {
@@ -236,7 +239,44 @@ function App() {
     return () => clearTimeout(t);
   }, [splitBlockIds]);
 
+  // ENG-026/027: Detect 2 blocks on altar, check equivalence, animate
+  const comparisonBlocks = state.blocks.filter((b) => b.position === 'comparison');
+  const prevCompCountRef = useRef(0);
+  useEffect(() => {
+    const prev = prevCompCountRef.current;
+    prevCompCountRef.current = comparisonBlocks.length;
+    if (comparisonBlocks.length >= 2 && prev < 2) {
+      const [a, b] = comparisonBlocks;
+      const equiv = areEquivalent(a.fraction, b.fraction);
+      setComparisonResult(equiv ? 'equivalent' : 'not-equivalent');
+      if (equiv) {
+        playCorrect();
+        notifySam(
+          `I placed ${a.fraction.numerator}/${a.fraction.denominator} and ${b.fraction.numerator}/${b.fraction.denominator} on the spell altar to compare them`
+        );
+      } else {
+        playIncorrect();
+        // Return non-equivalent blocks to workspace after animation
+        setTimeout(() => {
+          comparisonBlocks.forEach((bl) =>
+            dispatch({ type: 'RETURN_TO_WORKSPACE', blockId: bl.id })
+          );
+          setComparisonResult(null);
+        }, 1200);
+        notifySam(
+          `I placed ${a.fraction.numerator}/${a.fraction.denominator} and ${b.fraction.numerator}/${b.fraction.denominator} on the spell altar to compare them`
+        );
+      }
+    }
+    if (comparisonBlocks.length < 2 && comparisonResult === 'equivalent') {
+      setComparisonResult(null);
+    }
+  }, [comparisonBlocks.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleSelectBlock = (blockId: string) => {
+    // #region agent log
+    if (typeof fetch !== 'undefined') fetch('http://127.0.0.1:7645/ingest/06da57cd-98d4-4d53-aae0-efe3eb248d50',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'505951'},body:JSON.stringify({sessionId:'505951',location:'App.tsx:handleSelectBlock',message:'Block selected',data:{blockId},timestamp:Date.now(),hypothesisId:'E'})}).catch(()=>{});
+    // #endregion
     ensureAudioUnlocked();
     setCombineRejectionMessage(null);
     setSplitRejectionMessage(null);
@@ -244,6 +284,10 @@ function App() {
   };
 
   const handleSplitRequest = (parts: number) => {
+    // #region agent log
+    const selBlock = state.blocks.find((b) => b.id === selectedBlockId);
+    if (typeof fetch !== 'undefined') fetch('http://127.0.0.1:7645/ingest/06da57cd-98d4-4d53-aae0-efe3eb248d50',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'505951'},body:JSON.stringify({sessionId:'505951',location:'App.tsx:handleSplitRequest',message:'Split requested',data:{parts,selectedBlockId,selectedBlockFound:!!selBlock,denom:selBlock?.fraction.denominator,wouldReject:selBlock?selBlock.fraction.denominator*parts>12:null},timestamp:Date.now(),hypothesisId:'D'})}).catch(()=>{});
+    // #endregion
     ensureAudioUnlocked();
     if (!selectedBlockId) return;
     const selectedBlock = state.blocks.find((b) => b.id === selectedBlockId);
@@ -261,22 +305,6 @@ function App() {
     const { numerator, denominator } = selectedBlock.fraction;
     notifySam(
       `I split the ${numerator}/${denominator} crystal into ${parts} pieces`
-    );
-  };
-
-  const handleAltarSplit = (blockId: string, parts: number) => {
-    ensureAudioUnlocked();
-    const block = state.blocks.find((b) => b.id === blockId);
-    if (!block) return;
-    if (block.fraction.denominator * parts > 12) return;
-    const startId = state.nextBlockId;
-    const newIds = Array.from({ length: parts }, (_, i) => `block-${startId + i}`);
-    setSplitBlockIds(newIds);
-    dispatch({ type: 'SPLIT_BLOCK', blockId, parts });
-    playPop();
-    const { numerator, denominator } = block.fraction;
-    notifySam(
-      `I split the ${numerator}/${denominator} crystal into ${parts} pieces on the spell altar`
     );
   };
 
@@ -448,6 +476,45 @@ function App() {
 
   return (
     <>
+      {/* ENG-031: Skip link for keyboard users */}
+      <a
+        href="#main-content"
+        style={{
+          position: 'absolute',
+          left: -9999,
+          top: 'auto',
+          width: 1,
+          height: 1,
+          overflow: 'hidden',
+          zIndex: 10000,
+        }}
+        onFocus={(e) => {
+          const el = e.currentTarget;
+          el.style.position = 'fixed';
+          el.style.left = '8px';
+          el.style.top = '8px';
+          el.style.width = 'auto';
+          el.style.height = 'auto';
+          el.style.overflow = 'visible';
+          el.style.padding = '8px 16px';
+          el.style.background = '#7B2FBE';
+          el.style.color = '#fff';
+          el.style.borderRadius = '8px';
+          el.style.fontSize = '14px';
+          el.style.fontWeight = '700';
+          el.style.textDecoration = 'none';
+        }}
+        onBlur={(e) => {
+          const el = e.currentTarget;
+          el.style.position = 'absolute';
+          el.style.left = '-9999px';
+          el.style.width = '1px';
+          el.style.height = '1px';
+          el.style.overflow = 'hidden';
+        }}
+      >
+        Skip to main content
+      </a>
       {showConfetti && (
         <Confetti onComplete={handleConfettiComplete} />
       )}
@@ -551,13 +618,14 @@ function App() {
           <img
             src="/assets/title-logo.png"
             alt="Fraction Quest"
-            style={{ height: 340, objectFit: 'contain', marginBottom: -120 }}
+            style={{ height: 240, objectFit: 'contain', marginBottom: -60 }}
           />
         </h1>
       </header>
 
       {/* Main content */}
-      <div
+      <main
+        id="main-content"
         style={{
           flex: 1,
           minHeight: 0,
@@ -631,7 +699,7 @@ function App() {
                   onDropOnComparisonZone={handleDropOnComparisonZone}
                   onWorkspaceBackgroundClick={handleWorkspaceBackgroundClick}
                   onReturnToWorkspace={(blockId) => dispatch({ type: 'RETURN_TO_WORKSPACE', blockId })}
-                  onAltarSplit={handleAltarSplit}
+                  comparisonResult={comparisonResult}
                   isDragging={state.isDragging}
                   draggingBlockId={draggingBlockId}
                   combinedBlockId={combinedBlockId}
@@ -648,7 +716,7 @@ function App() {
             )}
           </div>
         </div>
-      </div>
+      </main>
 
       {/* Bottom chat bar */}
       <div style={{ flexShrink: 0, borderTop: '1px solid rgba(0,0,0,0.1)' }}>
