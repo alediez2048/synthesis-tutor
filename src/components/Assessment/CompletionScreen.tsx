@@ -6,16 +6,14 @@
 import { COLORS } from '../../theme';
 import { MagicButton } from '../shared/MagicButton';
 
-const SCORE_MESSAGES: Record<string, string> = {
-  '3/3':
-    "You're a fraction master! You proved that the same amount can be written in lots of different ways.",
-  '2/3':
-    "Great job! You really understand equivalent fractions. Want to try the one you missed again?",
-  '1/3':
-    "You're getting there! Want to practice a little more?",
-  '0/3':
-    "Fractions take practice, and you did great exploring today! Let's try again.",
-};
+function getScoreMessage(correct: number, total: number, passed: boolean): string {
+  if (total === 0) return "Great exploring today! Let's try again.";
+  if (passed && correct === total) return "Perfect score! You've mastered this lesson!";
+  if (passed) return "Great job! You passed the challenge! Ready for the next lesson?";
+  const ratio = correct / total;
+  if (ratio >= 0.34) return "You're getting there! A little more practice and you'll pass the challenge.";
+  return "Fractions take practice, and you did great exploring today! Let's try again.";
+}
 
 const CONCEPT_LABELS: Record<string, string> = {
   splitting: 'Splitting makes smaller equal pieces',
@@ -25,6 +23,7 @@ const CONCEPT_LABELS: Record<string, string> = {
 
 export interface CompletionScreenProps {
   score: { correct: number; total: number };
+  passed: boolean;
   conceptsDiscovered: string[];
   onRetryMissed: () => void;
   onLoopToPractice: () => void;
@@ -34,6 +33,7 @@ export interface CompletionScreenProps {
 
 export function CompletionScreen({
   score,
+  passed,
   conceptsDiscovered,
   onRetryMissed,
   onLoopToPractice,
@@ -41,8 +41,7 @@ export function CompletionScreen({
   onFinish,
 }: CompletionScreenProps) {
   const { correct, total } = score;
-  const scoreKey = `${correct}/${total}`;
-  const message = SCORE_MESSAGES[scoreKey] ?? SCORE_MESSAGES['0/3'];
+  const message = getScoreMessage(correct, total, passed);
 
   const conceptItems = conceptsDiscovered.map((id) => ({
     id,
@@ -130,27 +129,22 @@ export function CompletionScreen({
           justifyContent: 'center',
         }}
       >
-        {correct === 3 && total === 3 && (
+        {passed && (
           <MagicButton variant="success" onClick={onFinish}>
-            Finish
+            {correct === total ? 'Next Lesson' : 'Next Lesson'}
           </MagicButton>
         )}
-        {correct === 2 && total === 3 && (
+        {!passed && total > 0 && correct > 0 && (
           <>
             <MagicButton variant="primary" onClick={onRetryMissed}>
               Try Again
             </MagicButton>
-            <MagicButton variant="ghost" onClick={onFinish}>
-              I'm Done
+            <MagicButton variant="ghost" onClick={onLoopToPractice}>
+              Practice More
             </MagicButton>
           </>
         )}
-        {correct === 1 && total === 3 && (
-          <MagicButton variant="primary" onClick={onLoopToPractice}>
-            Practice More
-          </MagicButton>
-        )}
-        {correct === 0 && total === 3 && (
+        {!passed && (total === 0 || correct === 0) && (
           <MagicButton variant="gold" onClick={onRestartLesson}>
             Let's Explore Again
           </MagicButton>

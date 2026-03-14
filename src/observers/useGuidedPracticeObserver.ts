@@ -6,7 +6,7 @@
 import { useEffect, useRef } from 'react';
 import { areEquivalent, combine } from '../engine/FractionEngine';
 import type { LessonState, LessonAction } from '../state/types';
-import { GUIDED_PROBLEMS } from '../content/guided-practice-config';
+import { getLesson } from '../content/curriculum';
 import { GUIDED_DEMO_SCRIPTS } from '../content/guided-demo-scripts';
 
 const CFU_QUESTIONS: { question: string; expectedAnswer: number }[] = [
@@ -47,6 +47,9 @@ export function useGuidedPracticeObserver({
   const prevBlocksRef = useRef(state.blocks);
   const prevChatLengthRef = useRef(state.chatMessages.length);
 
+  const lesson = getLesson(state.lessonId);
+  const guidedProblems = lesson?.guidedProblems ?? [];
+
   function parseCFUAnswer(text: string, expected: number): boolean {
     const normalized = text.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
     const num = parseInt(text.replace(/[^0-9]/g, ''), 10);
@@ -68,7 +71,7 @@ export function useGuidedPracticeObserver({
     if (prevPhaseRef.current !== 'guided') {
       hasInitializedRef.current = true;
       dispatch({ type: 'INIT_GUIDED_PROBLEM', problemIndex: 0 });
-      const config = GUIDED_PROBLEMS[0];
+      const config = guidedProblems[0];
       if (config) {
         dispatch({
           type: 'TUTOR_RESPONSE',
@@ -86,10 +89,10 @@ export function useGuidedPracticeObserver({
     if (state.guidedStep !== 'problem') return;
 
     const idx = state.guidedProblemIndex;
-    if (idx !== prevProblemIndexRef.current && idx < GUIDED_PROBLEMS.length) {
+    if (idx !== prevProblemIndexRef.current && idx < guidedProblems.length) {
       prevProblemIndexRef.current = idx;
       dispatch({ type: 'INIT_GUIDED_PROBLEM', problemIndex: idx });
-      const config = GUIDED_PROBLEMS[idx];
+      const config = guidedProblems[idx];
       if (config) {
         dispatch({
           type: 'TUTOR_RESPONSE',
@@ -106,7 +109,7 @@ export function useGuidedPracticeObserver({
     if (state.guidedStep !== 'problem') return;
     if (state.isDemoActive) return;
 
-    const config = GUIDED_PROBLEMS[state.guidedProblemIndex];
+    const config = guidedProblems[state.guidedProblemIndex];
     if (!config) return;
 
     const prev = prevBlocksRef.current;
@@ -168,7 +171,7 @@ export function useGuidedPracticeObserver({
     if (correct) {
       playCorrect();
       const cfq = CFU_QUESTIONS[state.guidedProblemIndex];
-      if (cfq && state.guidedProblemIndex < 3) {
+      if (cfq && state.guidedProblemIndex < guidedProblems.length - 1) {
         dispatch({ type: 'SET_CFU_QUESTION', question: cfq.question, expectedAnswer: cfq.expectedAnswer });
         dispatch({
           type: 'TUTOR_RESPONSE',
@@ -176,7 +179,7 @@ export function useGuidedPracticeObserver({
           isStreaming: false,
         });
       } else {
-        if (state.guidedProblemIndex >= 3) {
+        if (state.guidedProblemIndex >= guidedProblems.length - 1) {
           dispatch({ type: 'PHASE_TRANSITION', to: 'assess' });
         } else {
           dispatch({ type: 'ADVANCE_GUIDED_PROBLEM' });
@@ -262,7 +265,7 @@ export function useGuidedPracticeObserver({
     if (correct) {
       playCorrect();
       dispatch({ type: 'CLEAR_CFU' });
-      if (state.guidedProblemIndex >= 3) {
+      if (state.guidedProblemIndex >= guidedProblems.length - 1) {
         dispatch({ type: 'PHASE_TRANSITION', to: 'assess' });
       } else {
         dispatch({ type: 'ADVANCE_GUIDED_PROBLEM' });
@@ -275,7 +278,7 @@ export function useGuidedPracticeObserver({
         isStreaming: false,
       });
       dispatch({ type: 'CLEAR_CFU' });
-      if (state.guidedProblemIndex >= 3) {
+      if (state.guidedProblemIndex >= guidedProblems.length - 1) {
         dispatch({ type: 'PHASE_TRANSITION', to: 'assess' });
       } else {
         dispatch({ type: 'ADVANCE_GUIDED_PROBLEM' });

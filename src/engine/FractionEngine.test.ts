@@ -9,6 +9,10 @@ import {
   toCommonDenominator,
   isValidFraction,
   parseStudentInput,
+  addFractions,
+  subtractFractions,
+  multiplyFractions,
+  divideFractions,
 } from './FractionEngine';
 
 /** Lesson-scope valid fraction: numerator 1..100, denominator 1..12 (integers). */
@@ -212,6 +216,85 @@ describe('FractionEngine', () => {
         }),
         { numRuns: 10_000 }
       );
+    });
+  });
+
+  describe('addFractions', () => {
+    it('adds 1/2 + 1/4 = 3/4', () => {
+      const result = addFractions({ numerator: 1, denominator: 2 }, { numerator: 1, denominator: 4 });
+      expect(result).toEqual({ numerator: 3, denominator: 4 });
+    });
+    it('adds 1/3 + 1/3 = 2/3', () => {
+      const result = addFractions({ numerator: 1, denominator: 3 }, { numerator: 1, denominator: 3 });
+      expect(result).toEqual({ numerator: 2, denominator: 3 });
+    });
+    it('is commutative', () => {
+      const a = { numerator: 1, denominator: 2 };
+      const b = { numerator: 1, denominator: 3 };
+      expect(areEquivalent(addFractions(a, b), addFractions(b, a))).toBe(true);
+    });
+    it('addFractions(a,b) equivalent to combine(toCommonDenominator(a,b))', () => {
+      const a = { numerator: 1, denominator: 2 };
+      const b = { numerator: 1, denominator: 3 };
+      const [a2, b2] = toCommonDenominator(a, b);
+      expect(areEquivalent(addFractions(a, b), combine([a2, b2]))).toBe(true);
+    });
+    it('throws when result denominator > 12', () => {
+      // 1/8 + 1/6 = 7/24, denominator 24 > 12
+      expect(() =>
+        addFractions({ numerator: 1, denominator: 8 }, { numerator: 1, denominator: 6 })
+      ).toThrow();
+    });
+  });
+
+  describe('subtractFractions', () => {
+    it('subtracts 3/4 - 1/4 = 1/2', () => {
+      const result = subtractFractions({ numerator: 3, denominator: 4 }, { numerator: 1, denominator: 4 });
+      expect(result).toEqual({ numerator: 1, denominator: 2 });
+    });
+    it('returns null when result would be negative', () => {
+      expect(subtractFractions({ numerator: 1, denominator: 4 }, { numerator: 1, denominator: 2 })).toBeNull();
+    });
+    it('addFractions(subtractFractions(a,b), b) equivalent to a when result non-negative', () => {
+      const a = { numerator: 3, denominator: 4 };
+      const b = { numerator: 1, denominator: 4 };
+      const diff = subtractFractions(a, b);
+      expect(diff).not.toBeNull();
+      if (diff) {
+        expect(areEquivalent(addFractions(diff, b), a)).toBe(true);
+      }
+    });
+  });
+
+  describe('multiplyFractions', () => {
+    it('multiplies 1/2 * 2/3 = 1/3', () => {
+      const result = multiplyFractions({ numerator: 1, denominator: 2 }, { numerator: 2, denominator: 3 });
+      expect(result).toEqual({ numerator: 1, denominator: 3 });
+    });
+    it('multiplyFractions(f, {n:1,d:1}) equivalent to f', () => {
+      const f = { numerator: 3, denominator: 7 };
+      expect(areEquivalent(multiplyFractions(f, { numerator: 1, denominator: 1 }), f)).toBe(true);
+    });
+    it('throws when result denominator > 12', () => {
+      expect(() =>
+        multiplyFractions({ numerator: 1, denominator: 3 }, { numerator: 1, denominator: 5 })
+      ).toThrow();
+    });
+  });
+
+  describe('divideFractions', () => {
+    it('divides 1/2 / 1/4 = 2', () => {
+      const result = divideFractions({ numerator: 1, denominator: 2 }, { numerator: 1, denominator: 4 });
+      expect(result).toEqual({ numerator: 2, denominator: 1 });
+    });
+    it('multiplyFractions(divideFractions(a,b), b) equivalent to a', () => {
+      const a = { numerator: 1, denominator: 2 };
+      const b = { numerator: 1, denominator: 4 };
+      const quot = divideFractions(a, b);
+      expect(areEquivalent(multiplyFractions(quot, b), a)).toBe(true);
+    });
+    it('throws on division by zero', () => {
+      expect(() => divideFractions({ numerator: 1, denominator: 2 }, { numerator: 0, denominator: 1 })).toThrow();
     });
   });
 });

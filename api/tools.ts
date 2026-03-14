@@ -11,10 +11,15 @@ import {
   toCommonDenominator,
   isValidFraction,
   parseStudentInput,
+  addFractions,
+  subtractFractions,
+  multiplyFractions,
+  divideFractions,
 } from '../src/engine/FractionEngine.js';
 import type { Fraction } from '../src/engine/FractionEngine.js';
 import { detectMisconception } from '../src/engine/MisconceptionDetector.js';
 import type { LessonState } from '../src/state/types.js';
+import { getLesson } from '../src/content/curriculum.js';
 
 const fractionSchema = {
   type: 'object' as const,
@@ -89,6 +94,58 @@ export const toolDefinitions: ToolDefinition[] = [
     },
   },
   {
+    name: 'add_fractions',
+    description:
+      'Add two fractions (handles same or different denominators). Use when the student adds fraction blocks on the workspace.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        a: { ...fractionSchema, description: 'First fraction' },
+        b: { ...fractionSchema, description: 'Second fraction' },
+      },
+      required: ['a', 'b'],
+    },
+  },
+  {
+    name: 'subtract_fractions',
+    description:
+      'Subtract fraction b from fraction a. Returns the difference, or an error if the result would be negative. Use when the student subtracts fraction blocks.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        a: { ...fractionSchema, description: 'Fraction to subtract from (minuend)' },
+        b: { ...fractionSchema, description: 'Fraction to subtract (subtrahend)' },
+      },
+      required: ['a', 'b'],
+    },
+  },
+  {
+    name: 'multiply_fractions',
+    description:
+      'Multiply two fractions together. Use when the student multiplies fraction blocks.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        a: { ...fractionSchema, description: 'First fraction' },
+        b: { ...fractionSchema, description: 'Second fraction' },
+      },
+      required: ['a', 'b'],
+    },
+  },
+  {
+    name: 'divide_fractions',
+    description:
+      'Divide fraction a by fraction b (multiply by reciprocal). Use when the student divides fraction blocks.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        a: { ...fractionSchema, description: 'Dividend (fraction being divided)' },
+        b: { ...fractionSchema, description: 'Divisor (fraction dividing by)' },
+      },
+      required: ['a', 'b'],
+    },
+  },
+  {
     name: 'find_common_denominator',
     description:
       'Find the least common denominator of two fractions and express both with that shared denominator. Use when the student needs to compare or add fractions with different denominators.',
@@ -142,6 +199,12 @@ export const toolDefinitions: ToolDefinition[] = [
     },
   },
 ];
+
+export function getToolsForLesson(lessonId: string): ToolDefinition[] {
+  const lesson = getLesson(lessonId);
+  const allowed = lesson?.tools ?? toolDefinitions.map((t) => t.name);
+  return toolDefinitions.filter((t) => allowed.includes(t.name));
+}
 
 function executeCheckAnswer(
   studentInput: string,
@@ -208,6 +271,28 @@ export function executeToolCall(
       case 'combine_fractions': {
         const fractions = input.fractions as Fraction[];
         return { combined: combine(fractions) };
+      }
+      case 'add_fractions': {
+        const a = input.a as Fraction;
+        const b = input.b as Fraction;
+        return { sum: addFractions(a, b) };
+      }
+      case 'subtract_fractions': {
+        const a = input.a as Fraction;
+        const b = input.b as Fraction;
+        const diff = subtractFractions(a, b);
+        if (diff === null) return { error: 'Result would be negative' };
+        return { difference: diff };
+      }
+      case 'multiply_fractions': {
+        const a = input.a as Fraction;
+        const b = input.b as Fraction;
+        return { product: multiplyFractions(a, b) };
+      }
+      case 'divide_fractions': {
+        const a = input.a as Fraction;
+        const b = input.b as Fraction;
+        return { quotient: divideFractions(a, b) };
       }
       case 'find_common_denominator': {
         const a = input.a as Fraction;

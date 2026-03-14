@@ -4,20 +4,23 @@
 
 import type { Phase } from '../../state/types';
 import { COLORS } from '../../theme';
+import { getLesson } from '../../content/curriculum';
 
 const PHASE_LABELS: { phase: Phase; label: string }[] = [
   { phase: 'intro', label: 'Intro' },
   { phase: 'explore', label: 'Explore' },
   { phase: 'guided', label: 'Practice' },
-  { phase: 'assess', label: 'Quest' },
+  { phase: 'assess', label: 'Challenge' },
 ];
 
 export interface ProgressDotsProps {
   currentPhase: Phase;
   explorationRound?: number;
+  lessonId?: string;
 }
 
-export function ProgressDots({ currentPhase, explorationRound }: ProgressDotsProps) {
+export function ProgressDots({ currentPhase, explorationRound, lessonId }: ProgressDotsProps) {
+  const roundCount = lessonId ? (getLesson(lessonId)?.explorationRounds.length ?? 5) : 5;
   const currentIndex = PHASE_LABELS.findIndex((p) => p.phase === currentPhase);
   const isComplete = currentPhase === 'complete';
   const completedCount = isComplete ? 4 : Math.max(0, currentIndex);
@@ -81,7 +84,7 @@ export function ProgressDots({ currentPhase, explorationRound }: ProgressDotsPro
                       marginTop: 2,
                     }}
                   >
-                    {[1, 2, 3, 4, 5].map((r) => {
+                    {Array.from({ length: roundCount }, (_, i) => i + 1).map((r) => {
                       const subCompleted = r < explorationRound;
                       const subCurrent = r === explorationRound;
                       return (

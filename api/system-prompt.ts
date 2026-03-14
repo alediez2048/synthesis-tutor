@@ -4,6 +4,8 @@
  */
 
 import type { LessonState } from '../src/state/types.js';
+import { buildLessonAdditions as buildL1Additions } from './system-prompts/lesson-1-equivalence.js';
+import { buildLessonAdditions as buildL2Additions } from './system-prompts/lesson-2-addition.js';
 
 const IDENTITY = `## Identity
 
@@ -58,6 +60,10 @@ NEVER compute fraction math yourself. You MUST use the provided tools for ALL ma
 - To simplify a fraction: use \`simplify_fraction\`
 - To split a fraction: use \`split_fraction\`
 - To combine fractions: use \`combine_fractions\`
+- To add fractions: use \`add_fractions\`
+- To subtract fractions: use \`subtract_fractions\`
+- To multiply fractions: use \`multiply_fractions\`
+- To divide fractions: use \`divide_fractions\`
 - To find common denominators: use \`find_common_denominator\`
 - To validate a fraction: use \`validate_fraction\`
 - To parse student input: use \`parse_student_input\`
@@ -86,6 +92,17 @@ const TOOL_USAGE_GUIDANCE = `## When to Use Each Tool
 - \`find_common_denominator\`: Use when the student needs to compare fractions with different denominators.
 - \`validate_fraction\`: Use before operations to ensure fractions are within lesson scope.
 - \`parse_student_input\`: Use only if you need to parse input WITHOUT checking against a target. Usually \`check_answer\` is preferred.`;
+
+function getLessonAdditions(lessonId: string): string {
+  switch (lessonId) {
+    case 'fractions-101':
+      return buildL1Additions();
+    case 'adding':
+      return buildL2Additions();
+    default:
+      return buildL1Additions(); // fallback to lesson 1
+  }
+}
 
 function buildPhaseContext(lessonState: LessonState): string {
   const phase = lessonState.phase ?? 'intro';
@@ -161,7 +178,8 @@ function getPhaseGuidance(phase: string): string {
 
 export function buildSystemPrompt(lessonState: LessonState): string {
   const phase = lessonState.phase ?? 'intro';
-  return [
+  const lessonId = lessonState.lessonId ?? 'fractions-101';
+  const parts = [
     IDENTITY,
     VOICE_CONSTRAINTS,
     PEDAGOGICAL_APPROACH,
@@ -171,5 +189,8 @@ export function buildSystemPrompt(lessonState: LessonState): string {
     buildPhaseContext(lessonState),
     getPhaseGuidance(phase),
     TOOL_USAGE_GUIDANCE,
-  ].join('\n\n');
+  ];
+  const lessonAdditions = getLessonAdditions(lessonId);
+  if (lessonAdditions) parts.push(lessonAdditions);
+  return parts.join('\n\n');
 }

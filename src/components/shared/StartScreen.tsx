@@ -36,7 +36,7 @@ export function StartScreen({ onStart }: StartScreenProps) {
         <img
           src="/assets/title-logo.png"
           alt="Fraction Quest with Sam the Math Wizard"
-          style={{ height: 200, objectFit: 'contain', marginBottom: 8 }}
+          style={{ height: 250, objectFit: 'contain', marginBottom: 8 }}
         />
 
         {/* Instructions card */}

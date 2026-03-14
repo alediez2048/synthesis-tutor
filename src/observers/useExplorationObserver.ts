@@ -1,15 +1,12 @@
 /**
  * Exploration phase observer. Round-aware: detects when each round's goal
- * is met and dispatches ADVANCE_ROUND. Manages round 5 timer.
+ * is met and dispatches ADVANCE_ROUND. Manages timer-based rounds.
  */
 
 import { useEffect, useRef } from 'react';
 import { areEquivalent } from '../engine/FractionEngine';
 import type { LessonState, LessonAction } from '../state/types';
-import {
-  EXPLORATION_ROUNDS,
-  ROUND_5_TIMER_MS,
-} from '../content/exploration-rounds';
+import { getLesson } from '../content/curriculum';
 
 interface ExplorationObserverOptions {
   state: LessonState;
@@ -24,123 +21,140 @@ export function useExplorationObserver({
 }: ExplorationObserverOptions): void {
   const prevBlocksRef = useRef(state.blocks);
   const prevRoundRef = useRef(state.explorationRound);
-  const round5TimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Reset round 5 timer when leaving explore or round 5
+  const lesson = getLesson(state.lessonId);
+  const rounds = lesson?.explorationRounds ?? [];
+  const currentRoundConfig = rounds[state.explorationRound - 1];
+  const isTimerRound = currentRoundConfig?.goalType === 'timer';
+  const timerMs = lesson?.lastRoundTimerMs ?? null;
+
+  // Reset timer when leaving explore or timer round
   useEffect(() => {
-    if (state.phase !== 'explore' || state.explorationRound !== 5) {
-      if (round5TimerRef.current) {
-        clearTimeout(round5TimerRef.current);
-        round5TimerRef.current = null;
+    if (state.phase !== 'explore' || !isTimerRound) {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
       }
     }
-  }, [state.phase, state.explorationRound]);
+  }, [state.phase, isTimerRound]);
 
-  // Round 5: start 60s timer when entering
+  // Timer round: start timer when entering
   useEffect(() => {
-    if (state.phase !== 'explore' || state.explorationRound !== 5) return;
-    if (round5TimerRef.current) return;
+    if (state.phase !== 'explore' || !isTimerRound || timerMs === null) return;
+    if (timerRef.current) return;
 
-    round5TimerRef.current = setTimeout(() => {
-      round5TimerRef.current = null;
-      dispatch({
-        type: 'TUTOR_RESPONSE',
-        content: EXPLORATION_ROUNDS[4]!.celebration,
-        isStreaming: false,
-      });
+    timerRef.current = setTimeout(() => {
+      timerRef.current = null;
+      if (currentRoundConfig) {
+        dispatch({
+          type: 'TUTOR_RESPONSE',
+          content: currentRoundConfig.celebration,
+          isStreaming: false,
+        });
+      }
       dispatch({ type: 'ADVANCE_ROUND' });
-    }, ROUND_5_TIMER_MS);
+    }, timerMs);
 
     return () => {
-      if (round5TimerRef.current) {
-        clearTimeout(round5TimerRef.current);
-        round5TimerRef.current = null;
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
       }
     };
-  }, [state.phase, state.explorationRound, dispatch]);
+  }, [state.phase, isTimerRound, timerMs, currentRoundConfig, dispatch]);
 
-  // Round 1–4 goal detection via block/state changes
+  // Goal detection via block/state changes
   useEffect(() => {
     if (state.phase !== 'explore') return;
-    if (state.explorationRound === 5) return; // Round 5 uses timer or button
+    if (!currentRoundConfig || currentRoundConfig.goalType === 'timer') return;
 
-    const round = state.explorationRound;
     const prev = prevBlocksRef.current;
     const curr = state.blocks;
     prevBlocksRef.current = curr;
 
-    // Skip processing when round just advanced (blocks changed from reducer, not user)
-    if (prevRoundRef.current !== round) {
-      prevRoundRef.current = round;
+    // Skip processing when round just advanced
+    if (prevRoundRef.current !== state.explorationRound) {
+      prevRoundRef.current = state.explorationRound;
       return;
     }
 
     if (prev === curr) return;
 
-    // Round 1: any SPLIT_BLOCK
-    if (round === 1 && curr.length > prev.length) {
-      const parts = curr.length - prev.length + 1;
-      dispatch({
-        type: 'TUTOR_RESPONSE',
-        content: EXPLORATION_ROUNDS[0]!.celebration,
-        isStreaming: false,
-      });
-      dispatch({ type: 'ADVANCE_ROUND', round1SplitParts: parts });
-      return;
-    }
+    const goalType = currentRoundConfig.goalType;
+    let goalMet = false;
 
-    // Round 2: any COMBINE_BLOCKS (combine first so student has blocks they can split differently)
-    if (round === 2 && curr.length === prev.length - 1) {
-      dispatch({
-        type: 'TUTOR_RESPONSE',
-        content: EXPLORATION_ROUNDS[1]!.celebration,
-        isStreaming: false,
-      });
-      dispatch({ type: 'ADVANCE_ROUND' });
-      return;
-    }
+    switch (goalType) {
+      case 'any_split':
+        goalMet = curr.length > prev.length;
+        break;
 
-    // Round 3: SPLIT_BLOCK into different number than round 1
-    if (round === 3 && curr.length > prev.length) {
-      const parts = curr.length - prev.length + 1;
-      const round1Parts = state.explorationRoundProgress?.round1SplitParts;
-      if (round1Parts !== undefined && parts !== round1Parts) {
-        dispatch({
-          type: 'TUTOR_RESPONSE',
-          content: EXPLORATION_ROUNDS[2]!.celebration,
-          isStreaming: false,
-        });
-        dispatch({ type: 'ADVANCE_ROUND' });
+      case 'any_combine':
+        goalMet = curr.length === prev.length - 1;
+        break;
+
+      case 'different_split': {
+        if (curr.length > prev.length) {
+          const parts = curr.length - prev.length + 1;
+          const round1Parts = state.explorationRoundProgress?.round1SplitParts;
+          goalMet = round1Parts !== undefined && parts !== round1Parts;
+        }
+        break;
       }
-      return;
-    }
 
-    // Round 4: 2 blocks in comparison zone, equivalent
-    if (round === 4) {
-      const comparisonBlocks = curr.filter((b) => b.position === 'comparison');
-      if (comparisonBlocks.length >= 2) {
-        for (let i = 0; i < comparisonBlocks.length; i++) {
-          for (let j = i + 1; j < comparisonBlocks.length; j++) {
-            const a = comparisonBlocks[i]!.fraction;
-            const b = comparisonBlocks[j]!.fraction;
-            if (a.denominator !== b.denominator && areEquivalent(a, b)) {
-              dispatch({
-                type: 'TUTOR_RESPONSE',
-                content: EXPLORATION_ROUNDS[3]!.celebration,
-                isStreaming: false,
-              });
-              dispatch({ type: 'ADVANCE_ROUND' });
-              return;
+      case 'equivalence_compare': {
+        const comparisonBlocks = curr.filter((b) => b.position === 'comparison');
+        if (comparisonBlocks.length >= 2) {
+          for (let i = 0; i < comparisonBlocks.length && !goalMet; i++) {
+            for (let j = i + 1; j < comparisonBlocks.length && !goalMet; j++) {
+              const a = comparisonBlocks[i]!.fraction;
+              const b = comparisonBlocks[j]!.fraction;
+              if (a.denominator !== b.denominator && areEquivalent(a, b)) {
+                goalMet = true;
+              }
             }
           }
         }
+        break;
       }
+
+      case 'any_add':
+        goalMet = curr.length === prev.length - 1;
+        break;
+
+      case 'unlike_add': {
+        if (curr.length === prev.length - 1) {
+          // Check that the blocks that were removed had different denominators
+          const removedIds = prev.filter((b) => !curr.some((c) => c.id === b.id));
+          if (removedIds.length === 2) {
+            goalMet = removedIds[0]!.fraction.denominator !== removedIds[1]!.fraction.denominator;
+          }
+        }
+        break;
+      }
+    }
+
+    if (goalMet) {
+      // Track round1SplitParts for 'any_split' goal
+      const advanceAction: any = { type: 'ADVANCE_ROUND' };
+      if (goalType === 'any_split' && curr.length > prev.length) {
+        advanceAction.round1SplitParts = curr.length - prev.length + 1;
+      }
+
+      dispatch({
+        type: 'TUTOR_RESPONSE',
+        content: currentRoundConfig.celebration,
+        isStreaming: false,
+      });
+      dispatch(advanceAction);
     }
   }, [
     state.phase,
     state.blocks,
     state.explorationRound,
     state.explorationRoundProgress,
+    state.lessonId,
+    currentRoundConfig,
     dispatch,
   ]);
 }

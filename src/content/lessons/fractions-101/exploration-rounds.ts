@@ -1,20 +1,8 @@
 /**
- * Exploration phase round configuration. Each round has a mini-goal,
- * celebration message, and block setup rules.
+ * Exploration rounds for Lesson 1: What Are Fractions?
  */
 
-import type { Fraction } from '../engine/FractionEngine';
-
-export type RoundGoalType = 'any_split' | 'any_combine' | 'different_split' | 'equivalence_compare' | 'any_add' | 'unlike_add' | 'timer';
-
-export interface ExplorationRoundConfig {
-  id: number;
-  name: string;
-  goal: string;
-  goalType: RoundGoalType;
-  celebration: string;
-  startingBlocks?: Fraction[];
-}
+import type { ExplorationRoundConfig } from '../../../content/exploration-rounds';
 
 export const EXPLORATION_ROUNDS: ExplorationRoundConfig[] = [
   {
