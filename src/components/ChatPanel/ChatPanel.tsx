@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import type { ChatMessage } from '../../state/types';
+import { COLORS } from '../../theme';
 import { MessageBubble } from './MessageBubble';
 import { InputField } from './InputField';
 import { useVoiceInput } from '../../brain/useVoiceInput';
@@ -8,9 +9,7 @@ export interface ChatPanelProps {
   messages: ChatMessage[];
   onSendMessage: (text: string) => void;
   isLoading?: boolean;
-  /** Called when voice input listening state changes (for TTS to avoid mic interference) */
   onVoiceInputStateChange?: (isListening: boolean) => void;
-  /** 'sidebar' = tall left panel (default), 'bottomBar' = compact full-width bottom bar */
   layout?: 'sidebar' | 'bottomBar';
 }
 
@@ -36,6 +35,11 @@ export function ChatPanel({
     onVoiceInputStateChange?.(voice.isListening);
   }, [voice.isListening, onVoiceInputStateChange]);
 
+  const handleSend = (text: string) => {
+    onSendMessage(text);
+    setInputValue('');
+  };
+
   const lastTutorMsg = [...messages].reverse().find((m) => m.sender === 'tutor');
 
   if (layout === 'bottomBar') {
@@ -49,21 +53,19 @@ export function ChatPanel({
           padding: '10px 16px',
           width: '100%',
           boxSizing: 'border-box',
-          backgroundColor: 'rgba(255,255,255,0.95)',
+          background: 'rgba(10, 5, 30, 0.6)',
+          borderTop: `1px solid ${COLORS.panelBorder}`,
         }}
       >
-        {/* Top row: Sam avatar + latest message */}
+        {/* Sam's latest message */}
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
           <div style={{ flexShrink: 0, textAlign: 'center' }}>
             <div
               style={{
-                width: 72,
-                height: 72,
+                width: 48,
+                height: 48,
                 borderRadius: '50%',
-                backgroundColor: '#4A90D9',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                border: `2px solid ${COLORS.gold}`,
                 overflow: 'hidden',
               }}
             >
@@ -71,11 +73,10 @@ export function ChatPanel({
                 src="/assets/sam-avatar.png"
                 alt=""
                 aria-hidden="true"
-                style={{ width: 72, height: 72, objectFit: 'cover' }}
+                style={{ width: 48, height: 48, objectFit: 'cover' }}
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
             </div>
-            <span style={{ fontSize: 10, fontWeight: 700 }}>Sam</span>
           </div>
           <p
             aria-live="polite"
@@ -83,40 +84,36 @@ export function ChatPanel({
             style={{
               margin: 0,
               fontSize: 14,
-              lineHeight: 1.4,
+              lineHeight: 1.5,
               flex: 1,
               minWidth: 0,
+              fontFamily: 'Georgia, serif',
+              color: COLORS.text,
             }}
           >
             {isLoading
-              ? 'Sam is typing...'
+              ? 'Sam is thinking...'
               : lastTutorMsg?.content ?? 'Say hi to get started!'}
           </p>
         </div>
-        {/* Bottom row: input field */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <InputField
-              onSend={(text) => {
-                onSendMessage(text);
-                setInputValue('');
-              }}
-              disabled={isLoading}
-              value={inputValue}
-              onChange={setInputValue}
-              voiceSupported={voice.supported}
-              isListening={voice.isListening}
-              transcript={voice.transcript}
-              onStartListening={voice.startListening}
-              onStopListening={voice.stopListening}
-            />
-          </div>
-        </div>
+        {/* Input */}
+        <InputField
+          onSend={handleSend}
+          disabled={isLoading}
+          value={inputValue}
+          onChange={setInputValue}
+          voiceSupported={voice.supported}
+          isListening={voice.isListening}
+          transcript={voice.transcript}
+          onStartListening={voice.startListening}
+          onStopListening={voice.stopListening}
+        />
         <div ref={scrollEndRef} />
       </section>
     );
   }
 
+  // Sidebar layout
   return (
     <section
       aria-label="Chat with Sam"
@@ -125,9 +122,8 @@ export function ChatPanel({
         flexDirection: 'column',
         height: '100%',
         minHeight: 0,
-        backgroundColor: '#fafafa',
-        borderRadius: 8,
-        border: '1px solid rgba(0,0,0,0.08)',
+        background: 'rgba(10, 5, 30, 0.4)',
+        borderRight: `1px solid ${COLORS.panelBorder}`,
       }}
     >
       <div
@@ -136,7 +132,7 @@ export function ChatPanel({
         style={{
           flex: 1,
           overflowY: 'auto',
-          padding: 16,
+          padding: 14,
           minHeight: 120,
         }}
       >
@@ -148,11 +144,13 @@ export function ChatPanel({
               alignItems: 'center',
               justifyContent: 'center',
               minHeight: 100,
-              color: 'rgba(0,0,0,0.45)',
+              color: COLORS.textMuted,
               fontSize: 14,
+              fontFamily: 'Georgia, serif',
+              fontStyle: 'italic',
             }}
           >
-            <p style={{ margin: 0 }}>No messages yet. Say hi to get started!</p>
+            <p style={{ margin: 0 }}>Say hi to get started!</p>
           </div>
         ) : (
           messages.map((msg) => <MessageBubble key={msg.id} message={msg} />)
@@ -165,45 +163,45 @@ export function ChatPanel({
               alignItems: 'center',
               gap: 6,
               padding: '8px 0',
-              fontSize: 14,
-              color: 'rgba(0,0,0,0.5)',
+              fontSize: 13,
+              color: COLORS.textMuted,
+              fontFamily: 'Georgia, serif',
             }}
           >
             <span
-              aria-hidden="true"
+              aria-hidden
               style={{
                 width: 8,
                 height: 8,
                 borderRadius: '50%',
-                backgroundColor: 'currentColor',
+                backgroundColor: COLORS.purpleLight,
+                animation: 'pulse 1.5s ease-in-out infinite',
               }}
             />
-            <span>Sam is typing...</span>
+            <span>Sam is thinking...</span>
           </div>
         )}
         <div ref={scrollEndRef} />
       </div>
-      <div style={{ padding: '0 16px 16px' }}>
+      <div style={{ padding: '10px 14px', borderTop: `1px solid ${COLORS.panelBorder}`, background: 'rgba(10, 5, 30, 0.6)' }}>
         {voice.error && (
           <div
             role="alert"
             style={{
               marginBottom: 8,
               padding: '8px 12px',
-              fontSize: 14,
-              color: '#c0392b',
-              backgroundColor: 'rgba(192, 57, 43, 0.1)',
+              fontSize: 13,
+              color: COLORS.incorrect,
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
               borderRadius: 8,
+              fontFamily: 'Georgia, serif',
             }}
           >
             {voice.error}
           </div>
         )}
         <InputField
-          onSend={(text) => {
-            onSendMessage(text);
-            setInputValue('');
-          }}
+          onSend={handleSend}
           disabled={isLoading}
           value={inputValue}
           onChange={setInputValue}

@@ -9,6 +9,7 @@ import type { FractionBlock } from '../../state/types';
 import { MultipleChoice } from './MultipleChoice';
 import { ConstructionTask } from './ConstructionTask';
 import { GeneralizationTask } from './GeneralizationTask';
+import { COLORS } from '../../theme';
 
 export interface AssessmentPhaseProps {
   pool: AssessmentProblem[];
@@ -41,7 +42,7 @@ export function AssessmentPhase({
 }: AssessmentPhaseProps) {
   if (step >= pool.length) {
     return (
-      <div style={{ padding: 16, fontSize: 16 }}>
+      <div style={{ padding: 16, fontSize: 16, color: COLORS.text, fontFamily: 'Georgia, serif' }}>
         Assessment complete. Score: {score.correct}/{score.total}
       </div>
     );
@@ -57,7 +58,8 @@ export function AssessmentPhase({
           margin: 0,
           marginBottom: 8,
           fontSize: 14,
-          color: 'rgba(0,0,0,0.6)',
+          color: COLORS.textMuted,
+          fontFamily: 'Georgia, serif',
         }}
       >
         Problem {step + 1} of 3

@@ -35,22 +35,29 @@ describe('lesson reducer', () => {
       expect(state.isDragging).toBe(false);
       expect(state.nextBlockId).toBe(1);
     });
+    it('returns tutorialComplete false, tutorialStep 0', () => {
+      const state = getInitialLessonState();
+      expect(state.tutorialComplete).toBe(false);
+      expect(state.tutorialStep).toBe(0);
+    });
   });
 
   describe('PHASE_TRANSITION', () => {
-    it('intro -> explore', () => {
+    it('intro -> tutorial', () => {
       const state = getInitialLessonState();
-      const next = lessonReducer(state, { type: 'PHASE_TRANSITION', to: 'explore' });
-      expect(next.phase).toBe('explore');
+      const next = lessonReducer(state, { type: 'PHASE_TRANSITION', to: 'tutorial' });
+      expect(next.phase).toBe('tutorial');
     });
-    it('explore -> guided', () => {
+    it('tutorial -> explore -> guided', () => {
       let state = getInitialLessonState();
+      state = lessonReducer(state, { type: 'PHASE_TRANSITION', to: 'tutorial' });
       state = lessonReducer(state, { type: 'PHASE_TRANSITION', to: 'explore' });
       state = lessonReducer(state, { type: 'PHASE_TRANSITION', to: 'guided' });
       expect(state.phase).toBe('guided');
     });
     it('guided -> assess -> complete', () => {
       let state = getInitialLessonState();
+      state = lessonReducer(state, { type: 'PHASE_TRANSITION', to: 'tutorial' });
       state = lessonReducer(state, { type: 'PHASE_TRANSITION', to: 'explore' });
       state = lessonReducer(state, { type: 'PHASE_TRANSITION', to: 'guided' });
       state = lessonReducer(state, { type: 'PHASE_TRANSITION', to: 'assess' });
@@ -61,6 +68,26 @@ describe('lesson reducer', () => {
       const state = getInitialLessonState();
       const next = lessonReducer(state, { type: 'PHASE_TRANSITION', to: 'complete' });
       expect(next.phase).toBe('intro');
+    });
+  });
+
+  describe('TUTORIAL_STEP', () => {
+    it('updates tutorialStep', () => {
+      let state = getInitialLessonState();
+      state = lessonReducer(state, { type: 'PHASE_TRANSITION', to: 'tutorial' });
+      const next = lessonReducer(state, { type: 'TUTORIAL_STEP', step: 3 });
+      expect(next.tutorialStep).toBe(3);
+    });
+  });
+
+  describe('COMPLETE_TUTORIAL', () => {
+    it('sets tutorialComplete, phase explore, tutorialStep 0', () => {
+      let state = getInitialLessonState();
+      state = lessonReducer(state, { type: 'PHASE_TRANSITION', to: 'tutorial' });
+      const next = lessonReducer(state, { type: 'COMPLETE_TUTORIAL' });
+      expect(next.tutorialComplete).toBe(true);
+      expect(next.phase).toBe('explore');
+      expect(next.tutorialStep).toBe(0);
     });
   });
 

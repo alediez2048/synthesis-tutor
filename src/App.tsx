@@ -23,6 +23,7 @@ import { ErrorBoundary } from './components/shared/ErrorBoundary';
 import { StartScreen } from './components/shared/StartScreen';
 import { ProgressDots } from './components/shared/ProgressDots';
 import { MagicButton } from './components/shared/MagicButton';
+import { TutorialOverlay } from './components/Onboarding/TutorialOverlay';
 import { COLORS } from './theme';
 
 const SPLIT_REJECTION_MESSAGE = 'Those pieces are as small as they can get!';
@@ -83,8 +84,13 @@ function App() {
     unlock();
     setAudioUnlocked(true);
     setShowStart(false);
-    sendMessage('[Student just started the lesson. Welcome them warmly and guide them to tap the crystal block and try splitting it.]');
-  }, [unlock, sendMessage]);
+    if (state.tutorialComplete) {
+      dispatch({ type: 'PHASE_TRANSITION', to: 'intro' });
+      sendMessage('[Student just started the lesson. Welcome them warmly and guide them to tap the crystal block and try splitting it.]');
+    } else {
+      dispatch({ type: 'PHASE_TRANSITION', to: 'tutorial' });
+    }
+  }, [unlock, sendMessage, state.tutorialComplete, dispatch]);
   const selectedBlockId = state.blocks.find((b) => b.isSelected)?.id ?? null;
 
   useExplorationObserver({
@@ -279,20 +285,16 @@ function App() {
   }, [comparisonBlocks.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSelectBlock = (blockId: string) => {
-    // #region agent log
-    if (typeof fetch !== 'undefined') fetch('http://127.0.0.1:7645/ingest/06da57cd-98d4-4d53-aae0-efe3eb248d50',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'505951'},body:JSON.stringify({sessionId:'505951',location:'App.tsx:handleSelectBlock',message:'Block selected',data:{blockId},timestamp:Date.now(),hypothesisId:'E'})}).catch(()=>{});
-    // #endregion
     ensureAudioUnlocked();
     setCombineRejectionMessage(null);
     setSplitRejectionMessage(null);
+    if (state.phase === 'tutorial' && state.tutorialStep === 2) {
+      dispatch({ type: 'TUTORIAL_STEP', step: 3 });
+    }
     dispatch({ type: 'SELECT_BLOCK', blockId });
   };
 
   const handleSplitRequest = (parts: number) => {
-    // #region agent log
-    const selBlock = state.blocks.find((b) => b.id === selectedBlockId);
-    if (typeof fetch !== 'undefined') fetch('http://127.0.0.1:7645/ingest/06da57cd-98d4-4d53-aae0-efe3eb248d50',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'505951'},body:JSON.stringify({sessionId:'505951',location:'App.tsx:handleSplitRequest',message:'Split requested',data:{parts,selectedBlockId,selectedBlockFound:!!selBlock,denom:selBlock?.fraction.denominator,wouldReject:selBlock?selBlock.fraction.denominator*parts>12:null},timestamp:Date.now(),hypothesisId:'D'})}).catch(()=>{});
-    // #endregion
     ensureAudioUnlocked();
     if (!selectedBlockId) return;
     const selectedBlock = state.blocks.find((b) => b.id === selectedBlockId);
@@ -308,6 +310,9 @@ function App() {
       return;
     }
     setSplitRejectionMessage(null);
+    if (state.phase === 'tutorial' && state.tutorialStep === 3 && parts === 2) {
+      dispatch({ type: 'TUTORIAL_STEP', step: 4 });
+    }
     const startId = state.nextBlockId;
     const newIds = Array.from({ length: parts }, (_, i) => `block-${startId + i}`);
     setSplitBlockIds(newIds);
@@ -378,6 +383,10 @@ function App() {
     },
     [ensureAudioUnlocked, sendMessage]
   );
+
+  const handleTutorialComplete = useCallback(() => {
+    sendMessage('[Student completed the tutorial. Welcome them to explore!]');
+  }, [sendMessage]);
 
   if (showStart) {
     return <StartScreen onStart={handleStartLesson} />;
@@ -453,6 +462,13 @@ function App() {
 
   return (
     <>
+      {state.phase === 'tutorial' && (
+        <TutorialOverlay
+          state={state}
+          dispatch={dispatch}
+          onComplete={handleTutorialComplete}
+        />
+      )}
       {/* ENG-031: Skip link for keyboard users */}
       <a
         href="#main-content"
@@ -607,7 +623,13 @@ function App() {
           />
         </h1>
         <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-          <ProgressDots currentPhase={state.phase} />
+          {state.phase === 'tutorial' ? (
+            <span style={{ fontSize: 12, color: COLORS.textMuted, fontFamily: 'Georgia, serif' }}>
+              Tutorial
+            </span>
+          ) : (
+            <ProgressDots currentPhase={state.phase} />
+          )}
         </div>
         <button
           type="button"
@@ -718,6 +740,7 @@ function App() {
                   onSplitRequest={handleSplitRequest}
                   rejectionMessage={splitRejectionMessage}
                   disabled={state.isDragging}
+                  tutorialStep={state.phase === 'tutorial' ? state.tutorialStep : undefined}
                 />
               </>
             )}

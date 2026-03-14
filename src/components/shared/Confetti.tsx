@@ -6,14 +6,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 const CRYSTAL_PALETTE = [
-  '#4A90D9', // Sapphire
-  '#27AE60', // Emerald
-  '#8E44AD', // Amethyst
-  '#F39C12', // Citrine
-  '#E67E22', // Topaz
-  '#16A085', // Aquamarine
-  '#E84393', // Rose Quartz
-  '#FDCB6E', // Gold
+  '#60a5fa', // Crystal blue
+  '#a78bfa', // Purple light
+  '#7c3aed', // Purple
+  '#d4a843', // Gold
+  '#f0d080', // Gold light
+  '#93c5fd', // Crystal glow
+  '#22c55e', // Correct green
+  '#f0e6ff', // Light text
 ];
 
 export interface ConfettiProps {

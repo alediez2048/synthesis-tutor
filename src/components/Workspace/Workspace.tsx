@@ -1,5 +1,6 @@
 import { useRef, useCallback } from 'react';
 import type { FractionBlock } from '../../state/types';
+import { COLORS } from '../../theme';
 import { FractionBlock as FractionBlockComponent } from './FractionBlock';
 import { ComparisonZone } from './ComparisonZone';
 import type { ComparisonResult } from './ComparisonZone';
@@ -35,6 +36,7 @@ export interface WorkspaceProps {
   onDropOnComparisonZone?: (draggedId: string) => void;
   onWorkspaceBackgroundClick?: () => void;
   onReturnToWorkspace?: (blockId: string) => void;
+  onAltarSplit?: (blockId: string, parts: number) => void;
   comparisonResult?: ComparisonResult;
   isDragging?: boolean;
   draggingBlockId?: string | null;
@@ -53,6 +55,7 @@ export function Workspace({
   onDropOnComparisonZone,
   onWorkspaceBackgroundClick,
   onReturnToWorkspace,
+  onAltarSplit,
   comparisonResult = null,
   isDragging = false,
   draggingBlockId = null,
@@ -60,7 +63,7 @@ export function Workspace({
   splitBlockIds = null,
   highlightedBlockIds = [],
 }: WorkspaceProps) {
-  void _selectedBlockId; // Reserved for ActionBar (ENG-007)
+  void _selectedBlockId;
   const workspaceBlocks = blocks.filter((b) => b.position === 'workspace');
   const comparisonBlocks = blocks.filter((b) => b.position === 'comparison');
   const blockRefs = useRef<Map<string, HTMLElement>>(new Map());
@@ -96,36 +99,43 @@ export function Workspace({
       role="region"
       aria-label="Fraction workspace"
       style={{
-        width: referenceWidth,
-        maxWidth: '100%',
+        width: '100%',
+        maxWidth: referenceWidth + 80,
         touchAction: 'none',
         display: 'flex',
         flexDirection: 'column',
-        gap: 0,
+        gap: 12,
+        padding: 14,
       }}
     >
-      {/* Active blocks area */}
+      {/* Crystal Workspace */}
       <section
+        data-tutorial-target="workspace-blocks"
         aria-label="Workspace"
         onClick={(e) => {
           if (e.target === e.currentTarget) onWorkspaceBackgroundClick?.();
         }}
         style={{
-          height: 140,
-          padding: '0 12px',
-          marginBottom: 0,
-          zIndex: 2,
+          flex: 1,
+          minHeight: 100,
+          padding: 14,
           position: 'relative',
-          backgroundColor: 'transparent',
-          borderRadius: 8,
+          background: `rgba(139, 92, 246, 0.06)`,
+          border: `1.5px solid ${COLORS.panelBorder}`,
+          borderRadius: 14,
           display: 'flex',
-          flexWrap: 'nowrap',
+          flexWrap: 'wrap',
           gap: 8,
           alignItems: 'center',
           justifyContent: 'center',
           overflow: 'visible',
         }}
       >
+        {workspaceBlocks.length === 0 && (
+          <span style={{ fontSize: 12, color: COLORS.textMuted, fontStyle: 'italic', fontFamily: 'Georgia, serif' }}>
+            Tap a crystal to select it, then split or compare
+          </span>
+        )}
         {workspaceBlocks.map((block) => (
           <FractionBlockComponent
             key={block.id}
@@ -146,13 +156,14 @@ export function Workspace({
         ))}
       </section>
 
-      {/* Comparison zone */}
+      {/* Comparison Portal */}
       <ComparisonZone
         ref={comparisonZoneRef}
         blocks={comparisonBlocks}
         referenceWidth={referenceWidth}
         onSelectBlock={onSelectBlock}
         onReturnToWorkspace={onReturnToWorkspace}
+        onAltarSplit={onAltarSplit}
         comparisonResult={comparisonResult}
       />
     </div>

@@ -106,6 +106,12 @@ function buildPhaseContext(lessonState: LessonState): string {
 
 function getPhaseGuidance(phase: string): string {
   switch (phase) {
+    case 'tutorial':
+      return `## Phase: Interactive Tutorial
+
+- The student is going through a guided tutorial overlay.
+- Keep responses brief if they message; the overlay guides them through the UI.
+- Do NOT overwhelm — they are learning the interface.`;
     case 'intro':
       return `## Phase: Introduction
 

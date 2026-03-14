@@ -1,37 +1,19 @@
 import { useRef, useState, useEffect } from 'react';
 import { useDrag } from '@use-gesture/react';
 import type { FractionBlock as FractionBlockType } from '../../state/types';
+import { COLORS, getDenomColor } from '../../theme';
 
-const MIN_SIZE_PX = 60;
+const MIN_WIDTH_PX = 50;
 
 const DENOMINATOR_WORDS: Record<number, string> = {
-  1: 'whole',
-  2: 'half',
-  3: 'third',
-  4: 'fourth',
-  5: 'fifth',
-  6: 'sixth',
-  7: 'seventh',
-  8: 'eighth',
-  9: 'ninth',
-  10: 'tenth',
-  11: 'eleventh',
-  12: 'twelfth',
+  1: 'whole', 2: 'half', 3: 'third', 4: 'fourth', 5: 'fifth',
+  6: 'sixth', 7: 'seventh', 8: 'eighth', 9: 'ninth', 10: 'tenth',
+  11: 'eleventh', 12: 'twelfth',
 };
 
 const NUMERATOR_WORDS: Record<number, string> = {
-  1: 'One',
-  2: 'Two',
-  3: 'Three',
-  4: 'Four',
-  5: 'Five',
-  6: 'Six',
-  7: 'Seven',
-  8: 'Eight',
-  9: 'Nine',
-  10: 'Ten',
-  11: 'Eleven',
-  12: 'Twelve',
+  1: 'One', 2: 'Two', 3: 'Three', 4: 'Four', 5: 'Five', 6: 'Six',
+  7: 'Seven', 8: 'Eight', 9: 'Nine', 10: 'Ten', 11: 'Eleven', 12: 'Twelve',
 };
 
 function getSpokenFraction(numerator: number, denominator: number): string {
@@ -58,7 +40,7 @@ export interface FractionBlockProps {
 
 export function FractionBlock({
   block,
-  referenceWidth = 200,
+  referenceWidth = 280,
   onSelect,
   onDragStart,
   onDragEnd,
@@ -89,8 +71,8 @@ export function FractionBlock({
     const el = rootRef.current;
     el.animate(
       [
-        { boxShadow: '0 0 0 0 rgba(255, 215, 0, 0.7)' },
-        { boxShadow: '0 0 0 12px rgba(255, 215, 0, 0)' },
+        { boxShadow: `0 0 0 0 ${COLORS.goldLight}b3` },
+        { boxShadow: `0 0 0 12px ${COLORS.goldLight}00` },
       ],
       { duration: 600, iterations: 2, easing: 'ease-out' }
     );
@@ -101,7 +83,6 @@ export function FractionBlock({
       if (first) onDragStart?.();
       if (last) {
         const el = rootRef.current;
-        // Capture rect while still translated, before resetting offset
         const dropRect = el?.getBoundingClientRect();
         setDragOffset({ x: 0, y: 0 });
         if (el && dropRect && onDragEnd) onDragEnd(block.id, dropRect);
@@ -114,10 +95,18 @@ export function FractionBlock({
 
   const { fraction, isSelected } = block;
   const value = fraction.numerator / fraction.denominator;
-  const sizePx = Math.max(MIN_SIZE_PX * 2, Math.round(value * referenceWidth * 1.2));
+  const widthPx = Math.max(MIN_WIDTH_PX, Math.round(value * referenceWidth));
+  const denomColor = getDenomColor(fraction.denominator);
 
   const label = `${fraction.numerator}/${fraction.denominator}`;
   const ariaLabel = getSpokenFraction(fraction.numerator, fraction.denominator);
+
+  // Subdivision lines
+  const subdivisionLines: number[] = [];
+  for (let i = 1; i < fraction.denominator; i++) {
+    const pos = (i / fraction.denominator) * 100;
+    if (pos > 0 && pos < 100) subdivisionLines.push(pos);
+  }
 
   return (
     <div
@@ -125,6 +114,7 @@ export function FractionBlock({
         (rootRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
         onBlockRef?.(block.id, el);
       }}
+      {...(block.id === 'block-0' ? { 'data-tutorial-target': 'initial-crystal' } : {})}
       role="button"
       tabIndex={0}
       aria-label={ariaLabel}
@@ -142,9 +132,11 @@ export function FractionBlock({
       }}
       style={{
         position: 'relative',
-        width: sizePx,
-        height: sizePx,
-        outline: 'none',
+        width: widthPx,
+        height: 56,
+        background: `linear-gradient(135deg, ${denomColor.bg}dd, ${denomColor.bg}88)`,
+        border: `2px solid ${isSelected ? COLORS.gold : denomColor.border}`,
+        borderRadius: 12,
         cursor: onSelect ? 'pointer' : 'default',
         touchAction: 'none',
         pointerEvents: 'auto',
@@ -152,44 +144,88 @@ export function FractionBlock({
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 1,
-        filter: isSelected
-          ? 'drop-shadow(0 0 8px rgba(74,144,217,0.8)) drop-shadow(0 0 16px rgba(74,144,217,0.4))'
-          : isDraggingThis
-            ? 'drop-shadow(0 8px 16px rgba(0,0,0,0.4))'
-            : 'drop-shadow(0 2px 6px rgba(0,0,0,0.3))',
+        userSelect: 'none',
+        margin: 4,
+        transition: 'all 0.3s ease',
         transform: isDraggingThis
-          ? `translate(${dragOffset.x}px, ${dragOffset.y}px) scale(1.1)`
-          : `translate(${dragOffset.x}px, ${dragOffset.y}px)`,
-        ...(isDraggingThis ? { willChange: 'transform' as const } : {}),
+          ? `translate(${dragOffset.x}px, ${dragOffset.y}px) scale(1.08)`
+          : isSelected
+            ? 'scale(1.08)'
+            : 'scale(1)',
+        boxShadow: isSelected
+          ? `0 0 20px ${COLORS.gold}80, inset 0 0 15px ${COLORS.gold}30`
+          : isDraggingThis
+            ? '0 8px 20px rgba(0,0,0,0.4)'
+            : `0 4px 15px rgba(0,0,0,0.3), inset 0 1px 0 ${denomColor.border}40`,
+        outline: 'none',
+        overflow: 'hidden',
+        ...(isDraggingThis ? { willChange: 'transform' as const, zIndex: 100 } : {}),
       }}
     >
-      <img
-        src="/assets/crystal.png"
-        alt=""
+      {/* Shimmer overlay */}
+      <div
         aria-hidden="true"
         style={{
-          width: '100%',
-          height: '100%',
-          objectFit: 'contain',
+          position: 'absolute',
+          inset: 0,
+          background: `linear-gradient(110deg, transparent 30%, ${denomColor.border}20 50%, transparent 70%)`,
+          backgroundSize: '200% 100%',
+          animation: 'shimmer 3s infinite',
           pointerEvents: 'none',
+          borderRadius: 10,
         }}
       />
+
+      {/* Subdivision lines */}
+      {subdivisionLines.map((pos) => (
+        <div
+          key={pos}
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            left: `${pos}%`,
+            top: 4,
+            bottom: 4,
+            width: 1,
+            backgroundColor: `${denomColor.border}50`,
+            pointerEvents: 'none',
+          }}
+        />
+      ))}
+
+      {/* Fraction label */}
       <span
         style={{
-          position: 'absolute',
+          position: 'relative',
           zIndex: 1,
-          fontSize: Math.max(16, Math.round(sizePx * 0.22)),
+          fontSize: 18,
           fontWeight: 700,
-          fontFamily: "'Fredoka One', 'Nunito', sans-serif",
+          fontFamily: 'Georgia, serif',
           color: '#fff',
-          textShadow: '0 2px 4px rgba(0,0,0,0.7), 0 0 8px rgba(0,0,0,0.3)',
-          top: '55%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
+          textShadow: '0 2px 4px rgba(0,0,0,0.5)',
+          pointerEvents: 'none',
         }}
       >
         {label}
       </span>
+
+      {/* Selection sparkle */}
+      {isSelected && (
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            top: 4,
+            right: 4,
+            width: 10,
+            height: 10,
+            borderRadius: '50%',
+            backgroundColor: COLORS.gold,
+            boxShadow: `0 0 6px ${COLORS.goldLight}`,
+            animation: 'pulse 1.5s ease-in-out infinite',
+          }}
+        />
+      )}
     </div>
   );
 }

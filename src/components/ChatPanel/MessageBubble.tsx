@@ -1,57 +1,8 @@
 import type { ChatMessage } from '../../state/types';
+import { COLORS } from '../../theme';
 
 export interface MessageBubbleProps {
   message: ChatMessage;
-}
-
-const AVATAR_SIZE = 36;
-
-function SamAvatar() {
-  return (
-    <div
-      aria-hidden
-      style={{
-        width: AVATAR_SIZE,
-        height: AVATAR_SIZE,
-        borderRadius: '50%',
-        backgroundColor: '#4A90D9',
-        flexShrink: 0,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        position: 'relative',
-      }}
-    >
-      {/* eyes */}
-      <span
-        style={{
-          position: 'absolute',
-          left: '50%',
-          top: '38%',
-          transform: 'translate(-50%, -50%)',
-          display: 'flex',
-          gap: 6,
-        }}
-      >
-        <span
-          style={{
-            width: 6,
-            height: 6,
-            borderRadius: '50%',
-            backgroundColor: '#fff',
-          }}
-        />
-        <span
-          style={{
-            width: 6,
-            height: 6,
-            borderRadius: '50%',
-            backgroundColor: '#fff',
-          }}
-        />
-      </span>
-    </div>
-  );
 }
 
 export function MessageBubble({ message }: MessageBubbleProps) {
@@ -66,28 +17,53 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         flexDirection: isTutor ? 'row' : 'row-reverse',
         gap: 10,
         alignItems: 'flex-start',
-        marginBottom: 12,
+        marginBottom: 10,
+        animation: 'fadeSlideIn 0.4s ease-out',
       }}
     >
-      {isTutor && <SamAvatar />}
+      {isTutor && (
+        <img
+          src="/assets/sam-avatar.png"
+          alt=""
+          aria-hidden="true"
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: '50%',
+            border: `2px solid ${COLORS.gold}`,
+            objectFit: 'cover',
+            flexShrink: 0,
+          }}
+          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+        />
+      )}
       <div
         style={{
           maxWidth: '85%',
           padding: '10px 14px',
-          borderRadius: 12,
-          fontSize: 15,
-          lineHeight: 1.4,
-          backgroundColor: isTutor ? 'rgba(74, 144, 217, 0.15)' : 'rgba(39, 174, 96, 0.2)',
-          border: isTutor ? '1px solid rgba(74, 144, 217, 0.3)' : '1px solid rgba(39, 174, 96, 0.3)',
+          borderRadius: isTutor ? '4px 16px 16px 16px' : '16px 4px 16px 16px',
+          fontSize: 14,
+          fontFamily: 'Georgia, serif',
+          lineHeight: 1.5,
+          background: isTutor
+            ? `linear-gradient(135deg, rgba(124,58,237,0.3), rgba(59,7,100,0.4))`
+            : `linear-gradient(135deg, rgba(37,99,235,0.3), rgba(29,78,216,0.4))`,
+          border: isTutor
+            ? `1px solid ${COLORS.purpleLight}40`
+            : `1px solid ${COLORS.crystal}40`,
+          color: COLORS.text,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
         }}
       >
         {isTutor && (
           <div
             style={{
-              fontSize: 12,
-              fontWeight: 600,
-              color: '#4A90D9',
+              fontSize: 11,
+              fontWeight: 700,
+              color: COLORS.purpleLight,
               marginBottom: 4,
+              textTransform: 'uppercase',
+              letterSpacing: 0.5,
             }}
           >
             Sam

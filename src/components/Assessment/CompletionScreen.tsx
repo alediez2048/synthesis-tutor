@@ -3,7 +3,8 @@
  * Score display, Sam's message per bracket, concepts discovered, action buttons.
  */
 
-const MIN_TAP_PX = 44;
+import { COLORS } from '../../theme';
+import { MagicButton } from '../shared/MagicButton';
 
 const SCORE_MESSAGES: Record<string, string> = {
   '3/3':
@@ -48,27 +49,6 @@ export function CompletionScreen({
     label: CONCEPT_LABELS[id] ?? id,
   }));
 
-  const buttonStyle: React.CSSProperties = {
-    minWidth: MIN_TAP_PX,
-    minHeight: MIN_TAP_PX,
-    padding: '12px 24px',
-    fontSize: 16,
-    fontWeight: 600,
-    color: '#fff',
-    backgroundColor: '#4A90D9',
-    border: 'none',
-    borderRadius: 8,
-    cursor: 'pointer',
-    boxShadow: '0 2px 4px rgba(74,144,217,0.3)',
-  };
-
-  const secondaryButtonStyle: React.CSSProperties = {
-    ...buttonStyle,
-    backgroundColor: '#fff',
-    color: '#4A90D9',
-    border: '2px solid #4A90D9',
-  };
-
   return (
     <div
       style={{
@@ -78,16 +58,12 @@ export function CompletionScreen({
         padding: 24,
         flex: 1,
         overflow: 'auto',
+        fontFamily: 'Georgia, serif',
       }}
     >
       {/* Score display */}
-      <div
-        style={{
-          textAlign: 'center',
-          padding: '24px 0',
-        }}
-      >
-        <p style={{ margin: 0, fontSize: 14, color: 'rgba(0,0,0,0.6)', marginBottom: 8 }}>
+      <div style={{ textAlign: 'center', padding: '24px 0' }}>
+        <p style={{ margin: 0, fontSize: 14, color: COLORS.textMuted, marginBottom: 8 }}>
           Your Score
         </p>
         <p
@@ -95,11 +71,12 @@ export function CompletionScreen({
             margin: 0,
             fontSize: 48,
             fontWeight: 700,
-            color: '#4A90D9',
+            color: COLORS.goldLight,
             lineHeight: 1,
+            textShadow: `0 0 20px ${COLORS.gold}66`,
           }}
         >
-          {correct} <span style={{ color: 'rgba(0,0,0,0.3)' }}>/</span> {total}
+          {correct} <span style={{ color: COLORS.textMuted }}>/</span> {total}
         </p>
       </div>
 
@@ -107,12 +84,12 @@ export function CompletionScreen({
       <div
         style={{
           padding: 20,
-          backgroundColor: 'rgba(74,144,217,0.08)',
+          background: `rgba(124, 58, 237, 0.1)`,
           borderRadius: 12,
-          border: '1px solid rgba(74,144,217,0.2)',
+          border: `1px solid ${COLORS.panelBorder}`,
         }}
       >
-        <p style={{ margin: 0, fontSize: 16, lineHeight: 1.5 }}>
+        <p style={{ margin: 0, fontSize: 16, lineHeight: 1.5, color: COLORS.text }}>
           {message}
         </p>
       </div>
@@ -122,20 +99,21 @@ export function CompletionScreen({
         <div
           style={{
             padding: 16,
-            backgroundColor: 'rgba(0,0,0,0.02)',
-            borderRadius: 8,
+            background: 'rgba(96, 165, 250, 0.08)',
+            borderRadius: 10,
+            border: `1px solid ${COLORS.crystal}30`,
           }}
         >
-          <p style={{ margin: '0 0 12px 0', fontSize: 14, fontWeight: 600 }}>
+          <p style={{ margin: '0 0 12px 0', fontSize: 14, fontWeight: 600, color: COLORS.crystal }}>
             Concepts Discovered
           </p>
           <ul style={{ margin: 0, paddingLeft: 20 }}>
             {conceptItems.map(({ id, label }) => (
               <li
                 key={id}
-                style={{ marginBottom: 8, fontSize: 14, lineHeight: 1.4 }}
+                style={{ marginBottom: 8, fontSize: 14, lineHeight: 1.4, color: COLORS.text }}
               >
-                ✓ {label}
+                <span style={{ color: COLORS.correct }}>&#10003;</span> {label}
               </li>
             ))}
           </ul>
@@ -149,32 +127,33 @@ export function CompletionScreen({
           flexWrap: 'wrap',
           gap: 12,
           marginTop: 'auto',
+          justifyContent: 'center',
         }}
       >
         {correct === 3 && total === 3 && (
-          <button type="button" onClick={onFinish} style={buttonStyle}>
+          <MagicButton variant="success" onClick={onFinish}>
             Finish
-          </button>
+          </MagicButton>
         )}
         {correct === 2 && total === 3 && (
           <>
-            <button type="button" onClick={onRetryMissed} style={buttonStyle}>
+            <MagicButton variant="primary" onClick={onRetryMissed}>
               Try Again
-            </button>
-            <button type="button" onClick={onFinish} style={secondaryButtonStyle}>
+            </MagicButton>
+            <MagicButton variant="ghost" onClick={onFinish}>
               I'm Done
-            </button>
+            </MagicButton>
           </>
         )}
         {correct === 1 && total === 3 && (
-          <button type="button" onClick={onLoopToPractice} style={buttonStyle}>
+          <MagicButton variant="primary" onClick={onLoopToPractice}>
             Practice More
-          </button>
+          </MagicButton>
         )}
         {correct === 0 && total === 3 && (
-          <button type="button" onClick={onRestartLesson} style={buttonStyle}>
+          <MagicButton variant="gold" onClick={onRestartLesson}>
             Let's Explore Again
-          </button>
+          </MagicButton>
         )}
       </div>
     </div>

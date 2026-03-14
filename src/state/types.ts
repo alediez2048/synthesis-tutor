@@ -7,7 +7,7 @@ import type { Fraction } from '../engine/FractionEngine';
 
 export type { Fraction };
 
-export type Phase = 'intro' | 'explore' | 'guided' | 'assess' | 'complete';
+export type Phase = 'intro' | 'tutorial' | 'explore' | 'guided' | 'assess' | 'complete';
 
 export interface FractionBlock {
   id: string;
@@ -65,6 +65,8 @@ export interface LessonState {
   nextBlockId: number;
   isLoading: boolean;
   isStreaming: boolean;
+  tutorialComplete: boolean;
+  tutorialStep: number;
 }
 
 export type LessonAction =
@@ -91,4 +93,6 @@ export type LessonAction =
   | { type: 'LOOP_TO_PRACTICE' }
   | { type: 'RESTART_LESSON' }
   | { type: 'FULL_RESET' }
-  | { type: 'RETURN_TO_WORKSPACE'; blockId: string };
+  | { type: 'RETURN_TO_WORKSPACE'; blockId: string }
+  | { type: 'TUTORIAL_STEP'; step: number }
+  | { type: 'COMPLETE_TUTORIAL' };
