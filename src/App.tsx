@@ -21,6 +21,9 @@ import { useExplorationObserver } from './observers/useExplorationObserver';
 import { useInactivityPrompt } from './hooks/useInactivityPrompt';
 import { ErrorBoundary } from './components/shared/ErrorBoundary';
 import { StartScreen } from './components/shared/StartScreen';
+import { ProgressDots } from './components/shared/ProgressDots';
+import { MagicButton } from './components/shared/MagicButton';
+import { COLORS } from './theme';
 
 const SPLIT_REJECTION_MESSAGE = 'Those pieces are as small as they can get!';
 const SPLIT_ANIMATION_MS = 400;
@@ -63,6 +66,8 @@ function App() {
     playCorrect,
     playIncorrect,
     playCelebration,
+    muted,
+    toggleMute,
   } = useSoundManager();
   const voice = useVoiceOutput();
   const [voiceInputListening, setVoiceInputListening] = useState(false);
@@ -294,6 +299,12 @@ function App() {
     if (!selectedBlock) return;
     if (selectedBlock.fraction.denominator * parts > 12) {
       setSplitRejectionMessage(SPLIT_REJECTION_MESSAGE);
+      const { numerator, denominator } = selectedBlock.fraction;
+      notifySam(
+        `[Student tried to split ${numerator}/${denominator} into ${parts} pieces, ` +
+          `but that would make ${denominator * parts}ths which is beyond our crystal limit of 12. ` +
+          `Help them understand why pieces can't get infinitely small and suggest trying a different crystal or combining first.]`
+      );
       return;
     }
     setSplitRejectionMessage(null);
@@ -384,90 +395,56 @@ function App() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundImage: 'url(/assets/background.png)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundColor: '#1a1040',
+          background: COLORS.bgGradient,
           zIndex: 1000,
           padding: 16,
         }}
       >
         <div
           style={{
-            background: 'linear-gradient(180deg, rgba(30,15,60,0.95) 0%, rgba(50,25,80,0.95) 100%)',
+            background: COLORS.panel,
             borderRadius: 16,
             padding: 32,
             maxWidth: 420,
-            border: '2px solid #D4A843',
-            boxShadow: '0 8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)',
+            border: `2px solid ${COLORS.gold}`,
+            boxShadow: `0 8px 40px rgba(0,0,0,0.5), 0 0 30px ${COLORS.gold}22`,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             gap: 20,
           }}
         >
-          <img
-            src="/assets/sam-avatar.png"
-            alt="Sam the Math Wizard"
-            style={{
-              width: 80,
-              height: 80,
-              borderRadius: '50%',
-              border: '3px solid #D4A843',
-              objectFit: 'cover',
-            }}
-            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-          />
+          <div style={{
+            width: 64,
+            height: 64,
+            borderRadius: '50%',
+            background: `linear-gradient(135deg, ${COLORS.purple}, ${COLORS.purpleLight})`,
+            border: `3px solid ${COLORS.gold}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 28,
+          }}>
+            🧙
+          </div>
           <p id="recovery-title" style={{
             margin: 0,
             fontSize: 18,
             lineHeight: 1.5,
-            fontFamily: "'Fredoka One', 'Nunito', sans-serif",
-            color: '#fff',
+            fontFamily: 'Georgia, serif',
+            color: COLORS.text,
             textAlign: 'center',
             textShadow: '0 2px 4px rgba(0,0,0,0.5)',
           }}>
             Hey, welcome back! Want to keep going where we left off?
           </p>
           <div style={{ display: 'flex', gap: 14, width: '100%', justifyContent: 'center' }}>
-            <button
-              type="button"
-              onClick={handleKeepGoing}
-              style={{
-                padding: '12px 24px',
-                fontSize: 17,
-                fontWeight: 700,
-                fontFamily: "'Fredoka One', 'Nunito', sans-serif",
-                background: 'linear-gradient(180deg, #7B2FBE 0%, #5B1F9E 100%)',
-                color: '#fff',
-                border: '2px solid #D4A843',
-                borderRadius: 12,
-                cursor: 'pointer',
-                boxShadow: '0 4px 12px rgba(123,47,190,0.5), inset 0 1px 0 rgba(255,255,255,0.2)',
-                textShadow: '0 2px 4px rgba(0,0,0,0.5)',
-              }}
-            >
+            <MagicButton variant="primary" onClick={handleKeepGoing}>
               Keep Going
-            </button>
-            <button
-              type="button"
-              onClick={handleStartOver}
-              style={{
-                padding: '12px 24px',
-                fontSize: 17,
-                fontWeight: 700,
-                fontFamily: "'Fredoka One', 'Nunito', sans-serif",
-                background: 'linear-gradient(180deg, #D4A843 0%, #B8892E 100%)',
-                color: '#fff',
-                border: '2px solid #E8C65A',
-                borderRadius: 12,
-                cursor: 'pointer',
-                boxShadow: '0 3px 8px rgba(180,137,46,0.4), inset 0 1px 0 rgba(255,255,255,0.3)',
-                textShadow: '0 1px 3px rgba(0,0,0,0.4)',
-              }}
-            >
+            </MagicButton>
+            <MagicButton variant="gold" onClick={handleStartOver}>
               Start Over
-            </button>
+            </MagicButton>
           </div>
         </div>
       </div>
@@ -528,7 +505,7 @@ function App() {
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.2)',
+            backgroundColor: 'rgba(26, 10, 46, 0.6)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -536,7 +513,17 @@ function App() {
             cursor: 'pointer',
           }}
         >
-          <p style={{ margin: 0, fontSize: 18, color: '#333', backgroundColor: '#fff', padding: '16px 24px', borderRadius: 8 }}>
+          <p style={{
+            margin: 0,
+            fontSize: 18,
+            fontFamily: 'Georgia, serif',
+            color: COLORS.goldLight,
+            background: COLORS.panel,
+            padding: '16px 24px',
+            borderRadius: 12,
+            border: `1px solid ${COLORS.gold}40`,
+            textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+          }}>
             Tap to continue
           </p>
         </div>
@@ -552,75 +539,93 @@ function App() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: 'rgba(0,0,0,0.4)',
+            backgroundColor: 'rgba(26, 10, 46, 0.7)',
             zIndex: 1000,
             padding: 16,
           }}
         >
           <div
             style={{
-              backgroundColor: '#fff',
-              borderRadius: 12,
+              background: COLORS.panel,
+              borderRadius: 14,
               padding: 24,
               maxWidth: 360,
               textAlign: 'center',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+              border: `1px solid ${COLORS.panelBorder}`,
+              boxShadow: `0 8px 32px rgba(0,0,0,0.4), 0 0 20px ${COLORS.purple}22`,
             }}
           >
-            <h2 id="welcome-back-title" style={{ margin: '0 0 12px', fontSize: 20 }}>Welcome back!</h2>
-            <p style={{ margin: '0 0 20px', fontSize: 15, color: '#555' }}>
+            <h2 id="welcome-back-title" style={{
+              margin: '0 0 12px',
+              fontSize: 20,
+              fontFamily: 'Georgia, serif',
+              color: COLORS.goldLight,
+            }}>Welcome back!</h2>
+            <p style={{
+              margin: '0 0 20px',
+              fontSize: 15,
+              fontFamily: 'Georgia, serif',
+              color: COLORS.textMuted,
+            }}>
               Tap below to continue your lesson.
             </p>
-            <button
-              type="button"
-              onClick={onDismissWelcomeBack}
-              style={{
-                padding: '10px 24px',
-                fontSize: 16,
-                fontWeight: 600,
-                backgroundColor: '#4A90D9',
-                color: '#fff',
-                border: 'none',
-                borderRadius: 8,
-                cursor: 'pointer',
-              }}
-            >
+            <MagicButton variant="primary" onClick={onDismissWelcomeBack}>
               Continue
-            </button>
+            </MagicButton>
           </div>
         </div>
       )}
       <div
         style={{
-          fontFamily: "'Nunito', sans-serif",
+          fontFamily: 'Georgia, serif',
           height: '100dvh',
           display: 'flex',
           flexDirection: 'column',
           boxSizing: 'border-box',
           overflow: 'hidden',
-          backgroundImage: 'url(/assets/background.png)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundColor: '#1a1040',
+          background: COLORS.bgGradient,
+          color: COLORS.text,
         }}
       >
       {/* Header */}
       <header
         style={{
           flexShrink: 0,
-          padding: '0px 20px 4px',
+          padding: '8px 16px',
           display: 'flex',
           alignItems: 'center',
-          gap: 16,
+          gap: 12,
+          borderBottom: `1px solid ${COLORS.panelBorder}`,
+          background: COLORS.panel,
         }}
       >
-        <h1 style={{ margin: 0, flex: 1, textAlign: 'center' }}>
+        <h1 style={{ margin: 0, lineHeight: 0 }}>
           <img
             src="/assets/title-logo.png"
             alt="Fraction Quest"
-            style={{ height: 240, objectFit: 'contain', marginBottom: -60 }}
+            style={{ height: 72, objectFit: 'contain' }}
           />
         </h1>
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+          <ProgressDots currentPhase={state.phase} />
+        </div>
+        <button
+          type="button"
+          onClick={toggleMute}
+          aria-label={muted ? 'Unmute sounds' : 'Mute sounds'}
+          style={{
+            background: 'none',
+            border: `1px solid ${COLORS.panelBorder}`,
+            borderRadius: 8,
+            padding: '4px 10px',
+            fontSize: 18,
+            cursor: 'pointer',
+            color: COLORS.text,
+            opacity: muted ? 0.5 : 1,
+          }}
+        >
+          {muted ? '🔇' : '🔊'}
+        </button>
       </header>
 
       {/* Main content */}
@@ -639,25 +644,27 @@ function App() {
         }}
       >
         {/* Game panel (centered) */}
-        <div style={{ width: '100%', maxWidth: 600, display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
+        <div style={{ width: '100%', maxWidth: 600, display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center', justifyContent: 'center' }}>
           {combineRejectionMessage && state.phase !== 'assess' && (
             <div
               role="alert"
               aria-live="polite"
               style={{
                 flexShrink: 0,
-                padding: '6px 10px',
-                backgroundColor: '#fff3cd',
-                border: '1px solid #ffc107',
-                borderRadius: 4,
+                padding: '6px 14px',
                 fontSize: 13,
+                color: COLORS.goldLight,
+                background: 'rgba(212, 168, 67, 0.15)',
+                border: `1px solid ${COLORS.gold}40`,
+                borderRadius: 8,
+                fontFamily: 'Georgia, serif',
               }}
             >
               {combineRejectionMessage}
             </div>
           )}
 
-          <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+          <div style={{ minHeight: 0, overflow: 'auto' }}>
             {state.phase === 'complete' ? (
               <CompletionScreen
                 score={state.score}
@@ -719,7 +726,7 @@ function App() {
       </main>
 
       {/* Bottom chat bar */}
-      <div style={{ flexShrink: 0, borderTop: '1px solid rgba(0,0,0,0.1)' }}>
+      <div style={{ flexShrink: 0, borderTop: `1px solid ${COLORS.panelBorder}` }}>
         <ChatPanel
           messages={state.chatMessages}
           onSendMessage={handleSendMessage}
