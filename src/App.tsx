@@ -138,6 +138,7 @@ function App() {
     state,
     dispatch,
     playPop,
+    playSnap,
   });
 
   useGuidedPracticeObserver({
@@ -424,7 +425,7 @@ function App() {
       return;
     }
     setSplitRejectionMessage(null);
-    if (state.phase === 'tutorial' && state.tutorialStep === 3 && parts === 2) {
+    if (state.phase === 'tutorial' && state.tutorialStep === 3) {
       dispatch({ type: 'TUTORIAL_STEP', step: 4 });
     }
     const startId = state.nextBlockId;
@@ -462,6 +463,9 @@ function App() {
       setTimeout(() => { combineCooldownRef.current = false; }, SPLIT_ANIMATION_MS);
       setCombinedBlockId(`block-${state.nextBlockId}`);
       dispatch({ type: 'COMBINE_BLOCKS', blockIds: [draggedId, targetId] });
+      if (state.phase === 'tutorial' && state.tutorialStep === 6) {
+        dispatch({ type: 'TUTORIAL_STEP', step: 7 });
+      }
       const d = dragged.fraction.denominator;
       const combinedNum = dragged.fraction.numerator + target.fraction.numerator;
       playSnap(combinedNum / d);
