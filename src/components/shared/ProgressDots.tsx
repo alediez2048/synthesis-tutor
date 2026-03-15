@@ -10,6 +10,7 @@ const PHASE_LABELS: { phase: Phase; label: string }[] = [
   { phase: 'intro', label: 'Intro' },
   { phase: 'explore', label: 'Explore' },
   { phase: 'guided', label: 'Practice' },
+  { phase: 'assess', label: 'Challenge' },
 ];
 
 export interface ProgressDotsProps {
