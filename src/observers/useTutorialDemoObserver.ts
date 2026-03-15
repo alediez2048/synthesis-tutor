@@ -71,61 +71,40 @@ export function useTutorialDemoObserver({
     return () => clearTimeout(t);
   }, [state.phase, state.tutorialStep, state.blocks, dispatch, playPop]);
 
-  // Step 5: Demo combine — fuse two same-sized pieces
+  // Step 5: Demo combine — reset to two 1/2s, fuse them into 1/1
   useEffect(() => {
     if (state.phase !== 'tutorial' || state.tutorialStep !== 5) return;
     if (hasDemoCombineRef.current) return;
 
-    // Find ALL same-denominator groups to pick a pair smartly
-    const denomGroups = new Map<number, typeof state.blocks>();
-    for (const b of state.blocks) {
-      const d = b.fraction.denominator;
-      const group = denomGroups.get(d) ?? [];
-      group.push(b);
-      denomGroups.set(d, group);
-    }
-
-    // Prefer the smallest pieces (highest denominator) that have 3+ blocks
-    // so the demo can take 2 and leave at least 1 for the user at step 6.
-    // Fall back to any pair if no group has 3+.
-    let pair: [string, string] | null = null;
-    let leavesRemainder = false;
-
-    const sortedDenoms = [...denomGroups.entries()].sort(([a], [b]) => b - a);
-    for (const [, group] of sortedDenoms) {
-      if (group.length >= 3) {
-        pair = [group[0].id, group[1].id];
-        leavesRemainder = true;
-        break;
-      }
-    }
-    if (!pair) {
-      // Fall back: just pick any same-denom pair
-      for (const [, group] of sortedDenoms) {
-        if (group.length >= 2) {
-          pair = [group[0].id, group[1].id];
-          break;
-        }
-      }
-    }
-    if (!pair) return;
-
-    const capturedPair = pair;
-    const willLeaveRemainder = leavesRemainder;
     const t = setTimeout(() => {
       hasDemoCombineRef.current = true;
-      dispatch({ type: 'DEMO_COMBINE', blockIds: capturedPair });
-      playSnap(0.5);
+      // Reset workspace to exactly two 1/2 blocks for a clean demo
+      dispatch({
+        type: 'TUTORIAL_SET_BLOCKS',
+        fractions: [
+          { numerator: 1, denominator: 2 },
+          { numerator: 1, denominator: 2 },
+        ],
+      });
 
+      // Combine them after a brief pause
       setTimeout(() => {
-        dispatch({ type: 'SET_DEMO_ACTIVE', active: false });
-        // If no same-denom pair remains for the user, skip step 6 → go to 7
-        dispatch({ type: 'TUTORIAL_STEP', step: willLeaveRemainder ? 6 : 7 });
-      }, DEMO_ANIMATION_MS);
+        const idA = `block-${state.nextBlockId}`;
+        const idB = `block-${state.nextBlockId + 1}`;
+        dispatch({ type: 'DEMO_COMBINE', blockIds: [idA, idB] });
+        playSnap(1);
+
+        setTimeout(() => {
+          dispatch({ type: 'SET_DEMO_ACTIVE', active: false });
+          // Skip step 6 (user combine) — go straight to step 7
+          // The demo already showed combining; no need for user to repeat
+          dispatch({ type: 'TUTORIAL_STEP', step: 7 });
+        }, DEMO_ANIMATION_MS);
+      }, ALTAR_DEMO_DELAY_MS);
     }, DEMO_DELAY_MS);
 
     return () => clearTimeout(t);
-  }, [state.phase, state.tutorialStep, state.blocks, dispatch, playSnap]);
+  }, [state.phase, state.tutorialStep, state.nextBlockId, dispatch, playSnap]);
 
   // Step 6 safety valve: auto-advance if user is stuck
   // Handles ALL edge cases — wrong block pairs, confusing state, etc.
