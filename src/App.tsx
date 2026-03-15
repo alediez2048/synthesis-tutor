@@ -605,7 +605,26 @@ function App() {
   }
 
   if (showLessonMap) {
-    return <LessonMap onSelectLesson={handleSelectLesson} />;
+    return (
+      <>
+        <LessonMap onSelectLesson={handleSelectLesson} />
+        {/* DEV ONLY: skip to practice */}
+        <button
+          onClick={() => {
+            setShowLessonMap(false);
+            dispatch({ type: 'START_LESSON', lessonId: 'fractions-101' });
+            dispatch({ type: 'SKIP_TO_GUIDED' });
+          }}
+          style={{
+            position: 'fixed', bottom: 16, right: 16, zIndex: 9999,
+            padding: '8px 16px', background: '#f59e0b', color: '#000',
+            border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer',
+          }}
+        >
+          DEV: Skip to Practice
+        </button>
+      </>
+    );
   }
   if (showStart) {
     return <StartScreen onStart={handleStartLesson} />;
@@ -1058,8 +1077,6 @@ function App() {
                 score={state.score}
                 passed={state.score.total === 0 || state.score.correct / state.score.total >= (lesson?.passThreshold ?? 0.67)}
                 conceptsDiscovered={state.conceptsDiscovered}
-                onRetryMissed={() => dispatch({ type: 'RETRY_MISSED' })}
-                onLoopToPractice={() => dispatch({ type: 'LOOP_TO_PRACTICE' })}
                 onRestartLesson={() => dispatch({ type: 'RESTART_LESSON' })}
                 onFinish={handleFinish}
               />

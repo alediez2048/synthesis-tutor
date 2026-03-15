@@ -22,7 +22,10 @@ function getNextPhase(current: Phase): Phase | null {
 
 function isValidPhaseTransition(from: Phase, to: Phase): boolean {
   const next = getNextPhase(from);
-  return next === to;
+  if (next === to) return true;
+  // Allow skipping assess: guided → complete
+  if (from === 'guided' && to === 'complete') return true;
+  return false;
 }
 
 import { createBlock, getColorForDenominator } from '../utils/blockUtils';
@@ -538,7 +541,11 @@ export const lessonReducer: LessonReducer = (state, action) => {
       return { ...state, guidedAttempts: state.guidedAttempts + 1 };
 
     case 'GUIDED_SOLVED':
-      return { ...state, guidedSolved: true };
+      return {
+        ...state,
+        guidedSolved: true,
+        score: { correct: state.score.correct + 1, total: state.score.total + 1 },
+      };
 
     case 'TUTORIAL_SET_BLOCKS': {
       const newBlocks: FractionBlock[] = action.fractions.map((fraction, i) =>
@@ -551,9 +558,14 @@ export const lessonReducer: LessonReducer = (state, action) => {
       };
     }
 
-    case 'ADVANCE_GUIDED_PROBLEM':
+    case 'ADVANCE_GUIDED_PROBLEM': {
+      // If problem was skipped (not solved), count it as incorrect
+      const skippedScore = !state.guidedSolved
+        ? { correct: state.score.correct, total: state.score.total + 1 }
+        : state.score;
       return {
         ...state,
+        score: skippedScore,
         guidedProblemIndex: state.guidedProblemIndex + 1,
         guidedStep: 'problem',
         guidedAttempts: 0,
@@ -562,6 +574,7 @@ export const lessonReducer: LessonReducer = (state, action) => {
         cfuQuestion: null,
         cfuExpectedAnswer: null,
       };
+    }
 
     case 'SET_CFU_QUESTION':
       return {
