@@ -444,8 +444,8 @@ function App() {
     ensureAudioUnlocked();
     setCombineRejectionMessage(null);
     setSplitRejectionMessage(null);
-    if (state.phase === 'tutorial' && state.tutorialStep === 2) {
-      dispatch({ type: 'TUTORIAL_STEP', step: 3 });
+    if (state.phase === 'tutorial' && state.tutorialStep === 3) {
+      dispatch({ type: 'TUTORIAL_STEP', step: 4 });
     }
     dispatch({ type: 'SELECT_BLOCK', blockId });
   };
@@ -466,8 +466,8 @@ function App() {
       return;
     }
     setSplitRejectionMessage(null);
-    if (state.phase === 'tutorial' && state.tutorialStep === 3) {
-      dispatch({ type: 'TUTORIAL_STEP', step: 4 });
+    if (state.phase === 'tutorial' && state.tutorialStep === 4) {
+      dispatch({ type: 'TUTORIAL_STEP', step: 5 });
     }
     const startId = state.nextBlockId;
     const newIds = Array.from({ length: parts }, (_, i) => `block-${startId + i}`);
@@ -504,8 +504,8 @@ function App() {
       setTimeout(() => { combineCooldownRef.current = false; }, SPLIT_ANIMATION_MS);
       setCombinedBlockId(`block-${state.nextBlockId}`);
       dispatch({ type: 'COMBINE_BLOCKS', blockIds: [draggedId, targetId] });
-      if (state.phase === 'tutorial' && state.tutorialStep === 6) {
-        dispatch({ type: 'TUTORIAL_STEP', step: 7 });
+      if (state.phase === 'tutorial' && state.tutorialStep === 7) {
+        dispatch({ type: 'TUTORIAL_STEP', step: 8 });
       }
       const d = dragged.fraction.denominator;
       const combinedNum = dragged.fraction.numerator + target.fraction.numerator;
@@ -518,7 +518,7 @@ function App() {
         'Those are different sizes — try blocks that are the same size!'
       );
       // Auto-advance tutorial step 6 after 2 failed combine attempts
-      if (state.phase === 'tutorial' && state.tutorialStep === 6) {
+      if (state.phase === 'tutorial' && state.tutorialStep === 7) {
         tutorialCombineFailsRef.current += 1;
         if (tutorialCombineFailsRef.current >= 2) {
           tutorialCombineFailsRef.current = 0;
@@ -528,7 +528,7 @@ function App() {
             content: "No worries — combining takes practice! Let's keep going.",
             isStreaming: false,
           });
-          dispatch({ type: 'TUTORIAL_STEP', step: 7 });
+          dispatch({ type: 'TUTORIAL_STEP', step: 8 });
         }
       }
     }

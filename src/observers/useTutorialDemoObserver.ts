@@ -39,20 +39,20 @@ export function useTutorialDemoObserver({
 
   // Reset demo flags when leaving relevant steps
   useEffect(() => {
-    if (state.phase !== 'tutorial' || state.tutorialStep !== 2) {
+    if (state.phase !== 'tutorial' || state.tutorialStep !== 3) {
       hasDemoSplitRef.current = false;
     }
   }, [state.phase, state.tutorialStep]);
 
   useEffect(() => {
-    if (state.phase !== 'tutorial' || state.tutorialStep !== 5) {
+    if (state.phase !== 'tutorial' || state.tutorialStep !== 6) {
       hasDemoCombineRef.current = false;
     }
   }, [state.phase, state.tutorialStep]);
 
   // Step 2: Demo split — whole crystal → two halves
   useEffect(() => {
-    if (state.phase !== 'tutorial' || state.tutorialStep !== 2) return;
+    if (state.phase !== 'tutorial' || state.tutorialStep !== 3) return;
     if (hasDemoSplitRef.current) return;
 
     const block0 = state.blocks.find((b) => b.id === 'block-0');
@@ -71,9 +71,9 @@ export function useTutorialDemoObserver({
     return () => clearTimeout(t);
   }, [state.phase, state.tutorialStep, state.blocks, dispatch, playPop]);
 
-  // Step 5: Demo combine — reset to two 1/2s, fuse them into 1/1
+  // Step 6: Demo combine — reset to two 1/2s, fuse them into 1/1
   useEffect(() => {
-    if (state.phase !== 'tutorial' || state.tutorialStep !== 5) return;
+    if (state.phase !== 'tutorial' || state.tutorialStep !== 6) return;
     if (hasDemoCombineRef.current) return;
 
     const t = setTimeout(() => {
@@ -96,9 +96,8 @@ export function useTutorialDemoObserver({
 
         setTimeout(() => {
           dispatch({ type: 'SET_DEMO_ACTIVE', active: false });
-          // Skip step 6 (user combine) — go straight to step 7
-          // The demo already showed combining; no need for user to repeat
-          dispatch({ type: 'TUTORIAL_STEP', step: 7 });
+          // Skip step 7 (user combine) — go straight to step 8
+          dispatch({ type: 'TUTORIAL_STEP', step: 8 });
         }, DEMO_ANIMATION_MS);
       }, ALTAR_DEMO_DELAY_MS);
     }, DEMO_DELAY_MS);
@@ -109,7 +108,7 @@ export function useTutorialDemoObserver({
   // Step 6 safety valve: auto-advance if user is stuck
   // Handles ALL edge cases — wrong block pairs, confusing state, etc.
   useEffect(() => {
-    if (state.phase !== 'tutorial' || state.tutorialStep !== 6) return;
+    if (state.phase !== 'tutorial' || state.tutorialStep !== 7) return;
 
     const t = setTimeout(() => {
       dispatch({
@@ -117,7 +116,7 @@ export function useTutorialDemoObserver({
         content: "No worries — combining takes practice! Let's keep going.",
         isStreaming: false,
       });
-      dispatch({ type: 'TUTORIAL_STEP', step: 7 });
+      dispatch({ type: 'TUTORIAL_STEP', step: 8 });
     }, STEP6_TIMEOUT_MS);
 
     return () => clearTimeout(t);
@@ -125,20 +124,20 @@ export function useTutorialDemoObserver({
 
   // Reset altar demo flags
   useEffect(() => {
-    if (state.phase !== 'tutorial' || state.tutorialStep !== 9) {
+    if (state.phase !== 'tutorial' || state.tutorialStep !== 10) {
       hasAltarMatchRef.current = false;
     }
   }, [state.phase, state.tutorialStep]);
 
   useEffect(() => {
-    if (state.phase !== 'tutorial' || state.tutorialStep !== 10) {
+    if (state.phase !== 'tutorial' || state.tutorialStep !== 11) {
       hasAltarMismatchRef.current = false;
     }
   }, [state.phase, state.tutorialStep]);
 
-  // Step 9: Demo — place 1/2 and 2/4 on altar (equivalent → golden glow)
+  // Step 10: Demo — place 1/2 and 2/4 on altar (equivalent → golden glow)
   useEffect(() => {
-    if (state.phase !== 'tutorial' || state.tutorialStep !== 9) return;
+    if (state.phase !== 'tutorial' || state.tutorialStep !== 10) return;
     if (hasAltarMatchRef.current) return;
 
     const t = setTimeout(() => {
@@ -173,7 +172,7 @@ export function useTutorialDemoObserver({
 
   // Step 10: Demo — place 1/2 and 1/3 on altar (not equivalent → red shake)
   useEffect(() => {
-    if (state.phase !== 'tutorial' || state.tutorialStep !== 10) return;
+    if (state.phase !== 'tutorial' || state.tutorialStep !== 11) return;
     if (hasAltarMismatchRef.current) return;
 
     const t = setTimeout(() => {
