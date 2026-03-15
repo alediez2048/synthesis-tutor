@@ -222,10 +222,10 @@ export function useGuidedPracticeObserver({
         }
       }
 
-      // Simple failure feedback
+      // Contextual hint on failure
       dispatch({
         type: 'TUTOR_RESPONSE',
-        content: "Not quite — try again!",
+        content: config.hint || "Not quite — try again!",
         isStreaming: false,
       });
     }
