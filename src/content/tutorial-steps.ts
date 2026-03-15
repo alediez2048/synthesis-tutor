@@ -67,7 +67,7 @@ export const TUTORIAL_STEPS: TutorialStepConfig[] = [
   },
   {
     id: 3,
-    spotlightTarget: "workspace-blocks",
+    spotlightTarget: null,
     samText:
       "Now we have two halves! Each piece is 1/2 — one piece out of two. Your turn — tap a piece and press Split!",
     ctaLabel: "Next",
@@ -76,7 +76,7 @@ export const TUTORIAL_STEPS: TutorialStepConfig[] = [
   },
   {
     id: 4,
-    spotlightTarget: "split-picker",
+    spotlightTarget: null,
     samText: "Now pick how many pieces to split it into. Try 2!",
     ctaLabel: "Next",
     blockedDuringDemo: false,

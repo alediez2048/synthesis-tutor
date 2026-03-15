@@ -14,13 +14,13 @@ export interface SpotlightMaskProps {
 
 export function SpotlightMask({ targetRect, children }: SpotlightMaskProps) {
   if (!targetRect) {
+    // No spotlight target — show tooltip without dimming so user can interact freely
     return (
       <div
         style={{
           position: "fixed",
           inset: 0,
           zIndex: 9990,
-          background: DIM_BG,
           pointerEvents: "none",
         }}
       >
