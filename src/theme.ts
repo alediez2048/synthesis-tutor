@@ -29,7 +29,7 @@ export const COLORS = {
 
   // Fraction blocks by denominator
   denom: {
-    1:  { bg: '#6b7280', border: '#9ca3af' },
+    1:  { bg: '#60a5fa', border: '#93c5fd' },
     2:  { bg: '#3b82f6', border: '#60a5fa' },
     3:  { bg: '#22c55e', border: '#4ade80' },
     4:  { bg: '#8b5cf6', border: '#a78bfa' },

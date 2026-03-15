@@ -80,6 +80,8 @@ export interface LessonState {
   guidedProblemIndex: number;
   guidedStep: 'problem' | 'cfu';
   guidedAttempts: number;
+  guidedPrompt: string | null;
+  guidedSolved: boolean;
   cfuQuestion: string | null;
   cfuExpectedAnswer: number | null;
 }
@@ -124,6 +126,8 @@ export type LessonAction =
   | { type: 'CLEAR_CFU' }
   | { type: 'RESET_GUIDED_WORKSPACE'; blocks: FractionBlock[] }
   | { type: 'INIT_GUIDED_PROBLEM'; problemIndex: number }
+  | { type: 'GUIDED_SOLVED' }
+  | { type: 'TUTORIAL_SET_BLOCKS'; fractions: Fraction[] }
   | { type: 'SKIP_TO_GUIDED' }
   | { type: 'START_LESSON'; lessonId: string }
   | { type: 'ADD_BLOCKS'; blockIds: [string, string] };

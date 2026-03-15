@@ -6,6 +6,7 @@ import { useEffect, useState, useCallback } from "react";
 import { SpotlightMask } from "./SpotlightMask";
 import { TutorialTooltip } from "./TutorialTooltip";
 import { useTutorialFlow } from "../../hooks/useTutorialFlow";
+import { resolveSamText } from "../../content/tutorial-steps";
 import type { LessonState, LessonAction } from "../../state/types";
 import { COLORS } from "../../theme";
 
@@ -88,9 +89,13 @@ export function TutorialOverlay({
     <>
       <SpotlightMask targetRect={targetRect}>
         <TutorialTooltip
-          samText={config.samText}
+          samText={resolveSamText(config.samText, state.blocks)}
           ctaLabel={config.ctaLabel}
           onCta={handleCta}
+          disabled={
+            config.requiresInteraction ||
+            (config.blockedDuringDemo && state.isDemoActive)
+          }
         />
       </SpotlightMask>
       {config.requiresInteraction && (

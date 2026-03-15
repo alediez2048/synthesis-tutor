@@ -29,6 +29,17 @@ import { createBlock, getColorForDenominator } from '../utils/blockUtils';
 
 export { getColorForDenominator };
 
+/** Build blocks + prompt from a guided problem's setup config. */
+function guidedSetup(lessonId: string, problemIndex: number, nextBlockId: number) {
+  const lesson = getLesson(lessonId);
+  const config = lesson?.guidedProblems[problemIndex];
+  if (!config) return null;
+  const blocks: FractionBlock[] = config.setup.map((fraction, i) =>
+    createBlock(`block-${nextBlockId + i}`, fraction, 'workspace', false)
+  );
+  return { blocks, nextBlockId: nextBlockId + blocks.length, prompt: config.prompt };
+}
+
 export function getInitialLessonState(lessonId: string = 'fractions-101'): LessonState {
   const initialBlocks = getInitialBlocks(lessonId, 0);
   return {
@@ -55,6 +66,8 @@ export function getInitialLessonState(lessonId: string = 'fractions-101'): Lesso
     guidedProblemIndex: 0,
     guidedStep: 'problem',
     guidedAttempts: 0,
+    guidedPrompt: null,
+    guidedSolved: false,
     cfuQuestion: null,
     cfuExpectedAnswer: null,
   };
@@ -68,7 +81,7 @@ export const lessonReducer: LessonReducer = (state, action) => {
       if (!isValidPhaseTransition(state.phase, action.to)) {
         return state;
       }
-      return { ...state, phase: action.to };
+      return { ...state, phase: action.to, chatMessages: [] };
     }
 
     case 'TUTORIAL_STEP': {
@@ -85,6 +98,7 @@ export const lessonReducer: LessonReducer = (state, action) => {
         explorationRound: 1,
         blocks: initialBlocks,
         nextBlockId: state.nextBlockId + initialBlocks.length,
+        chatMessages: [],
       };
     }
 
@@ -151,6 +165,7 @@ export const lessonReducer: LessonReducer = (state, action) => {
         blocks: initialBlocks,
         nextBlockId: state.nextBlockId + initialBlocks.length,
         explorationRound: 1,
+        chatMessages: [],
       };
     }
 
@@ -452,12 +467,14 @@ export const lessonReducer: LessonReducer = (state, action) => {
         phase: 'assess',
         blocks: blocks as FractionBlock[],
         nextBlockId: state.nextBlockId + (blocks !== state.blocks ? 1 : 0),
+        chatMessages: [],
       };
     }
 
     case 'LOOP_TO_PRACTICE': {
       const lesson = getLesson(state.lessonId);
       const midPoint = lesson ? Math.max(0, Math.floor(lesson.guidedProblems.length / 2)) : 2;
+      const setup = guidedSetup(state.lessonId, midPoint, state.nextBlockId);
       return {
         ...state,
         phase: 'guided',
@@ -465,12 +482,16 @@ export const lessonReducer: LessonReducer = (state, action) => {
         guidedProblemIndex: midPoint,
         guidedStep: 'problem',
         guidedAttempts: 0,
+        guidedPrompt: setup?.prompt ?? null,
+        guidedSolved: false,
         cfuQuestion: null,
         cfuExpectedAnswer: null,
         assessmentStep: 0,
         assessmentAttempts: 0,
         assessmentResults: [],
         assessmentPool: [],
+        chatMessages: [],
+        ...(setup ? { blocks: setup.blocks, nextBlockId: setup.nextBlockId } : {}),
       };
     }
 
@@ -489,6 +510,7 @@ export const lessonReducer: LessonReducer = (state, action) => {
         explorationRound: 1,
         explorationRoundProgress: undefined,
         nextBlockId: state.nextBlockId + initialBlocks.length,
+        chatMessages: [],
       };
     }
 
@@ -515,12 +537,28 @@ export const lessonReducer: LessonReducer = (state, action) => {
     case 'GUIDED_ATTEMPT':
       return { ...state, guidedAttempts: state.guidedAttempts + 1 };
 
+    case 'GUIDED_SOLVED':
+      return { ...state, guidedSolved: true };
+
+    case 'TUTORIAL_SET_BLOCKS': {
+      const newBlocks: FractionBlock[] = action.fractions.map((fraction, i) =>
+        createBlock(`block-${state.nextBlockId + i}`, fraction, 'workspace', false)
+      );
+      return {
+        ...state,
+        blocks: newBlocks,
+        nextBlockId: state.nextBlockId + newBlocks.length,
+      };
+    }
+
     case 'ADVANCE_GUIDED_PROBLEM':
       return {
         ...state,
         guidedProblemIndex: state.guidedProblemIndex + 1,
         guidedStep: 'problem',
         guidedAttempts: 0,
+        guidedPrompt: null,
+        guidedSolved: false,
         cfuQuestion: null,
         cfuExpectedAnswer: null,
       };
@@ -529,6 +567,7 @@ export const lessonReducer: LessonReducer = (state, action) => {
       return {
         ...state,
         guidedStep: 'cfu',
+        guidedSolved: false,
         cfuQuestion: action.question,
         cfuExpectedAnswer: action.expectedAnswer,
       };
@@ -547,20 +586,17 @@ export const lessonReducer: LessonReducer = (state, action) => {
       };
 
     case 'INIT_GUIDED_PROBLEM': {
-      const lesson = getLesson(state.lessonId);
-      const config = lesson?.guidedProblems[action.problemIndex];
-      if (!config) return state;
-      const nextId = state.nextBlockId;
-      const blocks: FractionBlock[] = config.setup.map((fraction, i) =>
-        createBlock(`block-${nextId + i}`, fraction, 'workspace', false)
-      );
+      const setup = guidedSetup(state.lessonId, action.problemIndex, state.nextBlockId);
+      if (!setup) return state;
       return {
         ...state,
-        blocks,
-        nextBlockId: nextId + blocks.length,
+        blocks: setup.blocks,
+        nextBlockId: setup.nextBlockId,
         guidedProblemIndex: action.problemIndex,
         guidedStep: 'problem',
         guidedAttempts: 0,
+        guidedPrompt: setup.prompt,
+        guidedSolved: false,
         cfuQuestion: null,
         cfuExpectedAnswer: null,
       };
@@ -568,6 +604,7 @@ export const lessonReducer: LessonReducer = (state, action) => {
 
     case 'SKIP_TO_GUIDED': {
       if (state.phase !== 'explore') return state;
+      const setup = guidedSetup(state.lessonId, 0, state.nextBlockId);
       return {
         ...state,
         phase: 'guided',
@@ -575,8 +612,12 @@ export const lessonReducer: LessonReducer = (state, action) => {
         guidedProblemIndex: 0,
         guidedStep: 'problem',
         guidedAttempts: 0,
+        guidedPrompt: setup?.prompt ?? null,
+        guidedSolved: false,
         cfuQuestion: null,
         cfuExpectedAnswer: null,
+        chatMessages: [],
+        ...(setup ? { blocks: setup.blocks, nextBlockId: setup.nextBlockId } : {}),
       };
     }
 
@@ -586,6 +627,7 @@ export const lessonReducer: LessonReducer = (state, action) => {
       const rounds = lesson?.explorationRounds ?? [];
       const round = state.explorationRound;
       if (round >= rounds.length) {
+        const setup = guidedSetup(state.lessonId, 0, state.nextBlockId);
         return {
           ...state,
           phase: 'guided',
@@ -593,8 +635,12 @@ export const lessonReducer: LessonReducer = (state, action) => {
           guidedProblemIndex: 0,
           guidedStep: 'problem',
           guidedAttempts: 0,
+          guidedPrompt: setup?.prompt ?? null,
+          guidedSolved: false,
           cfuQuestion: null,
           cfuExpectedAnswer: null,
+          chatMessages: [],
+          ...(setup ? { blocks: setup.blocks, nextBlockId: setup.nextBlockId } : {}),
         };
       }
       const nextRound = round + 1;
@@ -682,6 +728,8 @@ export const lessonReducer: LessonReducer = (state, action) => {
         guidedProblemIndex: 0,
         guidedStep: 'problem',
         guidedAttempts: 0,
+        guidedPrompt: null,
+        guidedSolved: false,
         cfuQuestion: null,
         cfuExpectedAnswer: null,
       };
