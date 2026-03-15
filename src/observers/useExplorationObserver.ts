@@ -22,6 +22,7 @@ export function useExplorationObserver({
   const prevBlocksRef = useRef(state.blocks);
   const prevRoundRef = useRef(state.explorationRound);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const advanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const lesson = getLesson(state.lessonId);
   const rounds = lesson?.explorationRounds ?? [];
@@ -29,13 +30,13 @@ export function useExplorationObserver({
   const isTimerRound = currentRoundConfig?.goalType === 'timer';
   const timerMs = lesson?.lastRoundTimerMs ?? null;
 
-  // Reset timer when leaving explore or timer round
+  // Reset timers when leaving explore or timer round
   useEffect(() => {
-    if (state.phase !== 'explore' || !isTimerRound) {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-        timerRef.current = null;
-      }
+    if (state.phase !== 'explore') {
+      if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
+      if (advanceTimerRef.current) { clearTimeout(advanceTimerRef.current); advanceTimerRef.current = null; }
+    } else if (!isTimerRound) {
+      if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
     }
   }, [state.phase, isTimerRound]);
 
@@ -146,7 +147,13 @@ export function useExplorationObserver({
         content: currentRoundConfig.celebration,
         isStreaming: false,
       });
-      dispatch(advanceAction);
+
+      // Pause 2s so the user sees the celebration before blocks change
+      if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
+      advanceTimerRef.current = setTimeout(() => {
+        advanceTimerRef.current = null;
+        dispatch(advanceAction);
+      }, 2000);
     }
   }, [
     state.phase,
