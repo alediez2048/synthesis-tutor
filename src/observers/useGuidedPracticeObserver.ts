@@ -46,6 +46,7 @@ export function useGuidedPracticeObserver({
   const hasInitializedRef = useRef(false);
   const prevBlocksRef = useRef(state.blocks);
   const prevChatLengthRef = useRef(state.chatMessages.length);
+  const successTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const lesson = getLesson(state.lessonId);
   const guidedProblems = lesson?.guidedProblems ?? [];
@@ -61,6 +62,14 @@ export function useGuidedPracticeObserver({
     return normalized.includes(String(expected)) || (word !== undefined && normalized.includes(word));
   }
 
+  // Clean up success timeout on phase change
+  useEffect(() => {
+    if (state.phase !== 'guided' && successTimeoutRef.current) {
+      clearTimeout(successTimeoutRef.current);
+      successTimeoutRef.current = null;
+    }
+  }, [state.phase]);
+
   // Initialize workspace when entering guided
   useEffect(() => {
     if (state.phase !== 'guided') {
@@ -70,12 +79,14 @@ export function useGuidedPracticeObserver({
     }
     if (prevPhaseRef.current !== 'guided') {
       hasInitializedRef.current = true;
+      // Blocks + guidedPrompt are already set by the reducer (SKIP_TO_GUIDED / ADVANCE_ROUND)
+      // Only dispatch INIT if blocks weren't set (e.g. edge case)
       dispatch({ type: 'INIT_GUIDED_PROBLEM', problemIndex: 0 });
       const config = guidedProblems[0];
       if (config) {
         dispatch({
           type: 'TUTOR_RESPONSE',
-          content: config.prompt,
+          content: `Time for practice! Problem 1 of ${guidedProblems.length}: ${config.prompt}`,
           isStreaming: false,
         });
       }
@@ -96,7 +107,7 @@ export function useGuidedPracticeObserver({
       if (config) {
         dispatch({
           type: 'TUTOR_RESPONSE',
-          content: config.prompt,
+          content: `Problem ${idx + 1} of ${guidedProblems.length}: ${config.prompt}`,
           isStreaming: false,
         });
       }
@@ -122,32 +133,33 @@ export function useGuidedPracticeObserver({
     const comparisonBlocks = curr.filter((b) => b.position === 'comparison');
 
     let correct = false;
+    const setupTarget = config.setup[0];
 
     if (config.type === 'split') {
-      // GP-1: split 1/2 into 2
-      if (curr.length === 2 && prev.length === 1) {
+      // Any valid split: more blocks than setup, and they all recombine to the setup fraction
+      if (workspaceBlocks.length > config.setup.length && setupTarget) {
         try {
           const combined = combine(workspaceBlocks.map((b) => b.fraction));
-          correct = areEquivalent(combined, { numerator: 1, denominator: 2 });
+          correct = areEquivalent(combined, setupTarget);
         } catch {
           correct = false;
         }
       }
     } else if (config.type === 'build-equivalent') {
-      // GP-2: build equivalent to 1/3
-      if (workspaceBlocks.length >= 1) {
+      // Combined workspace is equivalent to target but with different representation
+      if (workspaceBlocks.length >= 1 && setupTarget) {
         try {
           const result = combine(workspaceBlocks.map((b) => b.fraction));
           const different =
-            result.numerator !== 1 || result.denominator !== 3;
-          correct =
-            areEquivalent(result, { numerator: 1, denominator: 3 }) && different;
+            result.numerator !== setupTarget.numerator ||
+            result.denominator !== setupTarget.denominator;
+          correct = areEquivalent(result, setupTarget) && different;
         } catch {
           correct = false;
         }
       }
     } else if (config.type === 'compare') {
-      // GP-3: both in comparison, equivalent
+      // Both blocks in comparison zone and equivalent
       if (comparisonBlocks.length >= 2) {
         const [a, b] = comparisonBlocks;
         if (a && b) {
@@ -155,13 +167,13 @@ export function useGuidedPracticeObserver({
         }
       }
     } else if (config.type === 'simplify') {
-      // GP-4: simplify 2/4 to 1/2
-      if (workspaceBlocks.length >= 1) {
+      // Combined workspace is equivalent to setup but with smaller denominator
+      if (workspaceBlocks.length >= 1 && setupTarget) {
         try {
           const result = combine(workspaceBlocks.map((b) => b.fraction));
           correct =
-            areEquivalent(result, { numerator: 1, denominator: 2 }) &&
-            result.denominator < 4;
+            areEquivalent(result, setupTarget) &&
+            result.denominator < setupTarget.denominator;
         } catch {
           correct = false;
         }
@@ -170,22 +182,33 @@ export function useGuidedPracticeObserver({
 
     if (correct) {
       playCorrect();
-      const cfq = CFU_QUESTIONS[state.guidedProblemIndex];
-      if (cfq && state.guidedProblemIndex < guidedProblems.length - 1) {
-        dispatch({ type: 'SET_CFU_QUESTION', question: cfq.question, expectedAnswer: cfq.expectedAnswer });
-        dispatch({
-          type: 'TUTOR_RESPONSE',
-          content: cfq.question,
-          isStreaming: false,
-        });
-      } else {
-        if (state.guidedProblemIndex >= guidedProblems.length - 1) {
-          dispatch({ type: 'PHASE_TRANSITION', to: 'assess' });
+      dispatch({ type: 'GUIDED_SOLVED' });
+
+      // Pause 1.5s for "Correct!" celebration, then advance
+      const capturedIndex = state.guidedProblemIndex;
+      successTimeoutRef.current = setTimeout(() => {
+        successTimeoutRef.current = null;
+        const cfq = CFU_QUESTIONS[capturedIndex];
+        if (cfq && capturedIndex < guidedProblems.length - 1) {
+          dispatch({ type: 'SET_CFU_QUESTION', question: cfq.question, expectedAnswer: cfq.expectedAnswer });
+          dispatch({
+            type: 'TUTOR_RESPONSE',
+            content: cfq.question,
+            isStreaming: false,
+          });
         } else {
-          dispatch({ type: 'ADVANCE_GUIDED_PROBLEM' });
+          if (capturedIndex >= guidedProblems.length - 1) {
+            dispatch({ type: 'PHASE_TRANSITION', to: 'assess' });
+          } else {
+            dispatch({ type: 'ADVANCE_GUIDED_PROBLEM' });
+          }
         }
-      }
+      }, 1500);
     } else if (config.type === 'split' || config.type === 'build-equivalent' || config.type === 'simplify') {
+      // Only count as an attempt if block count changed from setup (student actually tried)
+      const setupBlockCount = config.setup.length;
+      if (workspaceBlocks.length === setupBlockCount && comparisonBlocks.length === 0) return;
+
       const newAttempts = state.guidedAttempts + 1;
       dispatch({ type: 'GUIDED_ATTEMPT' });
       if (newAttempts >= 2) {

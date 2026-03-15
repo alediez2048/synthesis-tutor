@@ -9,12 +9,14 @@ export interface TutorialTooltipProps {
   samText: string;
   ctaLabel: string;
   onCta: () => void;
+  disabled?: boolean;
 }
 
 export function TutorialTooltip({
   samText,
   ctaLabel,
   onCta,
+  disabled,
 }: TutorialTooltipProps) {
   return (
     <div
@@ -79,7 +81,12 @@ export function TutorialTooltip({
             {samText}
           </p>
         </div>
-        <MagicButton variant="gold" onClick={onCta} style={{ width: "100%" }}>
+        <MagicButton
+          variant="gold"
+          onClick={onCta}
+          disabled={disabled}
+          style={{ width: "100%" }}
+        >
           {ctaLabel}
         </MagicButton>
       </div>

@@ -348,7 +348,7 @@ describe('lesson reducer', () => {
       expect(next.blocks[0]!.fraction).toEqual({ numerator: 1, denominator: 2 });
       expect(next.blocks[1]!.fraction).toEqual({ numerator: 2, denominator: 4 });
     });
-    it('round 5 -> guided: transitions to guided phase with guided state', () => {
+    it('round 5 -> guided: transitions to guided phase with blocks from first problem', () => {
       let state = getInitialLessonState();
       state = lessonReducer(state, { type: 'PHASE_TRANSITION', to: 'tutorial' });
       state = lessonReducer(state, { type: 'COMPLETE_TUTORIAL' });
@@ -361,12 +361,12 @@ describe('lesson reducer', () => {
       expect(next.phase).toBe('guided');
       expect(next.explorationRound).toBe(1);
       expect(next.guidedProblemIndex).toBe(0);
-      expect(next.guidedStep).toBe('problem');
+      expect(next.guidedPrompt).toBeTruthy();
     });
   });
 
   describe('SKIP_TO_GUIDED', () => {
-    it('transitions from explore round 4 to guided phase', () => {
+    it('transitions from explore to guided phase with blocks from first problem', () => {
       let state = getInitialLessonState();
       state = lessonReducer(state, { type: 'COMPLETE_INTRO' });
       state = lessonReducer(state, { type: 'ADVANCE_ROUND', round1SplitParts: 2 });
@@ -377,6 +377,8 @@ describe('lesson reducer', () => {
       const next = lessonReducer(state, { type: 'SKIP_TO_GUIDED' });
       expect(next.phase).toBe('guided');
       expect(next.guidedProblemIndex).toBe(0);
+      expect(next.guidedPrompt).toBeTruthy();
+      expect(next.blocks.length).toBeGreaterThan(0);
     });
     it('returns state unchanged when phase is not explore', () => {
       const state = getInitialLessonState();

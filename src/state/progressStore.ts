@@ -6,8 +6,19 @@
 import type { PlayerProgress } from './types';
 import { getLesson } from '../content/curriculum';
 
-const STORAGE_KEY = 'fraction-quest-progress';
+const STORAGE_KEY_PREFIX = 'fraction-quest-progress';
 const SCHEMA_VERSION = 1;
+
+let _userId: string | null = null;
+
+/** Set the current user ID for progress isolation. null = guest. */
+export function setProgressUserId(userId: string | null): void {
+  _userId = userId;
+}
+
+function getStorageKey(): string {
+  return _userId ? `${STORAGE_KEY_PREFIX}-${_userId}` : STORAGE_KEY_PREFIX;
+}
 
 interface StoredProgress {
   version: number;
@@ -22,7 +33,7 @@ const DEFAULT_PROGRESS: PlayerProgress = {
 
 function loadRaw(): PlayerProgress {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(getStorageKey());
     if (!raw) return DEFAULT_PROGRESS;
     const stored: StoredProgress = JSON.parse(raw);
     if (stored.version !== SCHEMA_VERSION) return DEFAULT_PROGRESS;
@@ -44,7 +55,7 @@ function save(progress: PlayerProgress): void {
       version: SCHEMA_VERSION,
       data: progress,
     };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+    localStorage.setItem(getStorageKey(), JSON.stringify(stored));
   } catch {
     // localStorage full or unavailable — silently fail
   }

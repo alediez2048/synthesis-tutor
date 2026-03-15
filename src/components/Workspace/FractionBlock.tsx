@@ -1,9 +1,8 @@
 import { useRef, useState, useEffect } from 'react';
 import { useDrag } from '@use-gesture/react';
 import type { FractionBlock as FractionBlockType } from '../../state/types';
-import { COLORS, getDenomColor } from '../../theme';
 
-const MIN_WIDTH_PX = 50;
+const MIN_SIZE_PX = 60;
 
 const DENOMINATOR_WORDS: Record<number, string> = {
   1: 'whole', 2: 'half', 3: 'third', 4: 'fourth', 5: 'fifth',
@@ -40,7 +39,7 @@ export interface FractionBlockProps {
 
 export function FractionBlock({
   block,
-  referenceWidth = 280,
+  referenceWidth = 400,
   onSelect,
   onDragStart,
   onDragEnd,
@@ -71,8 +70,8 @@ export function FractionBlock({
     const el = rootRef.current;
     el.animate(
       [
-        { boxShadow: `0 0 0 0 ${COLORS.goldLight}b3` },
-        { boxShadow: `0 0 0 12px ${COLORS.goldLight}00` },
+        { boxShadow: '0 0 0 0 rgba(255, 215, 0, 0.7)' },
+        { boxShadow: '0 0 0 12px rgba(255, 215, 0, 0)' },
       ],
       { duration: 600, iterations: 2, easing: 'ease-out' }
     );
@@ -95,18 +94,11 @@ export function FractionBlock({
 
   const { fraction, isSelected } = block;
   const value = fraction.numerator / fraction.denominator;
-  const widthPx = Math.max(MIN_WIDTH_PX, Math.round(value * referenceWidth));
-  const denomColor = getDenomColor(fraction.denominator);
+  const widthPx = Math.max(MIN_SIZE_PX, Math.round(value * referenceWidth));
+  const heightPx = 56;
 
   const label = `${fraction.numerator}/${fraction.denominator}`;
   const ariaLabel = getSpokenFraction(fraction.numerator, fraction.denominator);
-
-  // Subdivision lines
-  const subdivisionLines: number[] = [];
-  for (let i = 1; i < fraction.denominator; i++) {
-    const pos = (i / fraction.denominator) * 100;
-    if (pos > 0 && pos < 100) subdivisionLines.push(pos);
-  }
 
   return (
     <div
@@ -133,10 +125,8 @@ export function FractionBlock({
       style={{
         position: 'relative',
         width: widthPx,
-        height: 56,
-        background: `linear-gradient(135deg, ${denomColor.bg}dd, ${denomColor.bg}88)`,
-        border: `2px solid ${isSelected ? COLORS.gold : denomColor.border}`,
-        borderRadius: 12,
+        height: heightPx,
+        outline: 'none',
         cursor: onSelect ? 'pointer' : 'default',
         touchAction: 'none',
         pointerEvents: 'auto',
@@ -144,63 +134,32 @@ export function FractionBlock({
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 1,
-        userSelect: 'none',
-        margin: 4,
-        transition: 'all 0.3s ease',
+        background: 'linear-gradient(135deg, rgba(74,144,217,0.7), rgba(50,100,180,0.5))',
+        border: isSelected ? '2px solid #D4A843' : '2px solid rgba(74,144,217,0.6)',
+        borderRadius: 12,
+        boxShadow: isSelected
+          ? '0 0 20px rgba(212,168,67,0.5), inset 0 0 15px rgba(212,168,67,0.2)'
+          : isDraggingThis
+            ? '0 8px 20px rgba(0,0,0,0.4)'
+            : '0 4px 15px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2)',
         transform: isDraggingThis
           ? `translate(${dragOffset.x}px, ${dragOffset.y}px) scale(1.08)`
           : isSelected
             ? 'scale(1.08)'
             : 'scale(1)',
-        boxShadow: isSelected
-          ? `0 0 20px ${COLORS.gold}80, inset 0 0 15px ${COLORS.gold}30`
-          : isDraggingThis
-            ? '0 8px 20px rgba(0,0,0,0.4)'
-            : `0 4px 15px rgba(0,0,0,0.3), inset 0 1px 0 ${denomColor.border}40`,
-        outline: 'none',
+        transition: 'border 0.2s ease, box-shadow 0.2s ease',
         overflow: 'hidden',
+        margin: 4,
         ...(isDraggingThis ? { willChange: 'transform' as const, zIndex: 100 } : {}),
       }}
     >
-      {/* Shimmer overlay */}
-      <div
-        aria-hidden="true"
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: `linear-gradient(110deg, transparent 30%, ${denomColor.border}20 50%, transparent 70%)`,
-          backgroundSize: '200% 100%',
-          animation: 'shimmer 3s infinite',
-          pointerEvents: 'none',
-          borderRadius: 10,
-        }}
-      />
-
-      {/* Subdivision lines */}
-      {subdivisionLines.map((pos) => (
-        <div
-          key={pos}
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            left: `${pos}%`,
-            top: 4,
-            bottom: 4,
-            width: 1,
-            backgroundColor: `${denomColor.border}50`,
-            pointerEvents: 'none',
-          }}
-        />
-      ))}
-
-      {/* Fraction label */}
       <span
         style={{
           position: 'relative',
           zIndex: 1,
           fontSize: 18,
           fontWeight: 700,
-          fontFamily: 'Georgia, serif',
+          fontFamily: "'Fredoka One', 'Nunito', sans-serif",
           color: '#fff',
           textShadow: '0 2px 4px rgba(0,0,0,0.5)',
           pointerEvents: 'none',
@@ -208,24 +167,6 @@ export function FractionBlock({
       >
         {label}
       </span>
-
-      {/* Selection sparkle */}
-      {isSelected && (
-        <div
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            top: 4,
-            right: 4,
-            width: 10,
-            height: 10,
-            borderRadius: '50%',
-            backgroundColor: COLORS.gold,
-            boxShadow: `0 0 6px ${COLORS.goldLight}`,
-            animation: 'pulse 1.5s ease-in-out infinite',
-          }}
-        />
-      )}
     </div>
   );
 }

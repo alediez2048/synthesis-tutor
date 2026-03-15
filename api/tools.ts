@@ -238,10 +238,17 @@ function executeCheckAnswer(
 }
 
 function extractWorkspaceState(lessonState: LessonState): Record<string, unknown> {
+  const blocks = lessonState.blocks ?? [];
+  const workspace = blocks.filter((b) => b.position === 'workspace');
+  const comparison = blocks.filter((b) => b.position === 'comparison');
+  const fmt = (list: typeof blocks) =>
+    list.map((b) => `${b.fraction.numerator}/${b.fraction.denominator}`);
+
   return {
     phase: lessonState.phase,
-    stepIndex: lessonState.stepIndex,
-    blocks: lessonState.blocks,
+    crystals_on_spell_table: fmt(workspace),
+    crystals_on_spell_altar: fmt(comparison),
+    total_crystals: blocks.length,
     score: lessonState.score,
     conceptsDiscovered: lessonState.conceptsDiscovered,
   };

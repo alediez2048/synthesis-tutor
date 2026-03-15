@@ -131,7 +131,7 @@ export function CompletionScreen({
       >
         {passed && (
           <MagicButton variant="success" onClick={onFinish}>
-            {correct === total ? 'Next Lesson' : 'Next Lesson'}
+            Next Lesson
           </MagicButton>
         )}
         {!passed && total > 0 && correct > 0 && (

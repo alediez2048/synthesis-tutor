@@ -104,9 +104,33 @@ function getLessonAdditions(lessonId: string): string {
   }
 }
 
+/** Describe blocks in plain English so the LLM can't hallucinate. */
+function describeBlocks(blocks: LessonState['blocks']): string {
+  if (!blocks || blocks.length === 0) return 'No crystals on the spell table.';
+
+  const workspace = blocks.filter((b) => b.position === 'workspace');
+  const comparison = blocks.filter((b) => b.position === 'comparison');
+
+  const describeFractions = (list: typeof blocks) => {
+    if (list.length === 0) return 'none';
+    return list
+      .map((b) => `${b.fraction.numerator}/${b.fraction.denominator}`)
+      .join(', ');
+  };
+
+  const parts: string[] = [];
+  if (workspace.length > 0) {
+    parts.push(`Spell table (${workspace.length}): ${describeFractions(workspace)}`);
+  }
+  if (comparison.length > 0) {
+    parts.push(`Spell altar (${comparison.length}): ${describeFractions(comparison)}`);
+  }
+  if (parts.length === 0) return 'No crystals on the spell table.';
+  return parts.join('. ');
+}
+
 function buildPhaseContext(lessonState: LessonState): string {
   const phase = lessonState.phase ?? 'intro';
-  const stepIndex = lessonState.stepIndex ?? 0;
   const blocks = lessonState.blocks ?? [];
   const score = lessonState.score ?? { correct: 0, total: 0 };
   const concepts = lessonState.conceptsDiscovered ?? [];
@@ -115,10 +139,11 @@ function buildPhaseContext(lessonState: LessonState): string {
   return `## Current Lesson State
 
 - Phase: ${phase}
-- Step: ${stepIndex}
-- Blocks on workspace: ${JSON.stringify(blocks)}
+- Crystals: ${describeBlocks(blocks)}
 - Score: ${score.correct} correct, ${score.total} total
-- Concepts discovered: ${conceptsStr}`;
+- Concepts discovered: ${conceptsStr}
+
+IMPORTANT: Only describe the crystals listed above. Do NOT invent, guess, or assume any crystals that are not listed. If only "1/1" is listed, only a whole crystal exists.`;
 }
 
 function getPhaseGuidance(phase: string): string {

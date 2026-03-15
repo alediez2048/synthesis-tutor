@@ -1,10 +1,11 @@
 /**
- * Full-viewport overlay with transparent cutout.
- * No dimming — page stays fully visible; cutout allows clicks through.
- * Uses four divs to form a frame so the center (cutout) passes pointer events.
+ * Full-viewport overlay with transparent cutout and dimmed background.
+ * Uses four divs to form a dark frame around the spotlight target.
+ * The cutout area passes pointer events through so users can interact.
  */
 
 const PADDING = 8;
+const DIM_BG = "rgba(0, 0, 0, 0.6)";
 
 export interface SpotlightMaskProps {
   targetRect: DOMRect | null;
@@ -19,6 +20,7 @@ export function SpotlightMask({ targetRect, children }: SpotlightMaskProps) {
           position: "fixed",
           inset: 0,
           zIndex: 9990,
+          background: DIM_BG,
           pointerEvents: "none",
         }}
       >
@@ -34,6 +36,7 @@ export function SpotlightMask({ targetRect, children }: SpotlightMaskProps) {
 
   const frameStyle = {
     pointerEvents: "auto" as const,
+    background: DIM_BG,
   };
 
   return (
@@ -45,10 +48,15 @@ export function SpotlightMask({ targetRect, children }: SpotlightMaskProps) {
         pointerEvents: "none",
       }}
     >
+      {/* Top */}
       <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: y, ...frameStyle }} />
+      {/* Bottom */}
       <div style={{ position: "absolute", top: y + h, left: 0, right: 0, bottom: 0, ...frameStyle }} />
+      {/* Left */}
       <div style={{ position: "absolute", top: y, left: 0, width: x, height: h, ...frameStyle }} />
+      {/* Right */}
       <div style={{ position: "absolute", top: y, left: x + w, right: 0, height: h, ...frameStyle }} />
+      {/* Spotlight ring */}
       <div
         style={{
           position: "absolute",

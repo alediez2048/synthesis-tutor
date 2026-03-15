@@ -30,7 +30,10 @@ import { ProgressDots } from './components/shared/ProgressDots';
 import { MagicButton } from './components/shared/MagicButton';
 import { RoundBanner } from './components/shared/RoundBanner';
 import { TutorialOverlay } from './components/Onboarding/TutorialOverlay';
+import { GuidedGoalCard } from './components/GuidedPractice/GuidedGoalCard';
+import { ExploreGoalCard } from './components/shared/ExploreGoalCard';
 import { COLORS } from './theme';
+import { LandingPage } from './components/LandingPage/LandingPage';
 
 const SPLIT_REJECTION_MESSAGE = 'Those pieces are as small as they can get!';
 const SPLIT_ANIMATION_MS = 400;
@@ -52,6 +55,7 @@ function App() {
     lessonReducer,
     recoveryState ?? getInitialLessonState()
   );
+  const [showLanding, setShowLanding] = useState(() => !loadCheckpoint());
   const [showRecovery, setShowRecovery] = useState(recoveryState !== null);
   const [showLessonMap, setShowLessonMap] = useState(recoveryState === null);
   const [showStart, setShowStart] = useState(false);
@@ -68,6 +72,9 @@ function App() {
   const [roundBannerName, setRoundBannerName] = useState('');
   const [round5SecondsRemaining, setRound5SecondsRemaining] = useState<number | null>(null);
   const round5StartRef = useRef<number | null>(null);
+  const [showPracticeSpotlight, setShowPracticeSpotlight] = useState(false);
+  const hasSentPracticePromptRef = useRef(false);
+  const tutorialCombineFailsRef = useRef(0);
 
   const { sendMessage, notifySam, isLoading } = useTutorChat(state, dispatch);
   const {
@@ -100,12 +107,14 @@ function App() {
     setShowStart(true);
   }, []);
   const handleFinish = useCallback(() => {
-    const passed = state.score.total > 0 && state.score.correct / state.score.total >= (lesson?.passThreshold ?? 0.67);
+    const passed = state.score.total === 0 || state.score.correct / state.score.total >= (lesson?.passThreshold ?? 0.67);
     if (passed) {
       markLessonComplete(state.lessonId, state.score);
     }
     clearCheckpoint(state.lessonId);
     setShowLessonMap(true);
+    hasSentPracticePromptRef.current = false;
+    setShowPracticeSpotlight(false);
   }, [state.lessonId, state.score, lesson]);
   const handleStartLesson = useCallback(() => {
     unlock();
@@ -139,6 +148,8 @@ function App() {
     dispatch,
     playPop,
     playSnap,
+    playCorrect,
+    playIncorrect,
   });
 
   useGuidedPracticeObserver({
@@ -163,12 +174,20 @@ function App() {
   const prevExplorationRoundRef = useRef(state.explorationRound);
 
   useEffect(() => {
-    if (prevPhaseRef.current !== 'assess' && state.phase === 'assess') {
+    const prev = prevPhaseRef.current;
+    prevPhaseRef.current = state.phase;
+    if (prev === state.phase) return;
+
+    // Welcome messages for each phase (chat was cleared by reducer)
+    if (state.phase === 'explore' && prev !== 'intro' && prev !== 'tutorial') {
+      dispatch({ type: 'TUTOR_RESPONSE', content: "Welcome back to exploring! Try splitting, combining, and comparing crystals.", isStreaming: false });
+    }
+    if (state.phase === 'assess') {
       const pool = selectAssessmentProblems(state.lessonId);
       dispatch({ type: 'INIT_ASSESSMENT', pool });
+      dispatch({ type: 'TUTOR_RESPONSE', content: "Challenge time! Show me what you've learned. Do your best — I believe in you!", isStreaming: false });
     }
-    prevPhaseRef.current = state.phase;
-  }, [state.phase, dispatch]);
+  }, [state.phase, state.lessonId, dispatch]);
 
   const handleRoundBannerComplete = useCallback(() => setShowRoundBanner(false), []);
 
@@ -188,6 +207,25 @@ function App() {
         queueMicrotask(() => {
           setRoundBannerName(name);
           setShowRoundBanner(true);
+        });
+        // Sam announces the new round goal
+        dispatch({
+          type: 'TUTOR_RESPONSE',
+          content: config.goalType === 'timer'
+            ? "Free time! Try anything you want — split, combine, compare. Have fun!"
+            : `Round ${round}: ${config.goal}!`,
+          isStreaming: false,
+        });
+      }
+    }
+    // Sam announces round 1 on first enter
+    if (round === 1 && prev === 1 && state.phase === 'explore') {
+      const config = explorationRounds[0];
+      if (config && state.chatMessages.length === 0) {
+        dispatch({
+          type: 'TUTOR_RESPONSE',
+          content: `Let's explore! Round 1: ${config.goal}. Tap a crystal and try it!`,
+          isStreaming: false,
         });
       }
     }
@@ -225,31 +263,32 @@ function App() {
   }, [state.phase, state.explorationRound, explorationRounds, lastRoundTimerMs]);
 
   const handleKeepGoing = useCallback(() => {
-    clearCheckpoint();
+    clearCheckpoint(state.lessonId);
     setShowRecovery(false);
     setRecoveryState(null);
-  }, []);
+  }, [state.lessonId]);
 
   const handleStartOver = useCallback(() => {
-    clearCheckpoint();
+    clearCheckpoint(state.lessonId);
     dispatch({ type: 'FULL_RESET' });
     setShowRecovery(false);
     setRecoveryState(null);
-  }, [dispatch]);
+  }, [state.lessonId, dispatch]);
 
   useEffect(() => {
-    if (!showRecovery) {
+    if (!showRecovery && !showLessonMap && !showLanding) {
       saveCheckpoint(state);
     }
   }, [
     showRecovery,
+    showLessonMap,
+    showLanding,
     state.phase,
     state.score.correct,
     state.score.total,
     state.assessmentStep,
     state.conceptsDiscovered.length,
     state.chatMessages.length,
-    state,
   ]);
 
   useEffect(() => {
@@ -382,22 +421,25 @@ function App() {
         );
       } else {
         playIncorrect();
-        // Return non-equivalent blocks to workspace after animation
-        setTimeout(() => {
-          comparisonBlocks.forEach((bl) =>
-            dispatch({ type: 'RETURN_TO_WORKSPACE', blockId: bl.id })
-          );
-          setComparisonResult(null);
-        }, 1200);
+        // Keep blocks on altar — user can manually return them and try again
         notifySam(
           `I placed ${a.fraction.numerator}/${a.fraction.denominator} and ${b.fraction.numerator}/${b.fraction.denominator} on the spell altar to compare them`
         );
       }
     }
-    if (comparisonBlocks.length < 2 && comparisonResult === 'equivalent') {
+    // Clear result when blocks leave the altar (user drags them back)
+    if (comparisonBlocks.length < 2 && comparisonResult != null) {
       setComparisonResult(null);
     }
   }, [comparisonBlocks.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Show practice prompt dialog only on the final timer round
+  const practiceEligible = state.phase === 'explore' && explorationRounds[state.explorationRound - 1]?.goalType === 'timer';
+  useEffect(() => {
+    if (!practiceEligible || hasSentPracticePromptRef.current) return;
+    hasSentPracticePromptRef.current = true;
+    setShowPracticeSpotlight(true);
+  }, [practiceEligible]);
 
   const handleSelectBlock = (blockId: string) => {
     ensureAudioUnlocked();
@@ -476,6 +518,20 @@ function App() {
       setCombineRejectionMessage(
         'Those are different sizes — try blocks that are the same size!'
       );
+      // Auto-advance tutorial step 6 after 2 failed combine attempts
+      if (state.phase === 'tutorial' && state.tutorialStep === 6) {
+        tutorialCombineFailsRef.current += 1;
+        if (tutorialCombineFailsRef.current >= 2) {
+          tutorialCombineFailsRef.current = 0;
+          setCombineRejectionMessage(null);
+          dispatch({
+            type: 'TUTOR_RESPONSE',
+            content: "No worries — combining takes practice! Let's keep going.",
+            isStreaming: false,
+          });
+          dispatch({ type: 'TUTORIAL_STEP', step: 7 });
+        }
+      }
     }
   };
 
@@ -537,8 +593,16 @@ function App() {
   );
 
   const handleTutorialComplete = useCallback(() => {
-    sendMessage('[Student completed the tutorial. Welcome them to explore!]');
-  }, [sendMessage]);
+    dispatch({
+      type: 'TUTOR_RESPONSE',
+      content: "You've learned the basics! Now it's your turn to explore. Try splitting, combining, and comparing crystals on your own!",
+      isStreaming: false,
+    });
+  }, [dispatch]);
+
+  if (showLanding) {
+    return <LandingPage onPlay={() => setShowLanding(false)} />;
+  }
 
   if (showLessonMap) {
     return <LessonMap onSelectLesson={handleSelectLesson} />;
@@ -833,17 +897,115 @@ function App() {
               onComplete={handleRoundBannerComplete}
             />
           )}
-          {state.phase === 'explore' && state.explorationRound >= explorationRounds.length - 1 && explorationRounds[state.explorationRound - 1]?.goalType !== 'timer' && (
-            <div
-              style={{
-                flexShrink: 0,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 8,
-                padding: '8px 0',
-              }}
-            >
+          {state.phase === 'explore' && (() => {
+            const roundConfig = explorationRounds[state.explorationRound - 1];
+            return roundConfig ? (
+              <ExploreGoalCard
+                round={state.explorationRound}
+                totalRounds={explorationRounds.length}
+                roundName={roundConfig.name}
+                goal={roundConfig.goal}
+                isTimerRound={roundConfig.goalType === 'timer'}
+                secondsRemaining={round5SecondsRemaining}
+              />
+            ) : null;
+          })()}
+          {state.phase === 'guided' && (
+            <GuidedGoalCard
+              problemIndex={state.guidedProblemIndex}
+              totalProblems={lesson?.guidedProblems.length ?? 4}
+              prompt={state.guidedPrompt}
+              solved={state.guidedSolved}
+            />
+          )}
+          {showPracticeSpotlight && (
+            <>
+              {/* Dim overlay */}
+              <div
+                style={{
+                  position: 'fixed',
+                  inset: 0,
+                  background: 'rgba(0, 0, 0, 0.6)',
+                  zIndex: 9000,
+                }}
+                onClick={() => setShowPracticeSpotlight(false)}
+              />
+              {/* Sam practice prompt dialog */}
+              <div
+                style={{
+                  position: 'fixed',
+                  left: 16,
+                  right: 16,
+                  bottom: 24,
+                  zIndex: 9001,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                }}
+              >
+                <div
+                  style={{
+                    background: COLORS.panel,
+                    borderRadius: 16,
+                    padding: 20,
+                    border: `2px solid ${COLORS.gold}`,
+                    boxShadow: `0 8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)`,
+                    maxWidth: 400,
+                    width: '100%',
+                    boxSizing: 'border-box',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 16 }}>
+                    <img
+                      src="/assets/sam-avatar.png"
+                      alt=""
+                      aria-hidden
+                      style={{
+                        width: 56,
+                        height: 56,
+                        borderRadius: '50%',
+                        border: `3px solid ${COLORS.gold}`,
+                        objectFit: 'cover',
+                        flexShrink: 0,
+                      }}
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                    <p style={{
+                      margin: 0,
+                      fontSize: 16,
+                      lineHeight: 1.5,
+                      fontFamily: "Georgia, serif",
+                      color: COLORS.text,
+                      flex: 1,
+                    }}>
+                      Great exploring, young wizard! Ready to put your skills to the test with some practice challenges?
+                    </p>
+                  </div>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <MagicButton
+                      variant="ghost"
+                      onClick={() => setShowPracticeSpotlight(false)}
+                      style={{ flex: 1 }}
+                    >
+                      Keep exploring
+                    </MagicButton>
+                    <MagicButton
+                      variant="gold"
+                      onClick={() => {
+                        setShowPracticeSpotlight(false);
+                        dispatch({ type: 'SKIP_TO_GUIDED' });
+                      }}
+                      style={{ flex: 1 }}
+                    >
+                      Let's practice!
+                    </MagicButton>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+          {practiceEligible && !showPracticeSpotlight && (
+            <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '8px 0' }}>
               <MagicButton
                 variant="gold"
                 onClick={() => dispatch({ type: 'SKIP_TO_GUIDED' })}
@@ -854,27 +1016,7 @@ function App() {
             </div>
           )}
           {state.phase === 'explore' && explorationRounds[state.explorationRound - 1]?.goalType === 'timer' && (
-            <div
-              style={{
-                flexShrink: 0,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 10,
-                padding: '8px 0',
-              }}
-            >
-              {round5SecondsRemaining !== null && (
-                <span
-                  style={{
-                    fontSize: 14,
-                    fontFamily: 'Georgia, serif',
-                    color: COLORS.textMuted,
-                  }}
-                >
-                  {round5SecondsRemaining}s free exploration
-                </span>
-              )}
+            <div style={{ flexShrink: 0, padding: '8px 0', display: 'flex', justifyContent: 'center' }}>
               <MagicButton
                 variant="gold"
                 onClick={() => {
@@ -885,9 +1027,9 @@ function App() {
                   });
                   dispatch({ type: 'ADVANCE_ROUND' });
                 }}
-                aria-label="Ready for a challenge"
+                aria-label="Finish exploring"
               >
-                Ready for a challenge?
+                I'm done exploring!
               </MagicButton>
             </div>
           )}
@@ -914,7 +1056,7 @@ function App() {
             {state.phase === 'complete' ? (
               <CompletionScreen
                 score={state.score}
-                passed={state.score.total > 0 && state.score.correct / state.score.total >= (lesson?.passThreshold ?? 0.67)}
+                passed={state.score.total === 0 || state.score.correct / state.score.total >= (lesson?.passThreshold ?? 0.67)}
                 conceptsDiscovered={state.conceptsDiscovered}
                 onRetryMissed={() => dispatch({ type: 'RETRY_MISSED' })}
                 onLoopToPractice={() => dispatch({ type: 'LOOP_TO_PRACTICE' })}

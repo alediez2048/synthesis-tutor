@@ -6,14 +6,59 @@ import { COLORS } from '../../theme';
 import { LessonCard } from './LessonCard';
 import { LESSONS, getUnlockedLessons } from '../../content/curriculum';
 import { getProgress } from '../../state/progressStore';
+import { isClerkEnabled } from '../../hooks/useClerkSafe';
+import { useUser, useClerk } from '@clerk/clerk-react';
 
 export interface LessonMapProps {
   onSelectLesson: (lessonId: string) => void;
 }
 
+function SignOutButton() {
+  const { user } = useUser();
+  const { signOut } = useClerk();
+
+  if (!user) return null;
+
+  return (
+    <div style={{
+      position: 'absolute',
+      top: 16,
+      right: 20,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 12,
+    }}>
+      <span style={{
+        fontSize: 13,
+        color: COLORS.goldLight,
+        fontFamily: 'Georgia, serif',
+      }}>
+        {user.firstName ?? 'Wizard'}
+      </span>
+      <button
+        type="button"
+        onClick={() => { signOut(); }}
+        style={{
+          background: 'none',
+          border: `1px solid ${COLORS.panelBorder}`,
+          borderRadius: 6,
+          padding: '4px 10px',
+          fontSize: 12,
+          color: COLORS.textMuted,
+          cursor: 'pointer',
+          fontFamily: 'Georgia, serif',
+        }}
+      >
+        Sign Out
+      </button>
+    </div>
+  );
+}
+
 export function LessonMap({ onSelectLesson }: LessonMapProps) {
   const progress = getProgress();
   const unlockedLessons = getUnlockedLessons(progress.completedLessons);
+  const clerkEnabled = isClerkEnabled();
 
   return (
     <div
@@ -28,6 +73,7 @@ export function LessonMap({ onSelectLesson }: LessonMapProps) {
         overflow: 'auto',
       }}
     >
+      {clerkEnabled && <SignOutButton />}
       <img
         src="/assets/title-logo.png"
         alt="Fraction Quest"

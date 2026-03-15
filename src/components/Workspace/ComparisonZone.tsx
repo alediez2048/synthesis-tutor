@@ -2,10 +2,6 @@ import { forwardRef, useEffect, useRef } from 'react';
 import type { FractionBlock } from '../../state/types';
 import { COLORS } from '../../theme';
 import { FractionBlock as FractionBlockComponent } from './FractionBlock';
-import { MagicButton } from '../shared/MagicButton';
-
-const MIN_TOUCH_PX = 44;
-
 export type ComparisonResult = 'equivalent' | 'not-equivalent' | null;
 
 export interface ComparisonZoneProps {
@@ -18,11 +14,7 @@ export interface ComparisonZoneProps {
 }
 
 export const ComparisonZone = forwardRef<HTMLElement, ComparisonZoneProps>(
-  function ComparisonZone({ blocks, referenceWidth, onSelectBlock, onReturnToWorkspace, onAltarSplit, comparisonResult }, ref) {
-    const singleBlock = blocks.length === 1 ? blocks[0] : null;
-    const splitOptions = singleBlock
-      ? ([2, 3, 4] as const).filter((n) => singleBlock.fraction.denominator * n <= 12)
-      : [];
+  function ComparisonZone({ blocks, referenceWidth, onSelectBlock, onReturnToWorkspace, comparisonResult }, ref) {
 
     const sectionRef = useRef<HTMLElement | null>(null);
 
@@ -148,27 +140,6 @@ export const ComparisonZone = forwardRef<HTMLElement, ComparisonZoneProps>(
                 }}
               >
                 Different sizes!
-              </div>
-            )}
-            {/* Altar split picker */}
-            {singleBlock && splitOptions.length > 0 && onAltarSplit && (
-              <div
-                role="group"
-                aria-label="Split crystal on the altar"
-                style={{ display: 'flex', gap: 8, justifyContent: 'center' }}
-              >
-                {splitOptions.map((n) => (
-                  <MagicButton
-                    key={n}
-                    variant="gold"
-                    small
-                    onClick={() => onAltarSplit(singleBlock.id, n)}
-                    aria-label={`Split into ${n} pieces`}
-                    style={{ minWidth: MIN_TOUCH_PX, minHeight: MIN_TOUCH_PX }}
-                  >
-                    ÷{n}
-                  </MagicButton>
-                ))}
               </div>
             )}
           </div>
