@@ -31,9 +31,9 @@ export const GUIDED_PROBLEMS: GuidedProblemConfig[] = [
   },
   {
     id: 3,
-    type: 'simplify',
-    setup: [{ numerator: 2, denominator: 4 }],
-    prompt: "Here's a trickier one. What's the simplest way to write 2/4?",
+    type: 'build-equivalent',
+    setup: [{ numerator: 1, denominator: 2 }],
+    prompt: "Last challenge! Can you make something equal to 1/2 but with different numbers? Try splitting!",
     maxAttempts: 3,
   },
 ];
