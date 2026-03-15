@@ -1,6 +1,6 @@
 /**
  * Guided practice observer: GP-1 through GP-4.
- * Sets up problems, validates answers, runs CFU, triggers re-model on failure.
+ * Sets up problems, validates answers, triggers re-model on failure.
  */
 
 import { useEffect, useRef } from 'react';
@@ -8,21 +8,6 @@ import { areEquivalent, combine } from '../engine/FractionEngine';
 import type { LessonState, LessonAction } from '../state/types';
 import { getLesson } from '../content/curriculum';
 import { GUIDED_DEMO_SCRIPTS } from '../content/guided-demo-scripts';
-
-const CFU_QUESTIONS: { question: string; expectedAnswer: number }[] = [
-  {
-    question: "If I split 1/2 into 3 pieces, how many pieces will I have?",
-    expectedAnswer: 3,
-  },
-  {
-    question: "If I split 1/3 into 2 pieces, how many pieces will I have?",
-    expectedAnswer: 2,
-  },
-  {
-    question: "If I combine two 1/4 pieces, what fraction do I get?",
-    expectedAnswer: 2, // 2/4 numerator, or we could accept "1/2" - use numeric for simplicity
-  },
-];
 
 interface GuidedPracticeObserverOptions {
   state: LessonState;
@@ -37,7 +22,6 @@ export function useGuidedPracticeObserver({
   state,
   dispatch,
   playPop,
-  playSnap,
   playCorrect,
   playIncorrect,
 }: GuidedPracticeObserverOptions): void {
@@ -45,22 +29,10 @@ export function useGuidedPracticeObserver({
   const prevProblemIndexRef = useRef(state.guidedProblemIndex);
   const hasInitializedRef = useRef(false);
   const prevBlocksRef = useRef(state.blocks);
-  const prevChatLengthRef = useRef(state.chatMessages.length);
   const successTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const lesson = getLesson(state.lessonId);
   const guidedProblems = lesson?.guidedProblems ?? [];
-
-  function parseCFUAnswer(text: string, expected: number): boolean {
-    const normalized = text.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-    const num = parseInt(text.replace(/[^0-9]/g, ''), 10);
-    if (num === expected) return true;
-    const words: Record<number, string> = {
-      1: 'one', 2: 'two', 3: 'three', 4: 'four', 5: 'five', 6: 'six',
-    };
-    const word = words[expected];
-    return normalized.includes(String(expected)) || (word !== undefined && normalized.includes(word));
-  }
 
   // Clean up success timeout on phase change
   useEffect(() => {
@@ -183,25 +155,16 @@ export function useGuidedPracticeObserver({
     if (correct) {
       playCorrect();
       dispatch({ type: 'GUIDED_SOLVED' });
+      dispatch({ type: 'TUTOR_RESPONSE', content: "You got it!", isStreaming: false });
 
       // Pause 1.5s for "Correct!" celebration, then advance
       const capturedIndex = state.guidedProblemIndex;
       successTimeoutRef.current = setTimeout(() => {
         successTimeoutRef.current = null;
-        const cfq = CFU_QUESTIONS[capturedIndex];
-        if (cfq && capturedIndex < guidedProblems.length - 1) {
-          dispatch({ type: 'SET_CFU_QUESTION', question: cfq.question, expectedAnswer: cfq.expectedAnswer });
-          dispatch({
-            type: 'TUTOR_RESPONSE',
-            content: cfq.question,
-            isStreaming: false,
-          });
+        if (capturedIndex >= guidedProblems.length - 1) {
+          dispatch({ type: 'PHASE_TRANSITION', to: 'complete' });
         } else {
-          if (capturedIndex >= guidedProblems.length - 1) {
-            dispatch({ type: 'PHASE_TRANSITION', to: 'complete' });
-          } else {
-            dispatch({ type: 'ADVANCE_GUIDED_PROBLEM' });
-          }
+          dispatch({ type: 'ADVANCE_GUIDED_PROBLEM' });
         }
       }, 1500);
     } else if (config.type === 'split' || config.type === 'build-equivalent' || config.type === 'simplify') {
@@ -211,52 +174,60 @@ export function useGuidedPracticeObserver({
 
       const newAttempts = state.guidedAttempts + 1;
       dispatch({ type: 'GUIDED_ATTEMPT' });
+
+      // Max attempts reached — auto-advance, mark as incorrect
+      if (newAttempts >= config.maxAttempts) {
+        playIncorrect();
+        dispatch({
+          type: 'TUTOR_RESPONSE',
+          content: "Let's move on — you'll get it next time!",
+          isStreaming: false,
+        });
+        successTimeoutRef.current = setTimeout(() => {
+          successTimeoutRef.current = null;
+          const capturedIndex = state.guidedProblemIndex;
+          if (capturedIndex >= guidedProblems.length - 1) {
+            dispatch({ type: 'PHASE_TRANSITION', to: 'complete' });
+          } else {
+            dispatch({ type: 'ADVANCE_GUIDED_PROBLEM' });
+          }
+        }, 1500);
+        return;
+      }
+
+      // Demo re-model after 2 failures
       if (newAttempts >= 2) {
         const demoScript = GUIDED_DEMO_SCRIPTS[state.guidedProblemIndex];
         if (demoScript) {
+          // Reset workspace first so demo finds the right block
+          dispatch({ type: 'INIT_GUIDED_PROBLEM', problemIndex: state.guidedProblemIndex });
           dispatch({ type: 'SET_DEMO_ACTIVE', active: true });
-          if (demoScript.type === 'split') {
-            const block = curr.find(
-              (b) =>
-                b.fraction.numerator === demoScript.blockFraction.numerator &&
-                b.fraction.denominator === demoScript.blockFraction.denominator
-            );
-            if (block) {
-              dispatch({ type: 'DEMO_SPLIT', blockId: block.id, parts: demoScript.parts });
+          setTimeout(() => {
+            // Re-read blocks after INIT reset
+            if (demoScript.type === 'split') {
+              dispatch({ type: 'DEMO_SPLIT', blockId: `block-${state.nextBlockId}`, parts: demoScript.parts });
               playPop();
             }
-          } else if (demoScript.type === 'combine') {
-            const [f1, f2] = demoScript.fractions;
-            const b1 = curr.find((b) => b.fraction.numerator === f1.numerator && b.fraction.denominator === f1.denominator);
-            const b2 = curr.find((b) => b.fraction.numerator === f2.numerator && b.fraction.denominator === f2.denominator);
-            if (b1 && b2) {
-              dispatch({ type: 'DEMO_COMBINE', blockIds: [b1.id, b2.id] });
-              playSnap(1);
-            }
-          }
-          setTimeout(() => {
-            dispatch({ type: 'SET_DEMO_ACTIVE', active: false });
-            dispatch({
-              type: 'TUTOR_RESPONSE',
-              content: "Let me show you. Now you try!",
-              isStreaming: false,
-            });
-            dispatch({ type: 'INIT_GUIDED_PROBLEM', problemIndex: state.guidedProblemIndex });
-          }, 600);
-        } else {
-          dispatch({
-            type: 'TUTOR_RESPONSE',
-            content: "Not quite — try again!",
-            isStreaming: false,
-          });
+            setTimeout(() => {
+              dispatch({ type: 'SET_DEMO_ACTIVE', active: false });
+              dispatch({
+                type: 'TUTOR_RESPONSE',
+                content: "Watch how I did it. Now you try!",
+                isStreaming: false,
+              });
+              dispatch({ type: 'INIT_GUIDED_PROBLEM', problemIndex: state.guidedProblemIndex });
+            }, 600);
+          }, 800);
+          return;
         }
-      } else {
-        dispatch({
-          type: 'TUTOR_RESPONSE',
-          content: "Not quite — try again!",
-          isStreaming: false,
-        });
       }
+
+      // Simple failure feedback
+      dispatch({
+        type: 'TUTOR_RESPONSE',
+        content: "Not quite — try again!",
+        isStreaming: false,
+      });
     }
   }, [
     state.phase,
@@ -272,49 +243,4 @@ export function useGuidedPracticeObserver({
     playIncorrect,
   ]);
 
-  // CFU validation: when student sends message and we're in CFU step
-  useEffect(() => {
-    if (state.phase !== 'guided' || state.guidedStep !== 'cfu') return;
-    if (state.cfuExpectedAnswer === null) return;
-
-    const msgs = state.chatMessages;
-    if (msgs.length <= prevChatLengthRef.current) return;
-    prevChatLengthRef.current = msgs.length;
-
-    const lastMsg = msgs[msgs.length - 1];
-    if (!lastMsg || lastMsg.sender !== 'student') return;
-
-    const correct = parseCFUAnswer(lastMsg.content, state.cfuExpectedAnswer);
-    if (correct) {
-      playCorrect();
-      dispatch({ type: 'CLEAR_CFU' });
-      if (state.guidedProblemIndex >= guidedProblems.length - 1) {
-        dispatch({ type: 'PHASE_TRANSITION', to: 'assess' });
-      } else {
-        dispatch({ type: 'ADVANCE_GUIDED_PROBLEM' });
-      }
-    } else {
-      playIncorrect();
-      dispatch({
-        type: 'TUTOR_RESPONSE',
-        content: "Almost! The answer is " + state.cfuExpectedAnswer + ". Let's move on.",
-        isStreaming: false,
-      });
-      dispatch({ type: 'CLEAR_CFU' });
-      if (state.guidedProblemIndex >= guidedProblems.length - 1) {
-        dispatch({ type: 'PHASE_TRANSITION', to: 'assess' });
-      } else {
-        dispatch({ type: 'ADVANCE_GUIDED_PROBLEM' });
-      }
-    }
-  }, [
-    state.phase,
-    state.guidedStep,
-    state.chatMessages,
-    state.cfuExpectedAnswer,
-    state.guidedProblemIndex,
-    dispatch,
-    playCorrect,
-    playIncorrect,
-  ]);
 }
