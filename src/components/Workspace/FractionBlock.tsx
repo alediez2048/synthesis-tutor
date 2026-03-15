@@ -97,8 +97,9 @@ export function FractionBlock({
   const widthPx = Math.max(MIN_SIZE_PX, Math.round(value * referenceWidth));
   const heightPx = 56;
 
-  const label = `${fraction.numerator}/${fraction.denominator}`;
-  const ariaLabel = getSpokenFraction(fraction.numerator, fraction.denominator);
+  const isWhole = fraction.numerator === fraction.denominator;
+  const label = isWhole ? '1 whole' : `${fraction.numerator}/${fraction.denominator}`;
+  const ariaLabel = isWhole ? 'One whole' : getSpokenFraction(fraction.numerator, fraction.denominator);
 
   return (
     <div

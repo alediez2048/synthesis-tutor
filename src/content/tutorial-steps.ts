@@ -112,10 +112,8 @@ export const TUTORIAL_STEPS: TutorialStepConfig[] = [
   {
     id: 7,
     spotlightTarget: "workspace-blocks",
-    samText: (blocks) => {
-      const count = blocks.length;
-      return `You fused them! Now you have ${count} crystal${count !== 1 ? 's' : ''}. Splitting and combining are the two main powers you'll use on your quest.`;
-    },
+    samText:
+      "I fused two halves back into one whole! 1/1 means one whole piece — like a full pizza before you slice it. Splitting and combining are the two main powers you'll use!",
     ctaLabel: "Next",
     blockedDuringDemo: false,
     requiresInteraction: false,
