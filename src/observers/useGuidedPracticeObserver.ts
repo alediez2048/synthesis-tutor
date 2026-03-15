@@ -13,7 +13,6 @@ interface GuidedPracticeObserverOptions {
   state: LessonState;
   dispatch: React.Dispatch<LessonAction>;
   playPop: () => void;
-  playSnap: (pitch?: number) => void;
   playCorrect: () => void;
   playIncorrect: () => void;
 }
@@ -162,7 +161,7 @@ export function useGuidedPracticeObserver({
       successTimeoutRef.current = setTimeout(() => {
         successTimeoutRef.current = null;
         if (capturedIndex >= guidedProblems.length - 1) {
-          dispatch({ type: 'PHASE_TRANSITION', to: 'complete' });
+          dispatch({ type: 'PHASE_TRANSITION', to: 'assess' });
         } else {
           dispatch({ type: 'ADVANCE_GUIDED_PROBLEM' });
         }
@@ -187,7 +186,7 @@ export function useGuidedPracticeObserver({
           successTimeoutRef.current = null;
           const capturedIndex = state.guidedProblemIndex;
           if (capturedIndex >= guidedProblems.length - 1) {
-            dispatch({ type: 'PHASE_TRANSITION', to: 'complete' });
+            dispatch({ type: 'PHASE_TRANSITION', to: 'assess' });
           } else {
             dispatch({ type: 'ADVANCE_GUIDED_PROBLEM' });
           }
@@ -239,7 +238,6 @@ export function useGuidedPracticeObserver({
     dispatch,
     playCorrect,
     playPop,
-    playSnap,
     playIncorrect,
   ]);
 
