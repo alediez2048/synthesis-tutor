@@ -7,12 +7,12 @@ import { COLORS } from '../../theme';
 import { MagicButton } from '../shared/MagicButton';
 
 function getScoreMessage(correct: number, total: number, passed: boolean): string {
-  if (total === 0) return "Great exploring today! Let's try again.";
-  if (passed && correct === total) return "Perfect score! You've mastered this lesson!";
-  if (passed) return "Great job! You passed the challenge! Ready for the next lesson?";
+  if (total === 0) return "Great exploring today!";
+  if (passed && correct === total) return "Perfect score! You're a true fraction wizard!";
+  if (passed) return "Great job! You passed! Ready for the next lesson?";
   const ratio = correct / total;
-  if (ratio >= 0.34) return "You're getting there! A little more practice and you'll pass the challenge.";
-  return "Fractions take practice, and you did great exploring today! Let's try again.";
+  if (ratio >= 0.5) return "Almost there! A little more practice and you'll get it!";
+  return "Fractions take practice. You did great — let's try again!";
 }
 
 const CONCEPT_LABELS: Record<string, string> = {
@@ -25,8 +25,6 @@ export interface CompletionScreenProps {
   score: { correct: number; total: number };
   passed: boolean;
   conceptsDiscovered: string[];
-  onRetryMissed: () => void;
-  onLoopToPractice: () => void;
   onRestartLesson: () => void;
   onFinish: () => void;
 }
@@ -35,8 +33,6 @@ export function CompletionScreen({
   score,
   passed,
   conceptsDiscovered,
-  onRetryMissed,
-  onLoopToPractice,
   onRestartLesson,
   onFinish,
 }: CompletionScreenProps) {
@@ -134,19 +130,9 @@ export function CompletionScreen({
             Next Lesson
           </MagicButton>
         )}
-        {!passed && total > 0 && correct > 0 && (
-          <>
-            <MagicButton variant="primary" onClick={onRetryMissed}>
-              Try Again
-            </MagicButton>
-            <MagicButton variant="ghost" onClick={onLoopToPractice}>
-              Practice More
-            </MagicButton>
-          </>
-        )}
-        {!passed && (total === 0 || correct === 0) && (
+        {!passed && (
           <MagicButton variant="gold" onClick={onRestartLesson}>
-            Let's Explore Again
+            Try Again
           </MagicButton>
         )}
       </div>

@@ -198,7 +198,7 @@ export function useGuidedPracticeObserver({
           });
         } else {
           if (capturedIndex >= guidedProblems.length - 1) {
-            dispatch({ type: 'PHASE_TRANSITION', to: 'assess' });
+            dispatch({ type: 'PHASE_TRANSITION', to: 'complete' });
           } else {
             dispatch({ type: 'ADVANCE_GUIDED_PROBLEM' });
           }
