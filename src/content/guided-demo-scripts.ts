@@ -27,7 +27,7 @@ export const GUIDED_DEMO_SCRIPTS: Record<number, DemoScript | undefined> = {
   },
   3: {
     type: 'split',
-    blockFraction: { numerator: 2, denominator: 4 },
+    blockFraction: { numerator: 1, denominator: 2 },
     parts: 2,
   },
 };
