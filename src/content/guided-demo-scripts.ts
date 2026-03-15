@@ -18,9 +18,9 @@ export interface DemoScriptCombine {
 
 export type DemoScript = DemoScriptSplit | DemoScriptCombine;
 
-/** Demo script per guided problem index (GP-2 and GP-4 have demos). */
+/** Demo script per guided problem index. Demos for build-equivalent problems (indices 2, 3). */
 export const GUIDED_DEMO_SCRIPTS: Record<number, DemoScript | undefined> = {
-  1: {
+  2: {
     type: 'split',
     blockFraction: { numerator: 1, denominator: 3 },
     parts: 2,
