@@ -18,6 +18,19 @@
 
 ## Ticket Index
 
+### Phase 9: EdTech Research-Informed Redesign
+
+| Ticket | Description | Status | Est. |
+|--------|-------------|--------|------|
+| ENG-058 | Strip fantasy theme — go cognitively coherent (Hinten et al.) | ⬜ Pending | TBD |
+| ENG-059 | Scaffolding mixing board — multi-dimensional (Kalyuga, Wood et al.) | ⬜ Pending | TBD |
+| ENG-060 | Self-explanation prompts throughout (Chi et al.) | ⬜ Pending | TBD |
+| ENG-061 | Assessment as learning mechanism — retrieval practice (Karpicke & Roediger) | ⬜ Pending | TBD |
+| ENG-062 | Off-ramps for real-world transfer (Hirsh-Pasek et al.) | ⬜ Pending | TBD |
+| ENG-063 | Motivation fading (Bardach & Murayama) | ⬜ Pending | TBD |
+| ENG-064 | Interleave problem types within sessions (Bjork & Bjork) | ⬜ Pending | TBD |
+| ENG-065 | Strengthen "We Do" phase — guided practice (Rosenshine) | ⬜ Pending | TBD |
+
 ### Phase 7: Demo + Delivery (Day 7 — Sunday)
 
 | Ticket | Description | Status | Est. |
