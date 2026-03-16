@@ -22,6 +22,7 @@ import { useIntroObserver } from './observers/useIntroObserver';
 import { useTutorialDemoObserver } from './observers/useTutorialDemoObserver';
 import { useGuidedPracticeObserver } from './observers/useGuidedPracticeObserver';
 import { useInactivityPrompt } from './hooks/useInactivityPrompt';
+import { useViewportWidth } from './hooks/useViewportWidth';
 import { ErrorBoundary } from './components/shared/ErrorBoundary';
 import { StartScreen } from './components/shared/StartScreen';
 import { LessonMap } from './components/LessonSelect/LessonMap';
@@ -99,6 +100,8 @@ function App() {
   const lesson = getLesson(state.lessonId);
   const explorationRounds = lesson?.explorationRounds ?? [];
   const lastRoundTimerMs = lesson?.lastRoundTimerMs ?? null;
+  const viewportWidth = useViewportWidth();
+  const workspaceReferenceWidth = Math.min(400, Math.max(240, viewportWidth - 48));
 
   const handleConfettiComplete = useCallback(() => setShowConfetti(false), []);
   const handleSelectLesson = useCallback((lessonId: string) => {
@@ -844,10 +847,10 @@ function App() {
       <header
         style={{
           flexShrink: 0,
-          padding: '8px 16px',
+          padding: viewportWidth < 480 ? '6px 12px' : '8px 16px',
           display: 'flex',
           alignItems: 'center',
-          gap: 12,
+          gap: viewportWidth < 480 ? 8 : 12,
           borderBottom: `1px solid ${COLORS.panelBorder}`,
           background: COLORS.panel,
         }}
@@ -856,7 +859,7 @@ function App() {
           <img
             src="/assets/title-logo.png"
             alt="Fraction Quest"
-            style={{ height: 72, objectFit: 'contain' }}
+            style={{ height: viewportWidth < 480 ? 48 : 72, objectFit: 'contain' }}
           />
         </h1>
         <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
@@ -899,7 +902,7 @@ function App() {
           minHeight: 0,
           display: 'flex',
           justifyContent: 'center',
-          padding: '0 16px',
+          padding: viewportWidth < 480 ? '0 12px' : '0 16px',
           maxWidth: 1200,
           width: '100%',
           alignSelf: 'center',
@@ -1103,7 +1106,7 @@ function App() {
               <>
                 <Workspace
                   blocks={state.blocks}
-                  referenceWidth={400}
+                  referenceWidth={workspaceReferenceWidth}
                   selectedBlockId={selectedBlockId}
                   onSelectBlock={handleSelectBlock}
                   onDragStart={handleDragStart}

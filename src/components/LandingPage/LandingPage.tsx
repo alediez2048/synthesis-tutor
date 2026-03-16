@@ -2,10 +2,13 @@ import { useSignIn, useUser } from '@clerk/clerk-react';
 import { useState } from 'react';
 import { setProgressUserId } from '../../state/progressStore';
 import { isClerkEnabled } from '../../hooks/useClerkSafe';
+import { useViewportWidth } from '../../hooks/useViewportWidth';
 
 export interface LandingPageProps {
   onPlay: () => void;
 }
+
+const MOBILE_BREAKPOINT = 480;
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
@@ -35,6 +38,8 @@ function ClerkLanding({ onPlay }: LandingPageProps) {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const viewportWidth = useViewportWidth();
+  const isMobile = viewportWidth < MOBILE_BREAKPOINT;
 
   if (user) {
     setProgressUserId(user.id);
@@ -48,8 +53,8 @@ function ClerkLanding({ onPlay }: LandingPageProps) {
           onClick={onPlay}
           style={{
             width: '100%',
-            padding: '14px 0',
-            fontSize: 18,
+            padding: isMobile ? '12px 0' : '14px 0',
+            fontSize: isMobile ? 16 : 18,
             fontWeight: 700,
             fontFamily: "'Fredoka One', 'Nunito', sans-serif",
             background: 'linear-gradient(180deg, #4A90D9 0%, #3570b8 100%)',
@@ -97,11 +102,11 @@ function ClerkLanding({ onPlay }: LandingPageProps) {
       <img
         src="/assets/crystal-icon.png"
         alt=""
-        style={{ width: 48, height: 48, marginBottom: 12 }}
+        style={{ width: isMobile ? 40 : 48, height: isMobile ? 40 : 48, marginBottom: isMobile ? 8 : 12 }}
         onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
       />
 
-      <form onSubmit={handleSubmit} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <form onSubmit={handleSubmit} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: isMobile ? 10 : 14 }}>
         <div>
           <label style={labelStyle}>Email</label>
           <input
@@ -134,8 +139,8 @@ function ClerkLanding({ onPlay }: LandingPageProps) {
           disabled={isLoading}
           style={{
             width: '100%',
-            padding: '14px 0',
-            fontSize: 18,
+            padding: isMobile ? '12px 0' : '14px 0',
+            fontSize: isMobile ? 16 : 18,
             fontWeight: 700,
             fontFamily: "'Fredoka One', 'Nunito', sans-serif",
             background: isLoading ? '#999' : 'linear-gradient(180deg, #4A90D9 0%, #3570b8 100%)',
@@ -152,7 +157,7 @@ function ClerkLanding({ onPlay }: LandingPageProps) {
         </button>
       </form>
 
-      <div style={{ width: '100%', height: 1, backgroundColor: '#d4c5a0', margin: '16px 0' }} />
+      <div style={{ width: '100%', height: 1, backgroundColor: '#d4c5a0', margin: isMobile ? '12px 0' : '16px 0' }} />
 
       <button
         type="button"
@@ -161,7 +166,7 @@ function ClerkLanding({ onPlay }: LandingPageProps) {
           background: 'none',
           border: 'none',
           color: '#4A90D9',
-          fontSize: 15,
+          fontSize: isMobile ? 14 : 15,
           fontWeight: 700,
           cursor: 'pointer',
           fontFamily: "'Nunito', sans-serif",
@@ -178,7 +183,7 @@ function ClerkLanding({ onPlay }: LandingPageProps) {
           background: 'none',
           border: 'none',
           color: '#5a4a3a',
-          fontSize: 14,
+          fontSize: isMobile ? 13 : 14,
           cursor: 'pointer',
           fontFamily: "'Nunito', sans-serif",
         }}
@@ -190,6 +195,8 @@ function ClerkLanding({ onPlay }: LandingPageProps) {
 }
 
 function GuestLanding({ onPlay }: LandingPageProps) {
+  const viewportWidth = useViewportWidth();
+  const isMobile = viewportWidth < MOBILE_BREAKPOINT;
   return (
     <LandingShell>
       <button
@@ -197,8 +204,8 @@ function GuestLanding({ onPlay }: LandingPageProps) {
         onClick={onPlay}
         style={{
           width: '100%',
-          padding: '14px 0',
-          fontSize: 18,
+          padding: isMobile ? '12px 0' : '14px 0',
+          fontSize: isMobile ? 16 : 18,
           fontWeight: 700,
           fontFamily: "'Fredoka One', 'Nunito', sans-serif",
           background: 'linear-gradient(180deg, #4A90D9 0%, #3570b8 100%)',
@@ -217,6 +224,9 @@ function GuestLanding({ onPlay }: LandingPageProps) {
 }
 
 function LandingShell({ children }: { children: React.ReactNode }) {
+  const viewportWidth = useViewportWidth();
+  const isMobile = viewportWidth < MOBILE_BREAKPOINT;
+
   return (
     <div
       style={{
@@ -233,33 +243,33 @@ function LandingShell({ children }: { children: React.ReactNode }) {
         fontFamily: "'Nunito', sans-serif",
       }}
     >
-      {/* Title — closer to top */}
+      {/* Title — closer to top, smaller on mobile */}
       <img
         src="/assets/title-logo.png"
         alt="Fraction Quest"
         style={{
           position: 'absolute',
-          top: 16,
+          top: isMobile ? 12 : 16,
           left: '50%',
           transform: 'translateX(-50%)',
-          width: '90%',
-          maxWidth: 567,
+          width: isMobile ? '85%' : '90%',
+          maxWidth: isMobile ? 320 : 567,
           height: 'auto',
           objectFit: 'contain',
           zIndex: 1,
         }}
       />
 
-      {/* Auth box — centered in the viewport, offset 50px down */}
+      {/* Auth box — centered, compact on mobile */}
       <div
         style={{
           position: 'absolute',
           top: 'calc(50% + 50px)',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          width: '85%',
-          maxWidth: 380,
-          padding: 24,
+          width: isMobile ? '92%' : '85%',
+          maxWidth: isMobile ? 340 : 380,
+          padding: isMobile ? 16 : 24,
           boxSizing: 'border-box',
           zIndex: 1,
         }}
@@ -267,8 +277,8 @@ function LandingShell({ children }: { children: React.ReactNode }) {
         <div
           style={{
             background: 'linear-gradient(180deg, #faf3e0 0%, #f5e6c8 100%)',
-            borderRadius: 20,
-            padding: '32px 28px 24px',
+            borderRadius: isMobile ? 16 : 20,
+            padding: isMobile ? '24px 20px 20px' : '32px 28px 24px',
             boxShadow: '0 8px 40px rgba(0,0,0,0.4)',
             display: 'flex',
             flexDirection: 'column',
@@ -279,15 +289,15 @@ function LandingShell({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      {/* Sam — closer to lower right corner, in front */}
+      {/* Sam — smaller on mobile so auth box stays usable */}
       <img
         src="/assets/sam-waving.png"
         alt="Sam the Math Wizard"
         style={{
           position: 'fixed',
-          bottom: -40,
-          right: -20,
-          height: 380,
+          bottom: isMobile ? -60 : -40,
+          right: isMobile ? -40 : -20,
+          height: isMobile ? 220 : 380,
           objectFit: 'contain',
           objectPosition: 'bottom right',
           pointerEvents: 'none',
