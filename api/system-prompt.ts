@@ -6,6 +6,8 @@
 import type { LessonState } from '../src/state/types.js';
 import { buildLessonAdditions as buildL1Additions } from './system-prompts/lesson-1-equivalence.js';
 import { buildLessonAdditions as buildL2Additions } from './system-prompts/lesson-2-addition.js';
+import { retrievePedagogy } from './rag/retrieve.js';
+import type { RetrievedChunk } from './rag/retrieve.js';
 
 const IDENTITY = `## Identity
 
@@ -201,13 +203,36 @@ function getPhaseGuidance(phase: string): string {
   }
 }
 
+function formatRagContext(chunks: RetrievedChunk[]): string {
+  if (chunks.length === 0) return '';
+  const body = chunks
+    .map((c, i) => `### Reference ${i + 1}\n${c.content}`)
+    .join('\n\n');
+  return `## Pedagogical Reference (Instructor-Facing)
+
+Use these research-based strategies to inform your teaching approach.
+These are for YOUR reference — do NOT quote them verbatim to the student.
+Adapt the language to be age-appropriate (ages 8-12) and within voice constraints.
+
+${body}`;
+}
+
 export function buildSystemPrompt(lessonState: LessonState): string {
   const phase = lessonState.phase ?? 'intro';
   const lessonId = lessonState.lessonId ?? 'fractions-101';
+
+  // RAG: retrieve pedagogy context for current lesson state
+  const ragChunks = retrievePedagogy({
+    lessonId,
+    phase,
+    concepts: lessonState.conceptsDiscovered ?? [],
+  });
+
   const parts = [
     IDENTITY,
     VOICE_CONSTRAINTS,
     PEDAGOGICAL_APPROACH,
+    formatRagContext(ragChunks),
     SPLIT_LIMIT_GUIDANCE,
     MATH_FIREWALL,
     NON_FRACTION_INPUT,
@@ -217,5 +242,5 @@ export function buildSystemPrompt(lessonState: LessonState): string {
   ];
   const lessonAdditions = getLessonAdditions(lessonId);
   if (lessonAdditions) parts.push(lessonAdditions);
-  return parts.join('\n\n');
+  return parts.filter(Boolean).join('\n\n');
 }
