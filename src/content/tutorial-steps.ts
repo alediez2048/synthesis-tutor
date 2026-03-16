@@ -42,7 +42,7 @@ export const TUTORIAL_STEPS: TutorialStepConfig[] = [
     id: 0,
     spotlightTarget: null,
     samText:
-      "Welcome, young wizard! Have you ever shared a pizza with a friend? When you cut it into equal slices, you're making fractions!",
+      "Welcome, young wizard! In this quest, you'll learn the magic of fractions — the power to break whole crystals into smaller, equal pieces!",
     ctaLabel: "Next",
     blockedDuringDemo: false,
     requiresInteraction: false,
@@ -51,7 +51,7 @@ export const TUTORIAL_STEPS: TutorialStepConfig[] = [
     id: 1,
     spotlightTarget: null,
     samText:
-      "A fraction tells you two things: how many pieces you have, and how many equal pieces the whole was cut into. Like 1/2 means 1 piece out of 2 equal pieces!",
+      "A fraction tells you two things: how many crystal shards you have, and how many equal pieces the whole crystal was split into. 1/2 means 1 shard out of 2!",
     ctaLabel: "Next",
     blockedDuringDemo: false,
     requiresInteraction: false,
