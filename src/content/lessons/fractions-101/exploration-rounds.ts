@@ -8,13 +8,13 @@ export const EXPLORATION_ROUNDS: ExplorationRoundConfig[] = [
   {
     id: 1,
     name: 'First Split',
-    goal: 'Split any crystal',
+    goal: 'Split any block',
     goalType: 'any_split',
-    celebration: "You cast your first spell! You made smaller pieces!",
+    celebration: "You made smaller pieces! Nice work!",
   },
   {
     id: 2,
-    name: 'Fusion Spell',
+    name: 'Combine',
     goal: 'Combine two blocks',
     goalType: 'any_combine',
     celebration: "Fusion! When pieces are the same size, they join together!",
@@ -24,14 +24,14 @@ export const EXPLORATION_ROUNDS: ExplorationRoundConfig[] = [
     name: 'Split Again',
     goal: 'Split a different way',
     goalType: 'different_split',
-    celebration: "Two different splits! Each spell makes different-sized pieces.",
+    celebration: "Two different splits! Each split makes different-sized pieces.",
   },
   {
     id: 4,
     name: 'The Comparison',
     goal: 'Drag two blocks to comparison zone',
     goalType: 'equivalence_compare',
-    celebration: "They're the same! Different fractions, same magical power!",
+    celebration: "They're the same! Different fractions, same size!",
     startingBlocks: [
       { numerator: 1, denominator: 2 },
       { numerator: 2, denominator: 4 },

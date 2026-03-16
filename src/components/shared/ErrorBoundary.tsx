@@ -77,7 +77,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               🧙
             </div>
             <h2 style={{ margin: 0, fontSize: 20, color: '#2C3E50' }}>
-              Oops! Something went wrong with the spell table.
+              Oops! Something went wrong with the workspace.
             </h2>
             <p style={{ margin: 0, fontSize: 15, color: '#555', lineHeight: 1.5 }}>
               Don't worry — your progress has been saved. Let's try again!

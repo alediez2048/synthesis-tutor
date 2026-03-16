@@ -35,7 +35,7 @@ export function StartScreen({ onStart }: StartScreenProps) {
         {/* Title logo */}
         <img
           src="/assets/title-logo.png"
-          alt="Fraction Quest with Sam the Math Wizard"
+          alt="Fraction Practice with Sam"
           style={{ height: 250, objectFit: 'contain', marginBottom: 8 }}
         />
 
@@ -73,7 +73,7 @@ export function StartScreen({ onStart }: StartScreenProps) {
               fontFamily: "Georgia, serif",
               color: COLORS.text,
             }}>
-              Hi there! I'm <strong style={{ color: COLORS.goldLight }}>Sam the Math Wizard</strong>. Let me show you how to play!
+              Hi there! I'm <strong style={{ color: COLORS.goldLight }}>Sam</strong>, your friendly guide. Let me show you how to play!
             </p>
           </div>
 
@@ -100,10 +100,10 @@ export function StartScreen({ onStart }: StartScreenProps) {
               gap: 8,
             }}>
               {[
-                'Tap a crystal to select it',
+                'Tap a block to select it',
                 'Split it into smaller equal pieces',
                 'Drag two same-size pieces together to combine them',
-                'Drag crystals to the altar to compare',
+                'Drag blocks to the comparison area to compare',
               ].map((text) => (
                 <li key={text} style={{
                   fontSize: 15,
@@ -136,7 +136,7 @@ export function StartScreen({ onStart }: StartScreenProps) {
             onClick={onStart}
             style={{ padding: '14px 48px', fontSize: 20 }}
           >
-            Begin Your Quest
+            Let's Start!
           </MagicButton>
         </div>
       </div>

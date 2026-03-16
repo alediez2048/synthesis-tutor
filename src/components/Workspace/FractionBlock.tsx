@@ -109,7 +109,7 @@ export function FractionBlock({
         (rootRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
         onBlockRef?.(block.id, el);
       }}
-      {...(block.id === 'block-0' ? { 'data-tutorial-target': 'initial-crystal' } : {})}
+      {...(block.id === 'block-0' ? { 'data-tutorial-target': 'initial-block' } : {})}
       role="button"
       tabIndex={0}
       aria-label={ariaLabel}

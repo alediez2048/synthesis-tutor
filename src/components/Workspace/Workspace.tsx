@@ -110,7 +110,7 @@ export function Workspace({
         padding: 14,
       }}
     >
-      {/* Crystal Workspace */}
+      {/* Block Workspace */}
       <section
         data-tutorial-target="workspace-blocks"
         aria-label="Workspace"
@@ -135,7 +135,7 @@ export function Workspace({
       >
         {workspaceBlocks.length === 0 && (
           <span style={{ fontSize: 12, color: COLORS.textMuted, fontStyle: 'italic', fontFamily: 'Georgia, serif' }}>
-            Tap a crystal to select it, then split or compare
+            Tap a block to select it, then split or compare
           </span>
         )}
         {workspaceBlocks.map((block) => (
@@ -158,7 +158,7 @@ export function Workspace({
         ))}
       </section>
 
-      {/* Comparison Portal */}
+      {/* Comparison Area */}
       <ComparisonZone
         ref={comparisonZoneRef}
         blocks={comparisonBlocks}

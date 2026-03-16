@@ -33,7 +33,7 @@ function SignOutButton() {
         color: COLORS.goldLight,
         fontFamily: 'Georgia, serif',
       }}>
-        {user.firstName ?? 'Wizard'}
+        {user.firstName ?? 'there'}
       </span>
       <button
         type="button"
@@ -76,7 +76,7 @@ export function LessonMap({ onSelectLesson }: LessonMapProps) {
       {clerkEnabled && <SignOutButton />}
       <img
         src="/assets/title-logo.png"
-        alt="Fraction Quest"
+        alt="Fractions"
         style={{ height: 120, objectFit: 'contain', marginBottom: 24 }}
       />
       <h2 style={{
