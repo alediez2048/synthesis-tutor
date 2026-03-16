@@ -1,4 +1,5 @@
-import { SignIn, useUser } from '@clerk/clerk-react';
+import { useSignIn, useUser } from '@clerk/clerk-react';
+import { useState } from 'react';
 import { setProgressUserId } from '../../state/progressStore';
 import { isClerkEnabled } from '../../hooks/useClerkSafe';
 
@@ -6,10 +7,35 @@ export interface LandingPageProps {
   onPlay: () => void;
 }
 
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '12px 14px',
+  fontSize: 16,
+  border: '1.5px solid #d4c5a0',
+  borderRadius: 8,
+  background: '#fff',
+  boxSizing: 'border-box',
+  fontFamily: "'Nunito', sans-serif",
+  outline: 'none',
+};
+
+const labelStyle: React.CSSProperties = {
+  fontSize: 14,
+  fontWeight: 600,
+  color: '#5a4a3a',
+  marginBottom: 6,
+  fontFamily: "'Nunito', sans-serif",
+};
+
 function ClerkLanding({ onPlay }: LandingPageProps) {
   const { isSignedIn, user } = useUser();
+  const { signIn, setActive } = useSignIn();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [mode, setMode] = useState<'login' | 'signup'>('login');
 
-  // Sync user ID for progress isolation
   if (user) {
     setProgressUserId(user.id);
   }
@@ -41,43 +67,90 @@ function ClerkLanding({ onPlay }: LandingPageProps) {
     );
   }
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!signIn || !setActive) return;
+    setError('');
+    setIsLoading(true);
+
+    try {
+      if (mode === 'login') {
+        const result = await signIn.create({ identifier: email, password });
+        if (result.status === 'complete' && result.createdSessionId) {
+          await setActive({ session: result.createdSessionId });
+        }
+      } else {
+        // For signup, redirect to Clerk's signup flow
+        window.location.href = '/sign-up';
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Something went wrong';
+      setError(msg.includes('identifier') ? 'Invalid email or password' : msg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <LandingShell>
-      <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-        <SignIn
-          appearance={{
-            elements: {
-              rootBox: { width: '100%' },
-              card: {
-                background: 'transparent',
-                boxShadow: 'none',
-                border: 'none',
-                padding: 0,
-                width: '100%',
-              },
-              formButtonPrimary: {
-                background: 'linear-gradient(180deg, #4A90D9 0%, #3570b8 100%)',
-                boxShadow: '0 3px 10px rgba(74,144,217,0.4)',
-                borderRadius: '10px',
-                fontSize: '16px',
-                fontWeight: 700,
-                padding: '12px 0',
-              },
-              formFieldInput: {
-                borderRadius: '10px',
-                border: '1.5px solid #d4c5a0',
-                fontSize: '16px',
-                padding: '12px 14px',
-              },
-              footerActionLink: {
-                color: '#4A90D9',
-              },
-              headerTitle: { display: 'none' },
-              headerSubtitle: { display: 'none' },
-            },
+      {/* Crystal icon */}
+      <img
+        src="/assets/crystal-icon.png"
+        alt=""
+        style={{ width: 48, height: 48, marginBottom: 12 }}
+        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+      />
+
+      <form onSubmit={handleSubmit} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div>
+          <label style={labelStyle}>Email</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Enter your email"
+            required
+            style={inputStyle}
+          />
+        </div>
+        <div>
+          <label style={labelStyle}>Password</label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Enter your password"
+            required
+            style={inputStyle}
+          />
+        </div>
+
+        {error && (
+          <p style={{ margin: 0, fontSize: 13, color: '#e53e3e', textAlign: 'center' }}>{error}</p>
+        )}
+
+        <button
+          type="submit"
+          disabled={isLoading}
+          style={{
+            width: '100%',
+            padding: '14px 0',
+            fontSize: 18,
+            fontWeight: 700,
+            fontFamily: "'Fredoka One', 'Nunito', sans-serif",
+            background: isLoading ? '#999' : 'linear-gradient(180deg, #4A90D9 0%, #3570b8 100%)',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 10,
+            cursor: isLoading ? 'not-allowed' : 'pointer',
+            boxShadow: '0 3px 10px rgba(74,144,217,0.4)',
+            letterSpacing: 0.5,
+            marginTop: 4,
           }}
-        />
-      </div>
+        >
+          {isLoading ? 'Loading...' : 'Log In'}
+        </button>
+      </form>
 
       <div style={{ width: '100%', height: 1, backgroundColor: '#d4c5a0', margin: '16px 0' }} />
 
@@ -92,9 +165,25 @@ function ClerkLanding({ onPlay }: LandingPageProps) {
           fontWeight: 700,
           cursor: 'pointer',
           fontFamily: "'Nunito', sans-serif",
+          marginBottom: 8,
         }}
       >
         Play as Guest
+      </button>
+
+      <button
+        type="button"
+        onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
+        style={{
+          background: 'none',
+          border: 'none',
+          color: '#5a4a3a',
+          fontSize: 14,
+          cursor: 'pointer',
+          fontFamily: "'Nunito', sans-serif",
+        }}
+      >
+        {mode === 'login' ? 'Create an account' : 'Already have an account? Log in'}
       </button>
     </LandingShell>
   );
@@ -140,7 +229,8 @@ function LandingShell({ children }: { children: React.ReactNode }) {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center',
+        justifyContent: 'flex-start',
+        paddingTop: '8vh',
         overflow: 'auto',
         fontFamily: "'Nunito', sans-serif",
       }}
