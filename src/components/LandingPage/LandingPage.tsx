@@ -229,50 +229,69 @@ function LandingShell({ children }: { children: React.ReactNode }) {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'flex-start',
-        paddingTop: '8vh',
         overflow: 'auto',
         fontFamily: "'Nunito', sans-serif",
       }}
     >
+      {/* Title — closer to top */}
       <img
         src="/assets/title-logo.png"
         alt="Fraction Quest"
         style={{
-          width: '80%',
-          maxWidth: 420,
+          position: 'absolute',
+          top: 16,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '90%',
+          maxWidth: 567,
           height: 'auto',
           objectFit: 'contain',
-          marginBottom: 24,
+          zIndex: 1,
         }}
       />
 
+      {/* Auth box — centered in the viewport, offset 50px down */}
       <div
         style={{
+          position: 'absolute',
+          top: 'calc(50% + 50px)',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
           width: '85%',
           maxWidth: 380,
-          background: 'linear-gradient(180deg, #faf3e0 0%, #f5e6c8 100%)',
-          borderRadius: 20,
-          padding: '32px 28px 24px',
-          boxShadow: '0 8px 40px rgba(0,0,0,0.4)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
+          padding: 24,
+          boxSizing: 'border-box',
+          zIndex: 1,
         }}
       >
-        {children}
+        <div
+          style={{
+            background: 'linear-gradient(180deg, #faf3e0 0%, #f5e6c8 100%)',
+            borderRadius: 20,
+            padding: '32px 28px 24px',
+            boxShadow: '0 8px 40px rgba(0,0,0,0.4)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+          }}
+        >
+          {children}
+        </div>
       </div>
 
+      {/* Sam — closer to lower right corner, in front */}
       <img
         src="/assets/sam-waving.png"
         alt="Sam the Math Wizard"
         style={{
           position: 'fixed',
-          bottom: 0,
-          right: 0,
-          height: 220,
+          bottom: -40,
+          right: -20,
+          height: 380,
           objectFit: 'contain',
+          objectPosition: 'bottom right',
           pointerEvents: 'none',
+          zIndex: 10,
         }}
         onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
       />
