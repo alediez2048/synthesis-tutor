@@ -66,3 +66,8 @@ body {
   background: #1a0a2e;
   -webkit-font-smoothing: antialiased;
 }
+
+/* Prevent overscroll bounce on mobile */
+html, body {
+  overscroll-behavior: none;
+}
