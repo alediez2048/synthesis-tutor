@@ -1,5 +1,4 @@
 import { COLORS } from '../../theme';
-import { Sparkles } from './Sparkles';
 import { MagicButton } from './MagicButton';
 
 export interface StartScreenProps {
@@ -20,7 +19,6 @@ export function StartScreen({ onStart }: StartScreenProps) {
         padding: 16,
       }}
     >
-      <Sparkles />
       <div
         style={{
           display: 'flex',
@@ -46,7 +44,7 @@ export function StartScreen({ onStart }: StartScreenProps) {
             borderRadius: 16,
             padding: 28,
             border: `2px solid ${COLORS.gold}`,
-            boxShadow: `0 8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)`,
+            boxShadow: `0 8px 40px rgba(0,0,0,0.1)`,
             width: '100%',
             boxSizing: 'border-box',
           }}
@@ -78,7 +76,7 @@ export function StartScreen({ onStart }: StartScreenProps) {
           </div>
 
           <div style={{
-            background: 'rgba(255,255,255,0.06)',
+            background: 'rgba(0,0,0,0.03)',
             borderRadius: 12,
             padding: 16,
             marginBottom: 16,

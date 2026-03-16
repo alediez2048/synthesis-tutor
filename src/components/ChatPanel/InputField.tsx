@@ -81,7 +81,7 @@ export function InputField({
           padding: '10px 14px',
           fontSize: 14,
           fontFamily: 'Georgia, serif',
-          background: 'rgba(255,255,255,0.05)',
+          background: 'rgba(255,255,255,0.8)',
           border: `1px solid ${COLORS.panelBorder}`,
           borderRadius: 12,
           outline: 'none',

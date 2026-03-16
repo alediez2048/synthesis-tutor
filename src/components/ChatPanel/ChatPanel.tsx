@@ -53,7 +53,7 @@ export function ChatPanel({
           padding: '10px 16px',
           width: '100%',
           boxSizing: 'border-box',
-          background: 'rgba(10, 5, 30, 0.6)',
+          background: 'rgba(255, 255, 255, 0.85)',
           borderTop: `1px solid ${COLORS.panelBorder}`,
         }}
       >
@@ -122,7 +122,7 @@ export function ChatPanel({
         flexDirection: 'column',
         height: '100%',
         minHeight: 0,
-        background: 'rgba(10, 5, 30, 0.4)',
+        background: 'rgba(255, 255, 255, 0.7)',
         borderRight: `1px solid ${COLORS.panelBorder}`,
       }}
     >
@@ -183,7 +183,7 @@ export function ChatPanel({
         )}
         <div ref={scrollEndRef} />
       </div>
-      <div style={{ padding: '10px 14px', borderTop: `1px solid ${COLORS.panelBorder}`, background: 'rgba(10, 5, 30, 0.6)' }}>
+      <div style={{ padding: '10px 14px', borderTop: `1px solid ${COLORS.panelBorder}`, background: 'rgba(255, 255, 255, 0.85)' }}>
         {voice.error && (
           <div
             role="alert"

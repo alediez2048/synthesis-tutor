@@ -98,11 +98,11 @@ function ClerkLanding({ onPlay }: LandingPageProps) {
 
   return (
     <LandingShell>
-      {/* Crystal icon */}
+      {/* Sam avatar */}
       <img
-        src="/assets/crystal-icon.png"
+        src="/assets/sam-avatar.png"
         alt=""
-        style={{ width: isMobile ? 40 : 48, height: isMobile ? 40 : 48, marginBottom: isMobile ? 8 : 12 }}
+        style={{ width: isMobile ? 40 : 48, height: isMobile ? 40 : 48, borderRadius: '50%', marginBottom: isMobile ? 8 : 12 }}
         onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
       />
 
@@ -235,7 +235,7 @@ function LandingShell({ children }: { children: React.ReactNode }) {
         backgroundImage: 'url(/assets/background.png)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        backgroundColor: '#1a0a2e',
+        backgroundColor: '#f0f4f8',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',

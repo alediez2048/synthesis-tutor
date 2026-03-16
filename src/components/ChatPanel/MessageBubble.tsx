@@ -46,13 +46,13 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           fontFamily: 'Georgia, serif',
           lineHeight: 1.5,
           background: isTutor
-            ? `linear-gradient(135deg, rgba(124,58,237,0.3), rgba(59,7,100,0.4))`
-            : `linear-gradient(135deg, rgba(37,99,235,0.3), rgba(29,78,216,0.4))`,
+            ? `rgba(124,58,237,0.08)`
+            : `rgba(96,165,250,0.1)`,
           border: isTutor
-            ? `1px solid ${COLORS.purpleLight}40`
-            : `1px solid ${COLORS.crystal}40`,
+            ? `1px solid rgba(124,58,237,0.15)`
+            : `1px solid rgba(96,165,250,0.2)`,
           color: COLORS.text,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
         }}
       >
         {isTutor && (

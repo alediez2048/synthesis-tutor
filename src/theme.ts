@@ -1,14 +1,14 @@
 /**
- * Fraction Quest — shared color system and theme constants.
+ * Fraction Practice — shared color system and theme constants.
  * Single source of truth for all visual styling.
  */
 
 export const COLORS = {
-  // Backgrounds
-  bg: '#1a0a2e',
-  bgGradient: 'linear-gradient(135deg, #1a0a2e 0%, #2d1b69 40%, #1a0a2e 100%)',
-  panel: 'rgba(30, 15, 60, 0.85)',
-  panelBorder: 'rgba(180, 140, 255, 0.3)',
+  // Backgrounds — calm, light palette (Hinten et al.: reduce extraneous cognitive load)
+  bg: '#f0f4f8',
+  bgGradient: 'linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 40%, #f0f4f8 100%)',
+  panel: 'rgba(255, 255, 255, 0.92)',
+  panelBorder: 'rgba(100, 116, 139, 0.2)',
 
   // Accents
   gold: '#d4a843',
@@ -16,12 +16,16 @@ export const COLORS = {
   purple: '#7c3aed',
   purpleLight: '#a78bfa',
   purpleDark: '#3b0764',
+  accent: '#60a5fa',
+  accentLight: '#93c5fd',
+  /** @deprecated Use `accent` instead */
   crystal: '#60a5fa',
+  /** @deprecated Use `accentLight` instead */
   crystalGlow: '#93c5fd',
 
-  // Text
-  text: '#f0e6ff',
-  textMuted: '#b8a0d8',
+  // Text — dark on light background
+  text: '#1e293b',
+  textMuted: '#64748b',
 
   // Semantic
   correct: '#22c55e',

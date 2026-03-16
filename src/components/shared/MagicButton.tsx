@@ -76,9 +76,9 @@ export function MagicButton({
       disabled={disabled}
       {...ariaProps}
       style={{
-        background: disabled ? 'rgba(60, 30, 90, 0.4)' : v.bg,
-        border: disabled ? `1px solid rgba(150, 120, 60, 0.3)` : v.border,
-        color: disabled ? 'rgba(255,255,255,0.4)' : v.color,
+        background: disabled ? 'rgba(148, 163, 184, 0.3)' : v.bg,
+        border: disabled ? `1px solid rgba(148, 163, 184, 0.3)` : v.border,
+        color: disabled ? 'rgba(100, 116, 139, 0.5)' : v.color,
         boxShadow: disabled ? 'none' : v.shadow,
         padding: small ? '6px 14px' : '10px 22px',
         fontSize: small ? 13 : 15,
