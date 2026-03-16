@@ -20,6 +20,7 @@ import type { Fraction } from '../src/engine/FractionEngine.js';
 import { detectMisconception } from '../src/engine/MisconceptionDetector.js';
 import type { LessonState } from '../src/state/types.js';
 import { getLesson } from '../src/content/curriculum.js';
+import { retrievePedagogy } from './rag/retrieve.js';
 
 const fractionSchema = {
   type: 'object' as const,
@@ -208,12 +209,14 @@ export function getToolsForLesson(lessonId: string): ToolDefinition[] {
 
 function executeCheckAnswer(
   studentInput: string,
-  target: Fraction
+  target: Fraction,
+  lessonState: LessonState
 ): {
   correct: boolean;
   parsed: Fraction | null;
   misconception?: string;
   misconceptionType?: string;
+  teachingStrategy?: string;
 } {
   const parsed = parseStudentInput(studentInput);
   if (parsed === null) {
@@ -229,11 +232,27 @@ function executeCheckAnswer(
     return { correct: true, parsed };
   }
   const detection = detectMisconception(parsed, target);
+
+  // RAG: retrieve misconception-specific teaching strategy
+  let teachingStrategy: string | undefined;
+  if (detection.type !== 'random_guess') {
+    const chunks = retrievePedagogy({
+      lessonId: lessonState.lessonId ?? 'fractions-101',
+      phase: lessonState.phase ?? 'guided',
+      concepts: lessonState.conceptsDiscovered ?? [],
+      misconceptionType: detection.type,
+    });
+    if (chunks.length > 0) {
+      teachingStrategy = chunks[0].content;
+    }
+  }
+
   return {
     correct: false,
     parsed,
     misconception: detection.description,
     misconceptionType: detection.type,
+    teachingStrategy,
   };
 }
 
@@ -317,7 +336,7 @@ export function executeToolCall(
       case 'check_answer': {
         const student_input = input.student_input as string;
         const target = input.target as Fraction;
-        return executeCheckAnswer(student_input, target);
+        return executeCheckAnswer(student_input, target, lessonState);
       }
       case 'get_workspace_state':
         return extractWorkspaceState(lessonState);
