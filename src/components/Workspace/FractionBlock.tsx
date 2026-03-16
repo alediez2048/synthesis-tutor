@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { useDrag } from '@use-gesture/react';
 import type { FractionBlock as FractionBlockType } from '../../state/types';
+import { getDenomColor } from '../../theme';
 
 const MIN_SIZE_PX = 60;
 
@@ -93,6 +94,7 @@ export function FractionBlock({
   );
 
   const { fraction, isSelected } = block;
+  const denomColor = getDenomColor(fraction.denominator);
   const value = fraction.numerator / fraction.denominator;
   const widthPx = Math.max(MIN_SIZE_PX, Math.round(value * referenceWidth));
   const heightPx = 56;
@@ -135,8 +137,8 @@ export function FractionBlock({
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 1,
-        background: 'linear-gradient(135deg, rgba(74,144,217,0.7), rgba(50,100,180,0.5))',
-        border: isSelected ? '2px solid #D4A843' : '2px solid rgba(74,144,217,0.6)',
+        background: `linear-gradient(135deg, ${denomColor.bg}, ${denomColor.bg}cc)`,
+        border: isSelected ? '2px solid #D4A843' : `2px solid ${denomColor.border}`,
         borderRadius: 12,
         boxShadow: isSelected
           ? '0 0 20px rgba(212,168,67,0.5), inset 0 0 15px rgba(212,168,67,0.2)'
