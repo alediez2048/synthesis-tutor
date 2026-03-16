@@ -42,7 +42,7 @@ const SPLIT_ANIMATION_MS = 400;
 function getCompletionMessage(correct: number, total: number): string {
   if (total === 0) return "Great exploring today! Let's try again.";
   const ratio = correct / total;
-  if (ratio === 1) return "You're a fraction master! You proved that the same amount can be written in lots of different ways.";
+  if (ratio === 1) return "Amazing! You proved that the same amount can be written in lots of different ways.";
   if (ratio >= 0.67) return "Great job! You really understand equivalent fractions. Want to try the one you missed again?";
   if (ratio >= 0.34) return "You're getting there! Want to practice a little more?";
   return "Fractions take practice, and you did great exploring today! Let's try again.";
@@ -182,7 +182,7 @@ function App() {
 
     // Welcome messages for each phase (chat was cleared by reducer)
     if (state.phase === 'explore' && prev !== 'intro' && prev !== 'tutorial') {
-      dispatch({ type: 'TUTOR_RESPONSE', content: "Welcome back to exploring! Try splitting, combining, and comparing crystals.", isStreaming: false });
+      dispatch({ type: 'TUTOR_RESPONSE', content: "Welcome back to exploring! Try splitting, combining, and comparing blocks.", isStreaming: false });
     }
     if (state.phase === 'assess') {
       const pool = selectAssessmentProblems(state.lessonId);
@@ -226,7 +226,7 @@ function App() {
       if (config && state.chatMessages.length === 0) {
         dispatch({
           type: 'TUTOR_RESPONSE',
-          content: `Let's explore! Round 1: ${config.goal}. Tap a crystal and try it!`,
+          content: `Let's explore! Round 1: ${config.goal}. Tap a block and try it!`,
           isStreaming: false,
         });
       }
@@ -419,13 +419,13 @@ function App() {
       if (equiv) {
         playCorrect();
         notifySam(
-          `I placed ${a.fraction.numerator}/${a.fraction.denominator} and ${b.fraction.numerator}/${b.fraction.denominator} on the spell altar to compare them`
+          `I placed ${a.fraction.numerator}/${a.fraction.denominator} and ${b.fraction.numerator}/${b.fraction.denominator} on the comparison area to compare them`
         );
       } else {
         playIncorrect();
-        // Keep blocks on altar — user can manually return them and try again
+        // Keep blocks on comparison area — user can manually return them and try again
         notifySam(
-          `I placed ${a.fraction.numerator}/${a.fraction.denominator} and ${b.fraction.numerator}/${b.fraction.denominator} on the spell altar to compare them`
+          `I placed ${a.fraction.numerator}/${a.fraction.denominator} and ${b.fraction.numerator}/${b.fraction.denominator} on the comparison area to compare them`
         );
       }
     }
@@ -463,8 +463,8 @@ function App() {
       const { numerator, denominator } = selectedBlock.fraction;
       notifySam(
         `[Student tried to split ${numerator}/${denominator} into ${parts} pieces, ` +
-          `but that would make ${denominator * parts}ths which is beyond our crystal limit of 12. ` +
-          `Help them understand why pieces can't get infinitely small and suggest trying a different crystal or combining first.]`
+          `but that would make ${denominator * parts}ths which is beyond our limit of 12. ` +
+          `Help them understand why pieces can't get infinitely small and suggest trying a different block or combining first.]`
       );
       return;
     }
@@ -479,7 +479,7 @@ function App() {
     playPop();
     const { numerator, denominator } = selectedBlock.fraction;
     notifySam(
-      `I split the ${numerator}/${denominator} crystal into ${parts} pieces`
+      `I split the ${numerator}/${denominator} block into ${parts} pieces`
     );
   };
 
@@ -544,7 +544,7 @@ function App() {
     const block = state.blocks.find((b) => b.id === draggedId);
     if (block) {
       const { numerator, denominator } = block.fraction;
-      notifySam(`I placed ${numerator}/${denominator} on the spell altar`);
+      notifySam(`I placed ${numerator}/${denominator} on the comparison area`);
     }
   };
 
@@ -597,7 +597,7 @@ function App() {
   const handleTutorialComplete = useCallback(() => {
     dispatch({
       type: 'TUTOR_RESPONSE',
-      content: "You've learned the basics! Now it's your turn to explore. Try splitting, combining, and comparing crystals on your own!",
+      content: "You've learned the basics! Now it's your turn to explore. Try splitting, combining, and comparing blocks on your own!",
       isStreaming: false,
     });
   }, [dispatch]);
@@ -858,7 +858,7 @@ function App() {
         <h1 style={{ margin: 0, lineHeight: 0 }}>
           <img
             src="/assets/title-logo.png"
-            alt="Fraction Quest"
+            alt="Fractions"
             style={{ height: viewportWidth < 480 ? 48 : 72, objectFit: 'contain' }}
           />
         </h1>
@@ -999,7 +999,7 @@ function App() {
                       color: COLORS.text,
                       flex: 1,
                     }}>
-                      Great exploring, young wizard! Ready to put your skills to the test with some practice challenges?
+                      Great exploring! Ready to put your skills to the test with some practice challenges?
                     </p>
                   </div>
                   <div style={{ display: 'flex', gap: 10 }}>
@@ -1140,16 +1140,16 @@ function App() {
                       small
                       onClick={() => dispatch({ type: 'ADD_BLOCK', fraction: { numerator: 1, denominator: 2 } })}
                       disabled={state.blocks.length >= 8 || state.isDragging}
-                      aria-label="Add new crystal"
+                      aria-label="Add block"
                     >
-                      New crystal
+                      New block
                     </MagicButton>
                     <MagicButton
                       variant="ghost"
                       small
                       onClick={() => dispatch({ type: 'RESET_WORKSPACE' })}
                       disabled={state.isDragging}
-                      aria-label="Start fresh with one crystal"
+                      aria-label="Start fresh with one block"
                     >
                       Start fresh
                     </MagicButton>

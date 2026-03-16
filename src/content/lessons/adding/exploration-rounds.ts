@@ -11,7 +11,7 @@ export const EXPLORATION_ROUNDS: ExplorationRoundConfig[] = [
     name: 'Add Same Size',
     goal: 'Add two fractions with the same denominator',
     goalType: 'any_add',
-    celebration: "You added them! Same-sized pieces fuse together!",
+    celebration: "You added them! Same-sized pieces combine together!",
   },
   {
     id: 2,

@@ -22,7 +22,8 @@
 
 | Ticket | Description | Status | Est. |
 |--------|-------------|--------|------|
-| ENG-058 | Strip fantasy theme — go cognitively coherent (Hinten et al.) | ⬜ Pending | TBD |
+| ENG-058a | Strip fantasy theme — vocabulary sweep (Hinten et al.) | ⬜ Pending | 2–3h |
+| ENG-058b | Strip fantasy theme — visual simplification (Hinten et al.) | ⬜ Pending | 2–3h |
 | ENG-059 | Scaffolding mixing board — multi-dimensional (Kalyuga, Wood et al.) | ⬜ Pending | TBD |
 | ENG-060 | Self-explanation prompts throughout (Chi et al.) | ⬜ Pending | TBD |
 | ENG-061 | Assessment as learning mechanism — retrieval practice (Karpicke & Roediger) | ⬜ Pending | TBD |

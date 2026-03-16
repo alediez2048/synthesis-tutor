@@ -77,7 +77,7 @@ export const ComparisonZone = forwardRef<HTMLElement, ComparisonZoneProps>(
           marginBottom: 8,
           textAlign: 'center',
         }}>
-          Comparison Portal
+          Comparison Area
         </div>
 
         {blocks.length === 0 ? (
@@ -89,7 +89,7 @@ export const ComparisonZone = forwardRef<HTMLElement, ComparisonZoneProps>(
             color: COLORS.textMuted,
             fontFamily: 'Georgia, serif',
           }}>
-            Drag crystals here to compare them
+            Drag blocks here to compare them
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>

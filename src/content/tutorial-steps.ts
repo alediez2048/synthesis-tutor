@@ -1,6 +1,6 @@
 /**
  * Interactive tutorial step configuration.
- * 10 steps walking students through the crystal workspace, split, combine, comparison, and chat.
+ * 10 steps walking students through the workspace, split, combine, comparison, and chat.
  *
  * samText can be a static string or a function receiving blocks to produce
  * dynamic feedback that reflects the user's actual actions.
@@ -42,7 +42,7 @@ export const TUTORIAL_STEPS: TutorialStepConfig[] = [
     id: 0,
     spotlightTarget: null,
     samText:
-      "Welcome, young wizard! In this quest, you'll learn the magic of fractions — the power to break whole crystals into smaller, equal pieces!",
+      "Hi! Let's learn about fractions — how to split a whole into equal pieces, like cutting a pizza!",
     ctaLabel: "Next",
     blockedDuringDemo: false,
     requiresInteraction: false,
@@ -51,16 +51,16 @@ export const TUTORIAL_STEPS: TutorialStepConfig[] = [
     id: 1,
     spotlightTarget: null,
     samText:
-      "A fraction tells you two things: how many crystal shards you have, and how many equal pieces the whole crystal was split into. 1/2 means 1 shard out of 2!",
+      "A fraction tells you two things: how many pieces you have, and how many equal pieces the whole was split into. 1/2 means 1 piece out of 2!",
     ctaLabel: "Next",
     blockedDuringDemo: false,
     requiresInteraction: false,
   },
   {
     id: 2,
-    spotlightTarget: "initial-crystal",
+    spotlightTarget: "initial-block",
     samText:
-      "This is a whole crystal — one complete piece. Watch me split it into two equal halves!",
+      "This is a whole — one complete piece. Watch me split it into two equal halves!",
     ctaLabel: "Next",
     blockedDuringDemo: false,
     requiresInteraction: false,
@@ -104,7 +104,7 @@ export const TUTORIAL_STEPS: TutorialStepConfig[] = [
     id: 6,
     spotlightTarget: "workspace-blocks",
     samText:
-      "Now watch me fuse two same-sized pieces back together! When pieces are the same size, they can combine into one bigger piece.",
+      "Now watch me combine two same-sized pieces back together! When pieces are the same size, they can combine into one bigger piece.",
     ctaLabel: "Next",
     blockedDuringDemo: true,
     requiresInteraction: false,
@@ -113,7 +113,7 @@ export const TUTORIAL_STEPS: TutorialStepConfig[] = [
     id: 7,
     spotlightTarget: "workspace-blocks",
     samText:
-      "Your turn! Drag one crystal onto another same-sized crystal to fuse them together.",
+      "Your turn! Drag one block onto another same-sized block to combine them together.",
     ctaLabel: "Next",
     blockedDuringDemo: false,
     requiresInteraction: true,
@@ -122,7 +122,7 @@ export const TUTORIAL_STEPS: TutorialStepConfig[] = [
     id: 8,
     spotlightTarget: "workspace-blocks",
     samText:
-      "I fused two halves back into one whole! 1/1 means one whole piece — like a full pizza before you slice it. Splitting and combining are the two main powers you'll use!",
+      "I combined two halves back into one whole! 1/1 means one whole piece — like a full pizza before you slice it. Splitting and combining are the two main tools you'll use!",
     ctaLabel: "Next",
     blockedDuringDemo: false,
     requiresInteraction: false,
@@ -131,7 +131,7 @@ export const TUTORIAL_STEPS: TutorialStepConfig[] = [
     id: 9,
     spotlightTarget: "comparison-portal",
     samText:
-      "This is the Spell Altar! Drag two crystals here to see if they're the same size. Watch what happens!",
+      "This is the comparison area! Drag two blocks here to see if they're the same size. Watch what happens!",
     ctaLabel: "Next",
     blockedDuringDemo: false,
     requiresInteraction: false,
@@ -140,7 +140,7 @@ export const TUTORIAL_STEPS: TutorialStepConfig[] = [
     id: 10,
     spotlightTarget: "comparison-portal",
     samText:
-      "Watch — I'll place 1/2 and 2/4 on the altar. They're the same size, so they match! That golden glow means equal magical power!",
+      "Watch — I'll place 1/2 and 2/4 in the comparison area. They're the same size, so they match! That golden glow means they're equivalent!",
     ctaLabel: "Next",
     blockedDuringDemo: true,
     requiresInteraction: false,
@@ -158,7 +158,7 @@ export const TUTORIAL_STEPS: TutorialStepConfig[] = [
     id: 12,
     spotlightTarget: "chat-input",
     samText:
-      "I'm Sam, your guide! You can ask me anything about fractions anytime. Ready to explore on your own?",
+      "I'm Sam, your friendly guide! You can ask me anything about fractions anytime. Ready to explore on your own?",
     ctaLabel: "Start Exploring",
     blockedDuringDemo: false,
     requiresInteraction: false,

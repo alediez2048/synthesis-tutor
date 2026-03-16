@@ -10,7 +10,7 @@ import type { LessonState, LessonAction } from '../state/types';
 const INTRO_DEMO_DELAY_MS = 2000;
 const INTRO_DEMO_ANIMATION_MS = 400;
 const INTRO_POST_DEMO_MESSAGE =
-  "Watch — I just split that whole crystal into two pieces. Each piece is one-half. Now you try!";
+  "Watch — I just split that whole block into two pieces. Each piece is one-half. Now you try!";
 
 interface IntroObserverOptions {
   state: LessonState;

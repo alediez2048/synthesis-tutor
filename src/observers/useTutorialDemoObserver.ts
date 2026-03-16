@@ -50,7 +50,7 @@ export function useTutorialDemoObserver({
     }
   }, [state.phase, state.tutorialStep]);
 
-  // Step 2: Demo split — whole crystal → two halves
+  // Step 2: Demo split — whole block → two halves
   useEffect(() => {
     if (state.phase !== 'tutorial' || state.tutorialStep !== 3) return;
     if (hasDemoSplitRef.current) return;
@@ -135,7 +135,7 @@ export function useTutorialDemoObserver({
     }
   }, [state.phase, state.tutorialStep]);
 
-  // Step 10: Demo — place 1/2 and 2/4 on altar (equivalent → golden glow)
+  // Step 10: Demo — place 1/2 and 2/4 on comparison area (equivalent → golden glow)
   useEffect(() => {
     if (state.phase !== 'tutorial' || state.tutorialStep !== 10) return;
     if (hasAltarMatchRef.current) return;
@@ -152,7 +152,7 @@ export function useTutorialDemoObserver({
         ],
       });
 
-      // Move them to the altar after a brief pause
+      // Move them to the comparison area after a brief pause
       setTimeout(() => {
         const nextId = state.nextBlockId;
         const idA = `block-${nextId}`;
@@ -170,7 +170,7 @@ export function useTutorialDemoObserver({
     return () => clearTimeout(t);
   }, [state.phase, state.tutorialStep, state.blocks, state.nextBlockId, dispatch, playCorrect]);
 
-  // Step 10: Demo — place 1/2 and 1/3 on altar (not equivalent → red shake)
+  // Step 10: Demo — place 1/2 and 1/3 on comparison area (not equivalent → red shake)
   useEffect(() => {
     if (state.phase !== 'tutorial' || state.tutorialStep !== 11) return;
     if (hasAltarMismatchRef.current) return;
@@ -191,7 +191,7 @@ export function useTutorialDemoObserver({
         ],
       });
 
-      // Move them to the altar
+      // Move them to the comparison area
       setTimeout(() => {
         const nextId = state.nextBlockId;
         const idA = `block-${nextId}`;

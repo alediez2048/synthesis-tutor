@@ -10,7 +10,7 @@ export const GUIDED_PROBLEMS: GuidedProblemConfig[] = [
     type: 'split',
     setup: [{ numerator: 1, denominator: 2 }, { numerator: 1, denominator: 4 }],
     prompt: "Let's add 1/2 and 1/4. Select both blocks and tap Add!",
-    hint: "Tap both crystals to select them, then press the Add button!",
+    hint: "Tap both blocks to select them, then press the Add button!",
     maxAttempts: 3,
   },
   {
@@ -18,7 +18,7 @@ export const GUIDED_PROBLEMS: GuidedProblemConfig[] = [
     type: 'build-equivalent',
     setup: [{ numerator: 1, denominator: 3 }, { numerator: 1, denominator: 6 }],
     prompt: "Add 1/3 and 1/6. What do you get?",
-    hint: "Select both crystals and tap Add to combine their magical power!",
+    hint: "Select both blocks and tap Add to add them together!",
     maxAttempts: 3,
   },
   {
@@ -26,7 +26,7 @@ export const GUIDED_PROBLEMS: GuidedProblemConfig[] = [
     type: 'compare',
     setup: [{ numerator: 1, denominator: 2 }, { numerator: 2, denominator: 4 }],
     prompt: "Add 1/2 + 1/2. Then add 2/4 + 2/4. Are they the same?",
-    hint: "Try adding each pair, then drag the results to the Spell Altar to compare!",
+    hint: "Try adding each pair, then drag the results to the comparison area to compare!",
     maxAttempts: 2,
   },
   {
@@ -34,7 +34,7 @@ export const GUIDED_PROBLEMS: GuidedProblemConfig[] = [
     type: 'simplify',
     setup: [{ numerator: 1, denominator: 4 }, { numerator: 2, denominator: 4 }],
     prompt: "Add 1/4 + 2/4. What's the simplest form?",
-    hint: "Select both crystals and tap Add. Can you simplify the result?",
+    hint: "Select both blocks and tap Add. Can you simplify the result?",
     maxAttempts: 3,
   },
 ];

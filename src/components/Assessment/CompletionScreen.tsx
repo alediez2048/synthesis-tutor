@@ -8,7 +8,7 @@ import { MagicButton } from '../shared/MagicButton';
 
 function getScoreMessage(correct: number, total: number, passed: boolean): string {
   if (total === 0) return "Great exploring today!";
-  if (passed && correct === total) return "Perfect score! You're a true fraction wizard!";
+  if (passed && correct === total) return "Perfect score! You really understand fractions now!";
   if (passed) return "Great job! You passed! Ready for the next lesson?";
   const ratio = correct / total;
   if (ratio >= 0.5) return "Almost there! A little more practice and you'll get it!";
@@ -17,7 +17,7 @@ function getScoreMessage(correct: number, total: number, passed: boolean): strin
 
 const CONCEPT_LABELS: Record<string, string> = {
   splitting: 'Splitting makes smaller equal pieces',
-  combining: 'Combining fuses pieces together',
+  combining: 'Combining puts pieces together',
   equivalence: 'Different fractions can be the same size!',
 };
 

@@ -1,5 +1,5 @@
 /**
- * ENG-030: Portrait mode tab bar — Spell Table / Sam's Chat.
+ * ENG-030: Portrait mode tab bar — Workspace / Sam's Chat.
  */
 
 const MIN_TAP_PX = 44;
@@ -31,7 +31,7 @@ export function ViewToggle({
       <button
         role="tab"
         aria-selected={activeView === 'workspace'}
-        aria-label="Spell Table"
+        aria-label="Workspace"
         type="button"
         onClick={() => onToggle('workspace')}
         style={{
@@ -47,7 +47,7 @@ export function ViewToggle({
           color: activeView === 'workspace' ? '#fff' : 'rgba(0,0,0,0.5)',
         }}
       >
-        Spell Table
+        Workspace
       </button>
       <button
         role="tab"

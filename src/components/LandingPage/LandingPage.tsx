@@ -246,7 +246,7 @@ function LandingShell({ children }: { children: React.ReactNode }) {
       {/* Title — closer to top, smaller on mobile */}
       <img
         src="/assets/title-logo.png"
-        alt="Fraction Quest"
+        alt="Fraction Practice"
         style={{
           position: 'absolute',
           top: isMobile ? 12 : 16,
@@ -292,7 +292,7 @@ function LandingShell({ children }: { children: React.ReactNode }) {
       {/* Sam — smaller on mobile so auth box stays usable */}
       <img
         src="/assets/sam-waving.png"
-        alt="Sam the Math Wizard"
+        alt="Sam"
         style={{
           position: 'fixed',
           bottom: isMobile ? -60 : -40,

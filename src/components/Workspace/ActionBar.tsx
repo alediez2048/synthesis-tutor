@@ -126,7 +126,7 @@ export function ActionBar({
             aria-expanded={pickerOpen}
             aria-haspopup="true"
           >
-            Split Crystal
+            Split
           </MagicButton>
         </span>
 
@@ -180,8 +180,8 @@ export function ActionBar({
           fontFamily: 'Georgia, serif',
         }}>
           {actions.includes('add')
-            ? 'Tap two crystals to select them, then tap Add'
-            : 'Tap a crystal to select it, then split or compare'}
+            ? 'Tap two blocks to select them, then tap Add'
+            : 'Tap a block to select it, then split or compare'}
         </span>
       )}
     </div>
