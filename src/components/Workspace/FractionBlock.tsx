@@ -137,14 +137,14 @@ export function FractionBlock({
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 1,
-        background: `linear-gradient(135deg, ${denomColor.bg}, ${denomColor.bg}cc)`,
+        background: denomColor.bg,
         border: isSelected ? '2px solid #D4A843' : `2px solid ${denomColor.border}`,
         borderRadius: 12,
         boxShadow: isSelected
-          ? '0 0 20px rgba(212,168,67,0.5), inset 0 0 15px rgba(212,168,67,0.2)'
+          ? '0 0 0 3px rgba(212,168,67,0.4)'
           : isDraggingThis
-            ? '0 8px 20px rgba(0,0,0,0.4)'
-            : '0 4px 15px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2)',
+            ? '0 4px 12px rgba(0,0,0,0.2)'
+            : '0 2px 6px rgba(0,0,0,0.1)',
         transform: isDraggingThis
           ? `translate(${dragOffset.x}px, ${dragOffset.y}px) scale(1.08)`
           : isSelected

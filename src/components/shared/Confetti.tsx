@@ -1,19 +1,19 @@
 /**
- * ENG-028: Celebration confetti — crystal-colored particles on 3/3 perfect score.
+ * ENG-028: Celebration confetti — colorful particles on 3/3 perfect score.
  * Uses only transform and opacity for 60fps composited animation.
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-const CRYSTAL_PALETTE = [
-  '#60a5fa', // Crystal blue
+const CELEBRATION_PALETTE = [
+  '#60a5fa', // Blue
   '#a78bfa', // Purple light
   '#7c3aed', // Purple
   '#d4a843', // Gold
   '#f0d080', // Gold light
-  '#93c5fd', // Crystal glow
-  '#22c55e', // Correct green
-  '#f0e6ff', // Light text
+  '#93c5fd', // Light blue
+  '#22c55e', // Green
+  '#f0e6ff', // Light
 ];
 
 export interface ConfettiProps {
@@ -54,7 +54,7 @@ function generateParticles(count: number): Particle[] {
       size: 8 + Math.random() * 6,
       width: 1,
       height: Math.random() < 0.5 ? 1 : 1.5, // aspect 1:1 or 1:1.5
-      color: pick(CRYSTAL_PALETTE),
+      color: pick(CELEBRATION_PALETTE),
       delay: Math.random() * 400,
     });
   }
