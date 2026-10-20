@@ -125,7 +125,9 @@ export default async function handler(req: Request): Promise<Response> {
           content: m.content,
         })) as Array<UserMessage | AssistantMessage>;
 
-        for (;;) {
+        // Cap model round-trips so a model that keeps calling tools can't run up cost.
+        const MAX_TOOL_ROUNDS = 5;
+        for (let round = 0; ; round++) {
           const response = await anthropic.messages.create({
             model,
             max_tokens: 1024,
@@ -134,6 +136,8 @@ export default async function handler(req: Request): Promise<Response> {
             tools,
           });
 
+          // Execute each tool call exactly once; the same result goes to the client and back to the model.
+          const toolResults: Array<{ type: 'tool_result'; tool_use_id: string; content: string }> = [];
           for (const block of response.content) {
             if (block.type === 'text') {
               enqueue('text_delta', { content: block.text });
@@ -147,21 +151,18 @@ export default async function handler(req: Request): Promise<Response> {
                 lessonState
               );
               enqueue('tool_result', { id: tb.id, result });
+              toolResults.push({
+                type: 'tool_result',
+                tool_use_id: tb.id,
+                content: JSON.stringify(result),
+              });
             }
           }
 
-          if (response.stop_reason === 'tool_use') {
-            const toolBlocks = response.content
-              .filter((b) => b.type === 'tool_use')
-              .map((b) => b as unknown as { type: 'tool_use'; id: string; name: string; input: unknown });
-            const toolResults: Array<{ type: 'tool_result'; tool_use_id: string; content: string }> = [];
-            for (const b of toolBlocks) {
-              const toolResult = executeToolCall(b.name, b.input as Record<string, unknown>, lessonState) as Record<string, unknown>;
-              toolResults.push({
-                type: 'tool_result',
-                tool_use_id: b.id,
-                content: JSON.stringify(toolResult),
-              });
+          if (response.stop_reason === 'tool_use' && toolResults.length > 0) {
+            if (round + 1 >= MAX_TOOL_ROUNDS) {
+              enqueue('error', { message: 'Tool call limit reached' });
+              break;
             }
             currentMessages = [
               ...currentMessages,

@@ -29,46 +29,26 @@ Curious → Exploring → Struggling → Discovering → Confident
 ## Key Features
 
 - **Deterministic Fraction Engine** — All math is verified by pure functions, never by an LLM. Zero mathematical hallucinations.
-- **Conversational Tutor (Sam)** — Warm, encouraging scripted dialogue with branching that feels adaptive. Never says "wrong."
+- **Conversational Tutor (Sam)** — Claude (Sonnet 4) drives the conversation through a small Vercel Edge function. Sam can only change fractions by calling math tools, so the model never decides what is correct.
 - **Visual Manipulatives** — Rectangular fraction blocks with split/combine/compare interactions and smooth animations.
 - **iPad-First Design** — Touch-optimized with 60×60pt tap targets, `touch-action: none` on the workspace, and PWA standalone mode.
 - **Misconception Detection** — Catches common errors (added numerators & denominators, flipped fractions) and responds with targeted remediation.
 - **Offline Support** — Full PWA with service worker caching. Works in airplane mode after first load.
-- **COPPA Compliant** — Zero data collection. No accounts, no cookies, no analytics, no server-side storage.
+- **Sign-in** — Clerk handles login on the landing page. Lesson state lives in the browser; nothing is stored server-side.
 - **Synthesized Audio** — 5 Web Audio API tones (split pop, combine snap, correct chime, gentle low, celebration arpeggio) with zero file size.
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                  CLIENT (iPad Safari)                    │
-│                                                          │
-│  ┌─────────────┐   ┌──────────────┐   ┌──────────────┐  │
-│  │ Chat Panel   │   │ Manipulative │   │ Sound Manager│  │
-│  │ (React)      │   │ Workspace    │   │ (Web Audio)  │  │
-│  └──────┬──────┘   └──────┬───────┘   └──────┬───────┘  │
-│         │                 │                   │          │
-│  ┌──────▼─────────────────▼───────────────────▼───────┐  │
-│  │           State Reducer (useReducer)                │  │
-│  │           Single Source of Truth                    │  │
-│  └──────┬─────────────────┬───────────────────────────┘  │
-│         │                 │                              │
-│  ┌──────▼──────┐   ┌──────▼───────────────┐             │
-│  │ Scripted    │   │ Fraction Engine       │             │
-│  │ TutorBrain  │   │ (Deterministic Math)  │             │
-│  └─────────────┘   └─────────────────────┘              │
-│                                                          │
-│  ┌──────────────────────────────────────────────────┐    │
-│  │ Checkpoint Layer (sessionStorage)                 │    │
-│  └──────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────┘
-                │
-                │ Static deploy (no backend)
-                ▼
-          Vercel / PWA
+iPad Safari (React)                          Vercel Edge function: api/chat.ts
+  Chat panel  ── messages + lesson state ──▶   Claude Sonnet 4 with tools
+  Workspace   ◀── text + tool results (SSE) ──   check_equivalence, simplify_fraction,
+  Reducer (single source of truth)               split_fraction, combine_fractions, ...
+  Fraction Engine (pure, exact)                  each tool runs on the same pure Fraction Engine
+                                                 retrieval over a 24-chunk pedagogy notes file (api/rag)
 ```
 
-**Core principle:** Fully client-side. No backend, no API calls, no database. The Fraction Engine, script engine, and all state management run in the browser.
+**Core principle:** the model talks, the engine decides. Every fraction the tutor shows or checks goes through a tool backed by `src/engine/FractionEngine.ts`, which uses integer arithmetic only. Tool rounds are capped at five per message.
 
 ## Tech Stack
 
@@ -80,7 +60,8 @@ Curious → Exploring → Struggling → Discovering → Confident
 | Animation | CSS Transitions + Web Animations API |
 | Audio | Web Audio API (synthesized, zero files) |
 | Testing | Vitest + fast-check (property-based) |
-| E2E | Cypress |
+| LLM | Claude Sonnet 4 via `@anthropic-ai/sdk`, Vercel Edge function |
+| Auth | Clerk |
 | Deploy | Vercel + `vite-plugin-pwa` |
 
 ## Getting Started
@@ -112,8 +93,8 @@ Then open `http://<your-local-ip>:5173` on the iPad.
 ### Run Tests
 
 ```bash
-npm test              # Unit + property-based tests
-npm run test:e2e      # Cypress E2E tests
+npm test              # Unit + property-based tests (Vitest, fast-check)
+npx tsx eval/run-eval.ts   # 51 tutor conversations against a running /api/chat
 ```
 
 ### Build & Deploy
@@ -135,9 +116,7 @@ synthesis-tutor/
 │   ├── engine/                  ← Fraction math (pure functions)
 │   │   ├── FractionEngine.ts
 │   │   └── MisconceptionDetector.ts
-│   ├── brain/                   ← TutorBrain abstraction
-│   │   ├── TutorBrain.ts           (interface)
-│   │   └── ScriptedTutorBrain.ts   (prototype implementation)
+│   ├── brain/                   ← Chat client, voice in/out hooks
 │   ├── state/                   ← State management
 │   │   ├── types.ts                (shared type contracts)
 │   │   ├── reducer.ts
@@ -151,7 +130,8 @@ synthesis-tutor/
 │   ├── content/                 ← Lesson scripts (JSON)
 │   ├── audio/                   ← Sound synthesis
 │   └── index.tsx
-├── cypress/                     ← E2E tests
+├── api/                         ← Edge function, tools, system prompt, retrieval
+├── eval/                        ← Conversation eval set and runner
 ├── package.json
 ├── tsconfig.json
 └── vite.config.ts
@@ -183,7 +163,7 @@ Sam is a warm, curious guide — not a teacher, not a parent, not a peer. Think 
 
 **Why deterministic math, not LLM?** An LLM that says "2/4 = 1/3" teaches a child something false. The Fraction Engine uses integer arithmetic — `areEquivalent(a, b)` is `a.n × b.d === b.n × a.d`. The LLM is never the authority on correctness.
 
-**Why scripted dialogue?** An 8-year-old won't wait 2–3 seconds for a GPT round-trip between every interaction. Scripted branching with template interpolation feels adaptive and is instantaneous. The `TutorBrain` interface allows swapping in an LLM-powered implementation later.
+**Why an LLM with tools instead of a script?** The first version used scripted branching; the current one uses Claude with tool calls so Sam can respond to whatever a student types. The engine still owns correctness, so a model slip can change the wording but not the math.
 
 **Why rectangles, not pie charts?** Rectangles tile and subdivide cleanly, enable edge-aligned comparison, and map to the number line model students encounter later. Pedagogically superior for fractions.
 
@@ -209,17 +189,18 @@ Targets validated against a 2020 iPad 8th gen (A12 chip) — the oldest hardware
 - No teacher dashboard
 - "Smashing" (fraction addition with unlike denominators) is architecturally supported but not implemented
 - Full Switch Control accessibility testing deferred
-- No LLM integration in prototype (seam is built, implementation is scripted)
+- Retrieval is tag-based over a small notes file; embeddings are not generated yet
+- The eval runner exists but its results are not committed or run in CI
+- Replies are sent as complete messages over SSE, not token-streamed
 
 ## Future Upgrades
 
 The architecture supports these without refactoring:
 
-- **LLM-powered TutorBrain** — Swap `ScriptedTutorBrain` for `LLMTutorBrain`. Math correctness still verified by the engine.
 - **Multiple lessons** — JSON-driven lesson schema with a lesson validator CLI
 - **Teacher dashboard** — Event-sourced session logs enable analytics queries
 - **Smashing interaction** — Action type exists, reducer gracefully redirects
-- **RAG pedagogical engine** — Retrieval over curated misconception/scaffolding corpus
+- **Embedding retrieval** — Generate embeddings for the pedagogy notes and rank by similarity
 
 ## License
 

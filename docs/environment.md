@@ -175,7 +175,7 @@ curl -sS -X POST "$BASE/api/chat" \
 ### 2.4 iPad / PWA Notes
 
 - **Viewport:** `index.html` includes iPad-friendly viewport and `apple-mobile-web-app-capable`.
-- **Target:** Test on real iPad Safari; Chrome DevTools is not sufficient for final validation (per `.cursor/rules/ipad-first.mdc`).
+- **Target:** Test on real iPad Safari; Chrome DevTools is not sufficient for final validation.
 - **PWA:** `manifest.json` is linked; full PWA configuration (service worker, offline) is planned in ENG-032.
 
 ---
@@ -207,9 +207,6 @@ curl -sS -X POST "$BASE/api/chat" \
 | `src/state/reducer.ts` | Lesson state reducer (blocks, chatMessages, phase, etc.). |
 | `src/state/types.ts` | `LessonState`, `ChatMessage`, `FractionBlock`, actions. |
 | `src/engine/FractionEngine.ts` | Pure fraction math (split, combine, etc.). |
-| `.cursor/rules/ipad-first.mdc` | iPad-first rules: touch targets, viewport, animations. |
-| `docs/DEVLOG.md` | Development log; updated after each ticket. |
-| `docs/prd.md` | Product requirements and phase plan. |
 | `docs/environment.md` | This file — environment and runbook. |
 
 ---
@@ -280,7 +277,7 @@ npm run build
 
 **Cause:** Missing viewport meta, hover-only UI, or missing touch handlers.
 
-**Fix:** See `.cursor/rules/ipad-first.mdc`: viewport in `index.html`, 44×44pt minimum touch targets, use `@use-gesture/react` for drag (already used in FractionBlock). Test on real device.
+**Fix:** Viewport in `index.html`, 44×44pt minimum touch targets, use `@use-gesture/react` for drag (already used in FractionBlock). Test on real device.
 
 ---
 
