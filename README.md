@@ -3,8 +3,8 @@
 **An interactive, iPad-first AI tutor that teaches fraction equivalence to children aged 8–12 through guided discovery and digital manipulatives.**
 
 [![Deploy](https://img.shields.io/badge/deploy-Vercel-black?logo=vercel)](https://synthesis-tutor.vercel.app)
-[![Standards](https://img.shields.io/badge/Common_Core-3.NF.A.3_·_4.NF.A.1-blue)]()
-[![License](https://img.shields.io/badge/license-MIT-green)]()
+![Standards](https://img.shields.io/badge/Common_Core-3.NF.A.3_·_4.NF.A.1-blue)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 ---
 
@@ -35,6 +35,7 @@ Curious → Exploring → Struggling → Discovering → Confident
 - **Misconception Detection** — Catches common errors (added numerators & denominators, flipped fractions) and responds with targeted remediation.
 - **Offline Support** — Full PWA with service worker caching. Works in airplane mode after first load.
 - **Sign-in** — Clerk handles login on the landing page. Lesson state lives in the browser; nothing is stored server-side.
+- **Protected chat API** — `/api/chat` verifies the Clerk session token when `CLERK_SECRET_KEY` is set, rate-limits each caller, caps message count and length, and rebuilds the lesson state from typed fields before it reaches the system prompt (`api/guard.ts`).
 - **Synthesized Audio** — 5 Web Audio API tones (split pop, combine snap, correct chime, gentle low, celebration arpeggio) with zero file size.
 
 ## Architecture
@@ -185,7 +186,8 @@ Targets validated against a 2020 iPad 8th gen (A12 chip) — the oldest hardware
 ## Known Limitations
 
 - Single lesson only (fraction equivalence) — no lesson library
-- No student accounts or cross-session persistence
+- No server-side student records or cross-session persistence
+- The rate limit is per edge instance (in memory); a shared store such as Vercel KV would make it global
 - No teacher dashboard
 - "Smashing" (fraction addition with unlike denominators) is architecturally supported but not implemented
 - Full Switch Control accessibility testing deferred

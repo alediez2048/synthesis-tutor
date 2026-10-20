@@ -1,12 +1,13 @@
 /**
  * Vercel Edge Function: Claude API proxy with SSE and tool use.
- * ENG-011: POST { messages, lessonState }, streams text_delta and done.
- * ENG-012: Passes toolDefinitions to Claude; executes tools and sends results back.
+ * POST { messages, lessonState }; streams text_delta, tool_use, tool_result and done.
+ * Requests are authenticated, rate limited and validated in ./guard.ts first.
  */
 
 import Anthropic from '@anthropic-ai/sdk';
 import { getToolsForLesson, executeToolCall } from './tools.js';
 import { buildSystemPrompt } from './system-prompt.js';
+import { GuardError, checkRateLimit, identifyCaller, sanitizeLessonState, validateMessages } from './guard.js';
 import type { LessonState } from '../src/state/types.js';
 
 export const config = {
@@ -24,8 +25,15 @@ function encodeSSE(event: string, data: object): string {
 }
 
 interface ChatRequest {
-  messages: Array<{ role: 'user' | 'assistant'; content: string }>;
-  lessonState?: Record<string, unknown>;
+  messages?: unknown;
+  lessonState?: unknown;
+}
+
+function jsonError(status: number, error: string): Response {
+  return new Response(JSON.stringify({ error }), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
 }
 
 /** Minimal default so get_workspace_state never crashes if client omits lessonState. */
@@ -54,6 +62,8 @@ function defaultLessonState(): LessonState {
     guidedProblemIndex: 0,
     guidedStep: 'problem',
     guidedAttempts: 0,
+    guidedPrompt: null,
+    guidedSolved: false,
     cfuQuestion: null,
     cfuExpectedAnswer: null,
   };
@@ -75,28 +85,23 @@ export default async function handler(req: Request): Promise<Response> {
     });
   }
 
-  let body: ChatRequest;
+  let messages: ReturnType<typeof validateMessages>;
+  let lessonState: LessonState;
   try {
-    body = (await req.json()) as ChatRequest;
-  } catch {
-    return new Response(JSON.stringify({ error: 'Invalid request' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    const caller = await identifyCaller(req);
+    checkRateLimit(caller);
+    let body: ChatRequest;
+    try {
+      body = (await req.json()) as ChatRequest;
+    } catch {
+      throw new GuardError(400, 'Invalid request');
+    }
+    messages = validateMessages(body.messages);
+    lessonState = sanitizeLessonState(body.lessonState, defaultLessonState());
+  } catch (err) {
+    if (err instanceof GuardError) return jsonError(err.status, err.message);
+    throw err;
   }
-
-  const { messages, lessonState: rawLessonState } = body;
-  if (!Array.isArray(messages)) {
-    return new Response(JSON.stringify({ error: 'Invalid request' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-
-  const lessonState: LessonState =
-    rawLessonState && typeof rawLessonState === 'object'
-      ? (rawLessonState as unknown as LessonState)
-      : defaultLessonState();
 
   const anthropic = new Anthropic({ apiKey });
   const model = 'claude-sonnet-4-20250514';
@@ -120,10 +125,7 @@ export default async function handler(req: Request): Promise<Response> {
       try {
         type UserMessage = { role: 'user'; content: string | Array<{ type: 'tool_result'; tool_use_id: string; content: string }> };
         type AssistantMessage = { role: 'assistant'; content: Array<{ type: string; text?: string; id?: string; name?: string; input?: unknown }> };
-        let currentMessages: Array<UserMessage | AssistantMessage> = messages.map((m) => ({
-          role: m.role as 'user' | 'assistant',
-          content: m.content,
-        })) as Array<UserMessage | AssistantMessage>;
+        let currentMessages: Array<UserMessage | AssistantMessage> = messages as Array<UserMessage | AssistantMessage>;
 
         // Cap model round-trips so a model that keeps calling tools can't run up cost.
         const MAX_TOOL_ROUNDS = 5;
@@ -177,9 +179,9 @@ export default async function handler(req: Request): Promise<Response> {
 
         enqueue('done', {});
       } catch (err) {
-        enqueue('error', {
-          message: err instanceof Error ? err.message : 'Upstream API error',
-        });
+        // Log the detail server-side; the client gets a generic message.
+        console.error('chat upstream error', err);
+        enqueue('error', { message: 'Upstream API error' });
       } finally {
         close();
       }

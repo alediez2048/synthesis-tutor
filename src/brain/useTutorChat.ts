@@ -27,6 +27,15 @@ function buildMessageHistory(
 
 const WORKSPACE_DEBOUNCE_MS = 500;
 
+/** JSON headers plus the Clerk session token when a user is signed in. */
+async function chatHeaders(): Promise<Record<string, string>> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const clerk = (window as { Clerk?: { session?: { getToken: () => Promise<string | null> } | null } }).Clerk;
+  const token = await clerk?.session?.getToken().catch(() => null);
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return headers;
+}
+
 export function useTutorChat(
   state: LessonState,
   dispatch: React.Dispatch<LessonAction>
@@ -52,7 +61,7 @@ export function useTutorChat(
       try {
         const response = await fetch('/api/chat', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: await chatHeaders(),
           body: JSON.stringify({
             messages: buildMessageHistory(state.chatMessages, text),
             lessonState: state,
