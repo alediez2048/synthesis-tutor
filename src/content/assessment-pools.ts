@@ -1,5 +1,5 @@
 /**
- * Assessment problem pools per PRD Section 7.4.
+ * Assessment problem pools for the final quiz.
  * Data defined in TypeScript (matches exploration-config.ts pattern).
  */
 

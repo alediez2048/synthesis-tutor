@@ -116,7 +116,7 @@ Sam is a **small wizard owl** — round body, big expressive eyes behind round g
 | `encouraging` | Soft open eyes, slight smile | One wing gesturing | Hints, nudges |
 | `celebrating` | Big eyes, open smile | Both wings up, stars around | Assessment complete, 3/3 |
 
-### Voice/Personality (updates to PRD Section 5)
+### Voice/Personality
 
 Sam retains all existing voice constraints but gains themed vocabulary:
 

@@ -1,6 +1,5 @@
 /**
  * Guided practice problem definitions (GP-1 through GP-4).
- * PRD Section 7.3.
  */
 
 import type { Fraction } from '../engine/FractionEngine';

@@ -1,6 +1,5 @@
 /**
  * Checkpoint + Recovery — sessionStorage persistence.
- * Per PRD Section 9.
  */
 
 import type { LessonState } from './types';
