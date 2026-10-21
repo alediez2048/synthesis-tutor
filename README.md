@@ -2,6 +2,7 @@
 
 **An interactive, iPad-first AI tutor that teaches fraction equivalence to children aged 8–12 through guided discovery and digital manipulatives.**
 
+[![CI](https://github.com/alediez2048/synthesis-tutor/actions/workflows/ci.yml/badge.svg)](https://github.com/alediez2048/synthesis-tutor/actions/workflows/ci.yml)
 [![Deploy](https://img.shields.io/badge/deploy-Vercel-black?logo=vercel)](https://synthesis-tutor.vercel.app)
 ![Standards](https://img.shields.io/badge/Common_Core-3.NF.A.3_·_4.NF.A.1-blue)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)

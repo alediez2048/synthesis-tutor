@@ -18,7 +18,7 @@ export const ComparisonZone = forwardRef<HTMLElement, ComparisonZoneProps>(
 
     const sectionRef = useRef<HTMLElement | null>(null);
 
-    // ENG-026: Golden pulse when equivalent
+    // Golden pulse when equivalent
     useEffect(() => {
       if (comparisonResult !== 'equivalent' || !sectionRef.current) return;
       sectionRef.current.animate(
@@ -31,7 +31,7 @@ export const ComparisonZone = forwardRef<HTMLElement, ComparisonZoneProps>(
       );
     }, [comparisonResult]);
 
-    // ENG-027: Red shake when not equivalent
+    // Red shake when not equivalent
     useEffect(() => {
       if (comparisonResult !== 'not-equivalent' || !sectionRef.current) return;
       sectionRef.current.animate(
@@ -103,7 +103,7 @@ export const ComparisonZone = forwardRef<HTMLElement, ComparisonZoneProps>(
                   />
                 </div>
               ))}
-              {/* ENG-026: Equals sign overlay */}
+              {/* Equals sign overlay */}
               {comparisonResult === 'equivalent' && blocks.length >= 2 && (
                 <div
                   aria-live="polite"
@@ -126,7 +126,7 @@ export const ComparisonZone = forwardRef<HTMLElement, ComparisonZoneProps>(
                 </div>
               )}
             </div>
-            {/* ENG-027: Not equal indicator */}
+            {/* Not equal indicator */}
             {comparisonResult === 'not-equivalent' && blocks.length >= 2 && (
               <div
                 aria-live="polite"

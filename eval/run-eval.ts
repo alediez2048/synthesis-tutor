@@ -1,5 +1,5 @@
 /**
- * ENG-044: Evaluation runner for Fraction Quest tutor.
+ * Evaluation runner for Fraction Quest tutor.
  * Runs dataset.json against /api/chat and checks:
  *   - Tool selection: Did Claude call the expected tool?
  *   - Math correctness: Did the tool return the expected result?

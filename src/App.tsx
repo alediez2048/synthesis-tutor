@@ -68,13 +68,12 @@ function App() {
   const [splitBlockIds, setSplitBlockIds] = useState<string[] | null>(null);
   const [highlightedBlockIds, setHighlightedBlockIds] = useState<string[]>([]);
   const [showConfetti, setShowConfetti] = useState(false);
-  const [comparisonResult, setComparisonResult] = useState<ComparisonResult>(null);
   const [showRoundBanner, setShowRoundBanner] = useState(false);
   const [roundBannerName, setRoundBannerName] = useState('');
   const [round5SecondsRemaining, setRound5SecondsRemaining] = useState<number | null>(null);
   const round5StartRef = useRef<number | null>(null);
   const [showPracticeSpotlight, setShowPracticeSpotlight] = useState(false);
-  const hasSentPracticePromptRef = useRef(false);
+  const [practicePromptShown, setPracticePromptShown] = useState(false);
   const tutorialCombineFailsRef = useRef(0);
 
   const { sendMessage, notifySam, isLoading } = useTutorChat(state, dispatch);
@@ -116,7 +115,7 @@ function App() {
     }
     clearCheckpoint(state.lessonId);
     setShowLessonMap(true);
-    hasSentPracticePromptRef.current = false;
+    setPracticePromptShown(false);
     setShowPracticeSpotlight(false);
   }, [state.lessonId, state.score, lesson]);
   const handleStartLesson = useCallback(() => {
@@ -242,7 +241,6 @@ function App() {
       }
     } else {
       round5StartRef.current = null;
-      setRound5SecondsRemaining(null);
     }
   }, [state.phase, state.explorationRound, explorationRounds, lastRoundTimerMs]);
 
@@ -398,25 +396,29 @@ function App() {
   }, [splitBlockIds]);
 
   // Demo split animation: when isDemoActive and blocks increased (demo split), trigger split animation
-  const prevBlocksCountRef = useRef(state.blocks.length);
-  useEffect(() => {
-    if (state.isDemoActive && state.blocks.length > prevBlocksCountRef.current) {
+  const [prevBlocksCount, setPrevBlocksCount] = useState(state.blocks.length);
+  if (state.blocks.length !== prevBlocksCount) {
+    setPrevBlocksCount(state.blocks.length);
+    if (state.isDemoActive && state.blocks.length > prevBlocksCount) {
       setSplitBlockIds(state.blocks.map((b) => b.id));
     }
-    prevBlocksCountRef.current = state.blocks.length;
-  }, [state.blocks, state.isDemoActive]);
+  }
 
-  // ENG-026/027: Detect 2 blocks on altar, check equivalence, animate
+  // Detect 2 blocks on the altar, check equivalence, animate
   const comparisonBlocks = state.blocks.filter((b) => b.position === 'comparison');
+  const comparisonResult: ComparisonResult =
+    comparisonBlocks.length >= 2
+      ? areEquivalent(comparisonBlocks[0].fraction, comparisonBlocks[1].fraction)
+        ? 'equivalent'
+        : 'not-equivalent'
+      : null;
   const prevCompCountRef = useRef(0);
   useEffect(() => {
     const prev = prevCompCountRef.current;
     prevCompCountRef.current = comparisonBlocks.length;
     if (comparisonBlocks.length >= 2 && prev < 2) {
       const [a, b] = comparisonBlocks;
-      const equiv = areEquivalent(a.fraction, b.fraction);
-      setComparisonResult(equiv ? 'equivalent' : 'not-equivalent');
-      if (equiv) {
+      if (areEquivalent(a.fraction, b.fraction)) {
         playCorrect();
         notifySam(
           `I placed ${a.fraction.numerator}/${a.fraction.denominator} and ${b.fraction.numerator}/${b.fraction.denominator} on the spell altar to compare them`
@@ -429,19 +431,14 @@ function App() {
         );
       }
     }
-    // Clear result when blocks leave the altar (user drags them back)
-    if (comparisonBlocks.length < 2 && comparisonResult != null) {
-      setComparisonResult(null);
-    }
   }, [comparisonBlocks.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Show practice prompt dialog only on the final timer round
   const practiceEligible = state.phase === 'explore' && explorationRounds[state.explorationRound - 1]?.goalType === 'timer';
-  useEffect(() => {
-    if (!practiceEligible || hasSentPracticePromptRef.current) return;
-    hasSentPracticePromptRef.current = true;
+  if (practiceEligible && !practicePromptShown) {
+    setPracticePromptShown(true);
     setShowPracticeSpotlight(true);
-  }, [practiceEligible]);
+  }
 
   const handleSelectBlock = (blockId: string) => {
     ensureAudioUnlocked();
@@ -709,7 +706,7 @@ function App() {
           onComplete={handleTutorialComplete}
         />
       )}
-      {/* ENG-031: Skip link for keyboard users */}
+      {/* Skip link for keyboard users */}
       <a
         href="#main-content"
         style={{
@@ -927,7 +924,7 @@ function App() {
                 roundName={roundConfig.name}
                 goal={roundConfig.goal}
                 isTimerRound={roundConfig.goalType === 'timer'}
-                secondsRemaining={round5SecondsRemaining}
+                secondsRemaining={roundConfig.goalType === 'timer' ? round5SecondsRemaining : null}
               />
             ) : null;
           })()}

@@ -1,5 +1,5 @@
 /**
- * ENG-021: A-3 Generalization — submit 2 different equivalents.
+ * A-3 Generalization — submit 2 different equivalents.
  * Max 3 attempts total across both submissions.
  */
 

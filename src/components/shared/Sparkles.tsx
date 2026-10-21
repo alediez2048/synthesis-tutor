@@ -3,7 +3,7 @@
  * 30 absolute-positioned dots with random sizes, positions, and animation timing.
  */
 
-import { useMemo } from 'react';
+import { useState } from 'react';
 import { COLORS } from '../../theme';
 
 const PARTICLE_COUNT = 30;
@@ -19,7 +19,8 @@ interface Particle {
 }
 
 export function Sparkles() {
-  const particles = useMemo<Particle[]>(() => {
+  // Random layout is picked once, on mount.
+  const [particles] = useState<Particle[]>(() => {
     return Array.from({ length: PARTICLE_COUNT }, (_, i) => ({
       left: `${Math.random() * 100}%`,
       top: `${Math.random() * 100}%`,
@@ -28,7 +29,7 @@ export function Sparkles() {
       duration: `${2 + Math.random() * 3}s`,
       delay: `${Math.random() * 2}s`,
     }));
-  }, []);
+  });
 
   return (
     <div

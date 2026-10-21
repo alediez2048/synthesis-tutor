@@ -1,5 +1,5 @@
 /**
- * ENG-025: Checkpoint + Recovery — sessionStorage persistence.
+ * Checkpoint + Recovery — sessionStorage persistence.
  * Per PRD Section 9.
  */
 

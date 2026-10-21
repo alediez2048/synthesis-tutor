@@ -1,5 +1,5 @@
 /**
- * ENG-042: React hook wrapping SpeechSynthesis API for text-to-speech.
+ * React hook wrapping SpeechSynthesis API for text-to-speech.
  * Reads Sam's tutor messages aloud with child-friendly voice settings.
  */
 

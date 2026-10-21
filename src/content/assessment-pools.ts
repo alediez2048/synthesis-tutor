@@ -1,5 +1,5 @@
 /**
- * ENG-020: Assessment problem pools per PRD Section 7.4.
+ * Assessment problem pools per PRD Section 7.4.
  * Data defined in TypeScript (matches exploration-config.ts pattern).
  */
 

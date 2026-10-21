@@ -1,5 +1,5 @@
 /**
- * ENG-029: React error boundary — catches render crashes and shows a friendly recovery screen.
+ * React error boundary — catches render crashes and shows a friendly recovery screen.
  */
 
 import { Component } from 'react';

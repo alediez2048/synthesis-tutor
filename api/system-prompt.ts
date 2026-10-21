@@ -1,5 +1,5 @@
 /**
- * ENG-013: System prompt for Sam the Wizard Owl.
+ * System prompt for Sam the Wizard Owl.
  * Single source of truth for identity, voice, pedagogy, math firewall, and phase guidance.
  */
 

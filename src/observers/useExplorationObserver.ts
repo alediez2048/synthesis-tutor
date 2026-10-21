@@ -137,7 +137,7 @@ export function useExplorationObserver({
 
     if (goalMet) {
       // Track round1SplitParts for 'any_split' goal
-      const advanceAction: any = { type: 'ADVANCE_ROUND' };
+      const advanceAction: { type: 'ADVANCE_ROUND'; round1SplitParts?: number } = { type: 'ADVANCE_ROUND' };
       if (goalType === 'any_split' && curr.length > prev.length) {
         advanceAction.round1SplitParts = curr.length - prev.length + 1;
       }

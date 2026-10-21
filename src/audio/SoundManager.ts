@@ -1,5 +1,5 @@
 /**
- * ENG-024: Web Audio API synthesizer — 5 sound effects, no audio files.
+ * Web Audio API synthesizer — 5 sound effects, no audio files.
  * Per PRD Section 8.
  */
 

@@ -1,5 +1,5 @@
 /**
- * ENG-021: A-2 Construction — workspace with startingBlock, submit button.
+ * A-2 Construction — workspace with startingBlock, submit button.
  * Student builds equivalent fraction; must be different representation.
  */
 

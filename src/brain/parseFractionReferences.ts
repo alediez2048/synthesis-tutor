@@ -1,5 +1,5 @@
 /**
- * ENG-015: Extract fraction mentions (e.g. 1/2, 3/4) from tutor text for workspace highlights.
+ * Extract fraction mentions (e.g. 1/2, 3/4) from tutor text for workspace highlights.
  */
 
 export interface FractionRef {

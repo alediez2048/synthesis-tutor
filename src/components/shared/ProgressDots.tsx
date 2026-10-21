@@ -1,5 +1,5 @@
 /**
- * ENG-023: Phase progress indicator — 4 labeled dots with connecting lines.
+ * Phase progress indicator — 4 labeled dots with connecting lines.
  */
 
 import type { Phase } from '../../state/types';

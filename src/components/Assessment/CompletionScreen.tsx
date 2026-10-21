@@ -1,5 +1,5 @@
 /**
- * ENG-022: End-of-lesson completion screen.
+ * End-of-lesson completion screen.
  * Score display, Sam's message per bracket, concepts discovered, action buttons.
  */
 

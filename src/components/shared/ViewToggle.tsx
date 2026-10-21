@@ -1,5 +1,5 @@
 /**
- * ENG-030: Portrait mode tab bar — Spell Table / Sam's Chat.
+ * Portrait mode tab bar — Spell Table / Sam's Chat.
  */
 
 const MIN_TAP_PX = 44;

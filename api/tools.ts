@@ -1,5 +1,5 @@
 /**
- * ENG-012: Claude tool definitions and server-side execution.
+ * Claude tool definitions and server-side execution.
  * All fraction math is delegated to FractionEngine (deterministic).
  */
 

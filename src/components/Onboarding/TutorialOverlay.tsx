@@ -66,11 +66,13 @@ export function TutorialOverlay({
   }, [config.spotlightTarget]);
 
   useEffect(() => {
-    updateTargetRect();
+    // Measure after the browser lays out the new step, then keep tracking.
+    const frame = requestAnimationFrame(updateTargetRect);
     const onResize = () => updateTargetRect();
     window.addEventListener("resize", onResize);
     const interval = setInterval(updateTargetRect, 200);
     return () => {
+      cancelAnimationFrame(frame);
       window.removeEventListener("resize", onResize);
       clearInterval(interval);
     };

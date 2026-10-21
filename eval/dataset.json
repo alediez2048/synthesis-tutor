@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "description": "ENG-043: Evaluation dataset for Fraction Quest tutor (Sam the Wizard Owl)",
+  "description": "Evaluation dataset for Fraction Quest tutor (Sam the Wizard Owl)",
   "categories": {
     "math_correctness": "Tool returns correct mathematical results",
     "tool_selection": "Claude selects the right tool for the situation",

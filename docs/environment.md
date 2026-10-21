@@ -176,7 +176,7 @@ curl -sS -X POST "$BASE/api/chat" \
 
 - **Viewport:** `index.html` includes iPad-friendly viewport and `apple-mobile-web-app-capable`.
 - **Target:** Test on real iPad Safari; Chrome DevTools is not sufficient for final validation.
-- **PWA:** `manifest.json` is linked; full PWA configuration (service worker, offline) is planned in ENG-032.
+- **PWA:** `manifest.json` is linked; full PWA configuration (service worker, offline) is configured in vite.config.ts.
 
 ---
 

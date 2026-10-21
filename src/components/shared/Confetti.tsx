@@ -1,5 +1,5 @@
 /**
- * ENG-028: Celebration confetti — crystal-colored particles on 3/3 perfect score.
+ * Celebration confetti — crystal-colored particles on 3/3 perfect score.
  * Uses only transform and opacity for 60fps composited animation.
  */
 

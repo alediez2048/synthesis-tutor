@@ -1,5 +1,5 @@
 /**
- * ENG-016: Exploration phase config. Values mirror exploration-config.json.
+ * Exploration phase config. Values mirror exploration-config.json.
  */
 
 export const explorationConfig = {

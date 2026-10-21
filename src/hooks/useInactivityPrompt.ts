@@ -1,5 +1,5 @@
 /**
- * ENG-029: Cross-phase inactivity detection.
+ * Cross-phase inactivity detection.
  * 60s: Sam nudge. 180s: dim overlay + tap to continue. 600s: auto-checkpoint.
  * Exploration phase has its own useExplorationObserver — this hook skips explore.
  */

@@ -1,5 +1,5 @@
 /**
- * ENG-041: TypeScript declarations for Web Speech API (webkitSpeechRecognition).
+ * TypeScript declarations for Web Speech API (webkitSpeechRecognition).
  * Not included in lib.dom.d.ts for the webkit-prefixed version.
  */
 

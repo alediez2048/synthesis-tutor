@@ -1,5 +1,5 @@
 /**
- * ENG-021: Assessment phase orchestrator.
+ * Assessment phase orchestrator.
  * Renders the correct sub-component based on current problem type.
  */
 

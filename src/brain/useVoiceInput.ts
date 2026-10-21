@@ -1,5 +1,5 @@
 /**
- * ENG-041: React hook wrapping Web Speech API (webkitSpeechRecognition) for speech-to-text.
+ * React hook wrapping Web Speech API (webkitSpeechRecognition) for speech-to-text.
  * iPad Safari uses webkit prefix; Chrome uses unprefixed SpeechRecognition.
  */
 

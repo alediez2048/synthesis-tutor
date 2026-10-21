@@ -1,5 +1,5 @@
 /**
- * ENG-014: React hook for Claude-powered tutor.
+ * React hook for Claude-powered tutor.
  * Sends messages to /api/chat, parses SSE, dispatches TUTOR_RESPONSE and SET_LOADING.
  */
 

@@ -1,5 +1,5 @@
 /**
- * ENG-024: React hook wrapping SoundManager singleton.
+ * React hook wrapping SoundManager singleton.
  * Mute state, unlock, prefers-reduced-motion.
  */
 

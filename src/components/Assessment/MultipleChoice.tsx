@@ -1,5 +1,5 @@
 /**
- * ENG-021: A-1 Recognition — multiple choice with tappable option cards.
+ * A-1 Recognition — multiple choice with tappable option cards.
  * Max 2 attempts; on exhaust, reveal correct with golden pulse.
  */
 

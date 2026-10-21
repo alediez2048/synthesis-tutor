@@ -1,5 +1,5 @@
 /**
- * ENG-018: Deterministic misconception detection for wrong fraction answers.
+ * Deterministic misconception detection for wrong fraction answers.
  * Used by check_answer tool so Claude can scaffold by misconception type.
  */
 

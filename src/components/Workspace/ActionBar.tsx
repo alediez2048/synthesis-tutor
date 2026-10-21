@@ -52,11 +52,13 @@ export function ActionBar({
     return () => document.removeEventListener('keydown', handler);
   }, [pickerOpen]);
 
-  useEffect(() => {
-    if (tutorialStep === 3 && selectedBlockId) {
-      setPickerOpen(true);
-    }
-  }, [tutorialStep, selectedBlockId]);
+  // Tutorial step 3 opens the picker as soon as a crystal is selected.
+  const autoOpenKey = tutorialStep === 3 && selectedBlockId ? selectedBlockId : null;
+  const [prevAutoOpenKey, setPrevAutoOpenKey] = useState<string | null>(null);
+  if (autoOpenKey !== prevAutoOpenKey) {
+    setPrevAutoOpenKey(autoOpenKey);
+    if (autoOpenKey) setPickerOpen(true);
+  }
 
   const handleSplitClick = useCallback(() => {
     if (disabled || !selectedBlockId || debounceActive) return;

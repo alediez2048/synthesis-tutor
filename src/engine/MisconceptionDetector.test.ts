@@ -1,5 +1,5 @@
 /**
- * ENG-019: Truth table tests for MisconceptionDetector.
+ * Truth table tests for MisconceptionDetector.
  * All inputs are wrong answers (areEquivalent(parsed, target) === false).
  */
 
